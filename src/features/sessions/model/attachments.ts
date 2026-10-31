@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { basename, pickFiles as pickFilePaths } from "../../../platform/tauri/fs";
 import type { Attachment, AttachmentKind } from "./session";
+import { interleaveAttachments } from "./inlineImages";
 
 export const MAX_ATTACHMENTS = 20;
 export const MAX_EMBED_BYTES = 20 * 1024 * 1024;
@@ -303,13 +304,12 @@ export function promptBlocks(
   text: string,
   attachments: Attachment[] = [],
 ): PromptContentBlock[] {
-  const blocks: PromptContentBlock[] = [];
-  const body = promptText(text, attachments);
-  if (body) blocks.push({ type: "text", text: body });
-  for (const file of attachments) {
-    blocks.push(contentBlockFor(file));
-  }
-  return blocks;
+  return interleaveAttachments(
+    promptText(text, attachments),
+    attachments,
+    (body) => ({ type: "text", text: body }),
+    contentBlockFor,
+  );
 }
 
 /** Require a deliverable source instead of silently dropping an attachment. */

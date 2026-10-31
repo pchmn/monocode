@@ -247,7 +247,7 @@ it("sends a screenshot that is still being read when the turn is sent", async ()
   release?.();
   await settleUntil(() => submit.mock.calls.length === 1, "the turn to include the screenshot");
 
-  expect(submit.mock.calls[0][0]).toBe("look");
+  expect(submit.mock.calls[0][0]).toBe("look [Image #1]");
   expect(submit.mock.calls[0][1]).toEqual([
     expect.objectContaining({ name: "clipboard-image.png", kind: "image" }),
   ]);

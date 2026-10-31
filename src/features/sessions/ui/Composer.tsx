@@ -100,6 +100,15 @@ import { AccessPicker } from "./AccessPicker";
 import { ComposerRunner } from "./ComposerRunner";
 import { ContextMeter } from "./ContextMeter";
 import { AttachmentChip } from "./AttachmentChip";
+import { ImageTokenRuns } from "./ImageTokenRuns";
+import { useImageTokenPreview } from "./ImageTokenPreview";
+import {
+  applyAtomicTokenKey,
+  openImageAtCaret,
+  orphanedImages,
+  pastedImageAttacher,
+  removeImageToken,
+} from "./inlineImagePaste";
 import { BranchPicker } from "../../source-control/ui/BranchPicker";
 import { WorktreePicker } from "../../source-control/ui/WorktreePicker";
 import {
@@ -801,6 +810,7 @@ export function Composer({
       }
       const next = previous.filter((file) => file.id !== id);
       attachmentsRef.current = next;
+      removeImageToken(ref.current, removed);
       draftRevisionRef.current += 1;
       setAttachments(next);
       setPasteError(null);
@@ -1505,6 +1515,7 @@ export function Composer({
     if (disabled) return;
     if (isImeComposition(e.nativeEvent)) return;
     if (creatingSkill) return;
+    if (applyAtomicTokenKey(e)) return;
     if (
       e.key === "Enter" &&
       !e.shiftKey &&
@@ -1664,6 +1675,9 @@ export function Composer({
     ref.current?.focus();
   };
 
+  const imagePreview = useImageTokenPreview();
+  const attachPasted = pastedImageAttacher(attachmentsRef, addAttachments);
+
   const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
     setPasteError(null);
     const messageFiles = messageFilesFromClipboard(e.clipboardData);
@@ -1700,9 +1714,8 @@ export function Composer({
       // Captured before the read crosses an IPC hop. Send and draft reset bump
       // the generation, so a finished read cannot attach onto a draft that is gone.
       const generation = pasteGenerationRef.current;
-      const captured = isFileReferenceText(text)
-        ? captureDraft(e.currentTarget)
-        : null;
+      const fileReference = isFileReferenceText(text);
+      const captured = captureDraft(e.currentTarget);
       rememberAttachmentRead(
         nativeClipboardAttachments(text)
           .then(({ files: pasted, warning }) => {
@@ -1713,9 +1726,11 @@ export function Composer({
             if (pasted.length) {
               // WebKit can insert the URI after preventDefault. The chip
               // replaces it, so the draft must not keep that text.
-              if (captured) dropPastedText(captured, text);
-              addAttachments(pasted);
-            } else if (captured) insertRestoredText(captured, text);
+              if (captured && fileReference) dropPastedText(captured, text);
+              attachPasted(pasted, captured);
+            } else if (captured && fileReference) {
+              insertRestoredText(captured, text);
+            }
             if (warning) setPasteError(warning);
           })
           .catch((reason: unknown) => {
@@ -1730,13 +1745,14 @@ export function Composer({
     e.preventDefault();
     if (!attachmentsSupported) return;
     const generation = pasteGenerationRef.current;
+    const captured = captureDraft(e.currentTarget);
     rememberAttachmentRead(
       attachmentsFromFiles(files).then((pasted) => {
         if (pasteGenerationRef.current !== generation) {
           pasted.forEach(revokeAttachment);
           return;
         }
-        addAttachments(pasted);
+        attachPasted(pasted, captured);
       }),
     );
   };
@@ -2159,7 +2175,10 @@ export function Composer({
               onKeyDown={onKeyDown}
               onPaste={onPaste}
               onScroll={(e) => syncHighlightScroll(e.currentTarget)}
-              onClick={(e) => syncTokensFromTextarea(e.currentTarget)}
+              onClick={(e) => {
+                openImageAtCaret(e.currentTarget, attachments, imagePreview.open);
+                syncTokensFromTextarea(e.currentTarget);
+              }}
               onKeyUp={(e) => syncTokensFromTextarea(e.currentTarget)}
               onSelect={(e) => syncTokensFromTextarea(e.currentTarget)}
               onInput={(e) => {
@@ -2168,6 +2187,9 @@ export function Composer({
                 resizeComposer(el);
                 draftRevisionRef.current += 1;
                 setDraft(el.value);
+                orphanedImages(el.value, attachmentsRef.current).forEach(
+                  (file) => removeAttachment(file.id),
+                );
                 setSelectedMcp((current) => {
                   const retained = current.filter(
                     (tag) => taggedMcpServers(el.value, [tag]).length > 0,
@@ -2183,10 +2205,11 @@ export function Composer({
                 ) {
                   setSessionFolderSelected(false);
                 }
-                syncHasValue(el.value, attachments);
+                syncHasValue(el.value, attachmentsRef.current);
                 syncTokensFromTextarea(el);
               }}
             />
+            {imagePreview.node}
           </div>
 
           <div
@@ -2599,7 +2622,7 @@ function FileMentionRuns({
             {part.text.slice(1)}
           </span>
         ) : (
-          part.text
+          <ImageTokenRuns key={index} text={part.text} />
         ),
       )}
     </>

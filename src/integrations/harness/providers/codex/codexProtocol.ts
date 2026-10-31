@@ -13,6 +13,7 @@ import {
   normalizeImageMime,
   promptText,
 } from "../../../../features/sessions/model/attachments";
+import { interleaveAttachments } from "../../../../features/sessions/model/inlineImages";
 import { displayPath } from "../../../../shared/lib/paths";
 import { normalizeTaskListStatus } from "../../../../features/sessions/model/taskList";
 import {
@@ -193,24 +194,22 @@ function codexInput(
   prompt: string | undefined,
   attachments: Attachment[] = [],
 ): Array<Record<string, unknown>> {
-  const input: Array<Record<string, unknown>> = [];
-  const body = promptText(prompt ?? "", attachments);
-  if (body) input.push({ type: "text", text: body });
-  for (const file of attachments) {
-    if (isVisionImage(file.mimeType)) {
-      input.push(
-        file.data
-          ? {
-              type: "image",
-              url: `data:${normalizeImageMime(file.mimeType)};base64,${file.data}`,
-            }
-          : { type: "localImage", path: attachmentPath(file) },
-      );
-    } else {
-      input.push({ type: "text", text: attachmentPathText(file) });
-    }
-  }
-  return input;
+  return interleaveAttachments<Record<string, unknown>>(
+    promptText(prompt ?? "", attachments),
+    attachments,
+    (text) => ({ type: "text", text }),
+    (file) => {
+      if (!isVisionImage(file.mimeType)) {
+        return { type: "text", text: attachmentPathText(file) };
+      }
+      return file.data
+        ? {
+            type: "image",
+            url: `data:${normalizeImageMime(file.mimeType)};base64,${file.data}`,
+          }
+        : { type: "localImage", path: attachmentPath(file) };
+    },
+  );
 }
 
 export function isRecoverableThreadResumeError(error: unknown): boolean {
