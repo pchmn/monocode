@@ -505,6 +505,7 @@ import {
   formatSessionTitle,
   sessionNeedsInput,
   newDefaultSession,
+  newSessionForProject,
   newSession,
   retargetSessionToProject,
   removeSessionDraft,
@@ -10537,6 +10538,33 @@ function Workspace({
     return () => window.clearTimeout(timer);
   }, [autoContinueKey, onSubmit]);
 
+  const onClearSession = useCallback((sessionId: string) => {
+    const current = sessionsRef.current.find((s) => s.id === sessionId);
+    const tab = tabsRef.current.find((t) =>
+      leafIds(t.layout).includes(sessionId),
+    );
+    if (!current || !tab || remoteProjectFor(current.cwd)) return;
+    const fresh = {
+      ...newSessionForProject(current, current.cwd),
+      worktreeCwd: current.worktreeCwd,
+      branch: current.branch,
+    };
+    setSessions((prev) => [...prev, fresh]);
+    setTabs((prev) =>
+      prev.map((entry) =>
+        entry.id === tab.id
+          ? {
+              ...entry,
+              layout: replaceLeafId(entry.layout, sessionId, fresh.id),
+              focusedId:
+                entry.focusedId === sessionId ? fresh.id : entry.focusedId,
+            }
+          : entry,
+      ),
+    );
+    setComposerFocused(true);
+  }, []);
+
   const onCompactContext = useCallback(
     (sessionId: string) => {
       const current = sessionsRef.current.find(
@@ -13478,6 +13506,7 @@ function Workspace({
     onSubmit,
     onStop,
     onCompactContext,
+    onClearSession,
     onPlaceSessionInFolder,
     onDeleteQueuedMessage,
     onEditQueuedMessage,

@@ -190,6 +190,7 @@ export type SessionPaneProps = {
   onRemoveDraft: (sessionId: string, draftBlockId: string) => boolean | void;
   onStop: (sessionId: string) => void;
   onCompactContext: (sessionId: string) => boolean;
+  onClearSession: (sessionId: string) => void;
   onPlaceSessionInFolder: (
     sessionId: string,
     target: SessionFolderTarget,
@@ -334,6 +335,7 @@ const LocalSessionPane = memo(function LocalSessionPane({
   onSubmit,
   onStop,
   onCompactContext,
+  onClearSession,
   onPlaceSessionInFolder,
   onDeleteQueuedMessage,
   onEditQueuedMessage,
@@ -758,6 +760,7 @@ const LocalSessionPane = memo(function LocalSessionPane({
       onBtwCommand={btw.openWith}
       onStop={() => onStop(session.id)}
       onCompactContext={() => onCompactContext(session.id)}
+      onClearSession={() => onClearSession(session.id)}
       onPlaceInFolder={(target) => onPlaceSessionInFolder(session.id, target)}
       queuedMessages={session.queuedMessages}
       queueStatus={session.queueStatus}

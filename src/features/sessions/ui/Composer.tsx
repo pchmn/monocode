@@ -168,6 +168,7 @@ import {
   consumeBtwPrefix,
   supportsBtwHarness,
 } from "../model/btw";
+import { CLEAR_COMMAND, isClearCommand } from "../model/clear";
 import { COMPACT_COMMAND, isCompactCommand } from "../model/compact";
 import {
   consumeSessionFolderCommand,
@@ -284,6 +285,7 @@ type Props = {
   onSaveDraft?: (text: string, attachments: Attachment[]) => boolean | void;
   onStop?: () => void;
   onCompactContext?: () => boolean;
+  onClearSession?: () => void;
   onPlaceInFolder?: (target: SessionFolderTarget) => void;
   onDeleteQueuedMessage?: (messageId: string) => void;
   onEditQueuedMessage?: (messageId: string, text: string) => void;
@@ -402,6 +404,7 @@ export function Composer({
   onSaveDraft,
   onStop,
   onCompactContext,
+  onClearSession,
   onPlaceInFolder,
   onDeleteQueuedMessage,
   onEditQueuedMessage,
@@ -569,6 +572,7 @@ export function Composer({
             PLAN_COMMAND,
             ...(canSaveDraft && onSaveDraft ? [DRAFT_COMMAND] : []),
             COMPACT_COMMAND,
+            ...(onClearSession ? [CLEAR_COMMAND] : []),
             ...(supportsBtwHarness(harness) ? [BTW_COMMAND] : []),
             ...skills.filter(
               (skill) =>
@@ -578,6 +582,7 @@ export function Composer({
                 (skill.kind === "native" ||
                   (skill.name !== PLAN_COMMAND.name &&
                     skill.name !== COMPACT_COMMAND.name &&
+                    skill.name !== CLEAR_COMMAND.name &&
                     skill.name !== SESSION_FOLDER_COMMAND.name &&
                     skill.name !== MCP_COMMAND.name &&
                     skill.name !== ORCHESTRATOR_COMMAND.name &&
@@ -1379,6 +1384,11 @@ export function Composer({
       return;
     }
 
+    if (onClearSession && isClearCommand(value)) {
+      onClearSession();
+      return;
+    }
+
     if (isCompactCommand(value)) {
       if (!onCompactContext?.()) return;
       if (!ref.current) return;
@@ -1555,6 +1565,7 @@ export function Composer({
       e.key === "Enter" &&
       !e.shiftKey &&
       (isCompactCommand(e.currentTarget.value) ||
+        (onClearSession && isClearCommand(e.currentTarget.value)) ||
         isMcpCommand(e.currentTarget.value) ||
         isSessionFolderCommand(e.currentTarget.value))
     ) {
