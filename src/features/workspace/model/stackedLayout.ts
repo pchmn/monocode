@@ -34,7 +34,7 @@ export function stackedSurface(
   return focusedId === pair.paneId ? "file" : "session";
 }
 
-/** In sub-tabs mode the top tab names the session, whichever sub-tab is shown. */
+/** In sub-tabs mode the top tab is titled by the session, with the file as its subtitle. */
 export function titlesAsSession(
   layout: LayoutNode,
   sessionIds: readonly string[],
