@@ -55,6 +55,8 @@ type Props = {
   onPaneDragStart?: (event: ReactPointerEvent<HTMLElement>) => void;
   label?: string;
   trailing?: ReactNode;
+  /** Rendered as the first tab, inside the scrolling tab list. */
+  leading?: ReactNode;
 };
 
 export type SurfaceTabPresentation = {
@@ -204,6 +206,7 @@ export function SurfaceTabs({
   onPaneDragStart,
   label = "Open files",
   trailing,
+  leading,
 }: Props) {
   const lockOverscroll = useLockOverscroll<HTMLDivElement>();
   const activeTabRef = useRef<HTMLDivElement | null>(null);
@@ -291,6 +294,7 @@ export function SurfaceTabs({
             <GripVertical className="size-3.5" strokeWidth={1.75} />
           </div>
         ) : null}
+        {leading}
         {displayed.map((entry) => {
           const file = entry.item;
           const closing = entry.closing;
