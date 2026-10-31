@@ -1,5 +1,6 @@
 import { loadProjectFiles, rankProjectFiles, type RankedFile } from "./fileIndex";
 import type { ProjectFile } from "../../../platform/tauri/fs";
+import { parentMentionLines } from "./parentMentions";
 import { isMarkdownBlockquotePosition } from "../../sessions/model/quoteDraft";
 
 export type MentionToken = {
@@ -44,7 +45,7 @@ const TRAILING_PUNCTUATION = new Set([
   "/",
 ]);
 const MAX_QUERY = 120;
-const MAX_PICKER = 30;
+export const MAX_PICKER = 30;
 
 /** Mention token that contains `cursor`, if the user is typing `@file`. */
 export function mentionTokenAt(
@@ -231,12 +232,12 @@ export async function applyFileMentionsToTurn(
 ): Promise<string> {
   if (!looksMentioned(text)) return text;
   const files = await loadProjectFiles(cwd).catch(() => []);
-  if (files.length === 0) return text;
 
   const index = buildMentionIndex(files);
   const lines = fileMentionsInText(text, index.labels)
     .filter((hit) => hit.label !== hit.file.relative)
     .map((hit) => `- @${hit.label} → ${hit.file.relative}`);
+  lines.push(...parentMentionLines(text, cwd));
   if (lines.length === 0) return text;
 
   return [text, "", "---", "Referenced with @ above:", ...lines].join("\n");
@@ -359,7 +360,7 @@ function encodeMentionToken(relative: string): string | null {
   return isTokenSafe(encoded) ? encoded : null;
 }
 
-function isTokenSafe(value: string): boolean {
+export function isTokenSafe(value: string): boolean {
   return (
     value.length > 0 &&
     value.length <= MAX_QUERY &&

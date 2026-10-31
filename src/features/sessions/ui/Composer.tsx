@@ -55,6 +55,7 @@ import {
   type MentionToken,
 } from "../../files/model/fileMentions";
 import type { ProjectFile } from "../../../platform/tauri/fs";
+import { parentMentionPick, useParentMentions } from "./useParentMentions";
 import {
   composeInboxMessage,
   type InboxComposerCard,
@@ -640,7 +641,12 @@ export function Composer({
   );
   const mentionIndexRef = useRef<MentionIndex>(mentionIndex);
   mentionIndexRef.current = mentionIndex;
-  const rankedFiles = useMemo(() => {
+  const parentFiles = useParentMentions(
+    mentionOpen && looksLikeProject(executionCwd),
+    executionCwd,
+    mention?.query ?? "",
+  );
+  const localFiles = useMemo(() => {
     if (!mentionOpen) return [];
     const fileHits = looksLikeProject(executionCwd)
       ? rankMentionFiles(
@@ -655,6 +661,7 @@ export function Composer({
     const seen = new Set(noteHits.map((file) => file.path));
     return [...noteHits, ...fileHits.filter((file) => !seen.has(file.path))];
   }, [executionCwd, files, mention?.query, mentionOpen, notes, notesEnabled]);
+  const rankedFiles = parentFiles ?? localFiles;
 
   const syncHasValue = useCallback(
     (text: string, files: Attachment[]) => {
@@ -1148,18 +1155,21 @@ export function Composer({
         setMention(null);
         return;
       }
-      const label = isNoteMentionPath(file.path)
-        ? file.relative
-        : mentionLabel(file, mentionIndexRef.current);
+      const parentPick = parentMentionPick(token.query, file);
+      const label =
+        parentPick?.label ??
+        (isNoteMentionPath(file.path)
+          ? file.relative
+          : mentionLabel(file, mentionIndexRef.current));
       const next = replaceMentionToken(el.value, token, label);
       el.value = next;
       resizeComposer(el);
       let cursor = token.start + label.length + 1;
-      if (next[cursor] === " ") cursor += 1;
+      if (!parentPick?.intoDir && next[cursor] === " ") cursor += 1;
       el.setSelectionRange(cursor, cursor);
       setDraft(next);
       syncHasValue(next, attachmentsRef.current);
-      setMention(null);
+      setMention(parentPick?.intoDir ? mentionTokenAt(next, cursor) : null);
       el.focus();
     },
     [syncHasValue],
