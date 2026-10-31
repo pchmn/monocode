@@ -55,3 +55,33 @@ export function usePanelsSwapped(): boolean {
   }, [swapped]);
   return swapped;
 }
+
+const TOOLS_WIDTH_VAR = "--inset-tools-width";
+
+/** Publishes the left-docked tools panel width so swapPanels.css can start the title tabs after it. */
+export function useToolsPanelWidthVar(swapped: boolean) {
+  useLayoutEffect(() => {
+    if (!swapped) return;
+    const root = document.documentElement;
+    const observer = new ResizeObserver(([entry]) =>
+      root.style.setProperty(
+        TOOLS_WIDTH_VAR,
+        `${entry.target.getBoundingClientRect().width}px`,
+      ),
+    );
+    let frame = 0;
+    const attach = () => {
+      const panel = document.querySelector('[aria-label="Project tools"]')
+        ?.parentElement;
+      if (panel) observer.observe(panel);
+      // The card can mount after the title bar.
+      else frame = requestAnimationFrame(attach);
+    };
+    attach();
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      root.style.removeProperty(TOOLS_WIDTH_VAR);
+    };
+  }, [swapped]);
+}

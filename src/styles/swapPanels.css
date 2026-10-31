@@ -41,7 +41,7 @@ html.panels-swapped .sidebar-peek {
   right: 0.375rem;
 }
 
-/* The tabs no longer start over a left rail. */
+/* Tabs start where the card's workspace starts: past the card margin and the tools panel. */
 html.panels-swapped [data-inset-title-nav] {
-  min-width: 0 !important;
+  min-width: calc(var(--inset-tools-width, 0px) + 0.375rem) !important;
 }

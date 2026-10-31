@@ -16,7 +16,10 @@ import {
   X,
   Zap,
 } from "../../shared/ui/icons";
-import { usePanelsSwapped } from "../../features/settings/model/panelSide";
+import {
+  usePanelsSwapped,
+  useToolsPanelWidthVar,
+} from "../../features/settings/model/panelSide";
 import {
   memo,
   useCallback,
@@ -1053,6 +1056,7 @@ function TitleBarComponent({
   const showRightPanelToggle = inset && Boolean(onToggleRightPanel);
   // Swapped panels put the sessions sidebar, and so its toggle, on the right.
   const sessionToggleRight = usePanelsSwapped();
+  useToolsPanelWidthVar(sessionToggleRight);
   // A Mono's own overview holds its changes; app views have none beside them.
   const rightPanelOff = !!mono || rightPanelUnavailable;
   const changesDot = rightPanelDot && !rightPanelOff;
