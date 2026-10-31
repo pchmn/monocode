@@ -4,7 +4,13 @@ import { gitPrStatus } from "../../../platform/tauri/fs";
 import type { ContextUsage } from "../model/contextUsage";
 import { formatContextText, formatCost } from "../model/sessionStatusLine";
 
-type Pr = Awaited<ReturnType<typeof gitPrStatus>>;
+type Pr = { number: number; url: string; title?: string } | null;
+
+export type SessionStatusInfo = {
+  costUsd?: number;
+  /** PR already linked to the session; skips the `gh` lookup. */
+  pr?: NonNullable<Pr>;
+};
 
 const PR_TTL_MS = 5 * 60_000;
 const prCache = new Map<string, { at: number; pr: Pr }>();
@@ -40,16 +46,18 @@ function useBranchPr(cwd: string, branch: string | undefined): Pr {
 
 export function SessionStatusLine({
   context,
-  costUsd,
+  info,
   cwd,
   branch,
 }: {
   context?: ContextUsage;
-  costUsd?: number;
+  info?: SessionStatusInfo;
   cwd: string;
   branch?: string;
 }) {
-  const pr = useBranchPr(cwd, branch);
+  const costUsd = info?.costUsd;
+  const lookedUp = useBranchPr(info?.pr ? "" : cwd, branch);
+  const pr = info?.pr ?? lookedUp;
   const parts = [
     context ? formatContextText(context) : null,
     costUsd ? formatCost(costUsd) : null,
