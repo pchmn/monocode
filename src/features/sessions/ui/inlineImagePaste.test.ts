@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+// @vitest-environment happy-dom
+import { describe, expect, it, vi } from "vitest";
 import type { Attachment } from "../model/session";
-import { atomicTokenEdit, imageAtCaret } from "./inlineImagePaste";
+import { atomicTokenEdit, imageAtCaret, openImageAtCaret } from "./inlineImagePaste";
 
 const v = "a [Image #2] b";
 // token spans 2..12
@@ -50,5 +51,18 @@ describe("imageAtCaret", () => {
     expect(imageAtCaret(v, 2, [file])).toBeUndefined();
     expect(imageAtCaret(v, 12, [file])).toBeUndefined();
     expect(imageAtCaret(v, 6, [])).toBeUndefined();
+  });
+});
+
+describe("openImageAtCaret", () => {
+  it("opens the image and moves the caret after the token", () => {
+    const field = document.createElement("textarea");
+    field.value = "see [Image #1] ok";
+    field.setSelectionRange(8, 8);
+    const file = { id: "a", imageNumber: 1 } as Attachment;
+    const open = vi.fn();
+    openImageAtCaret(field, [file], open);
+    expect(open).toHaveBeenCalledWith(file);
+    expect(field.selectionStart).toBe(14);
   });
 });

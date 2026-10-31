@@ -101,6 +101,21 @@ export function imageAtCaret(
   return hit && attachments.find((file) => file.imageNumber === hit.imageNumber);
 }
 
+/** Opens the clicked token's image and parks the caret after the token, not inside it. */
+export function openImageAtCaret(
+  field: HTMLTextAreaElement,
+  attachments: Attachment[],
+  open: (file: Attachment) => void,
+) {
+  const { value, selectionStart, selectionEnd } = field;
+  if (selectionStart !== selectionEnd) return;
+  const image = imageAtCaret(value, selectionStart, attachments);
+  if (!image) return;
+  const end = value.indexOf("]", selectionStart) + 1;
+  field.setSelectionRange(end, end);
+  open(image);
+}
+
 export function applyAtomicTokenKey(e: KeyboardEvent<HTMLTextAreaElement>) {
   const field = e.currentTarget;
   const arrow = e.key.startsWith("Arrow");

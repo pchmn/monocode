@@ -104,7 +104,7 @@ import { ImageTokenRuns } from "./ImageTokenRuns";
 import { useImageTokenPreview } from "./ImageTokenPreview";
 import {
   applyAtomicTokenKey,
-  imageAtCaret,
+  openImageAtCaret,
   orphanedImages,
   pastedImageAttacher,
   removeImageToken,
@@ -2152,11 +2152,7 @@ export function Composer({
               onPaste={onPaste}
               onScroll={(e) => syncHighlightScroll(e.currentTarget)}
               onClick={(e) => {
-                const { value, selectionStart, selectionEnd } = e.currentTarget;
-                const image =
-                  selectionStart === selectionEnd &&
-                  imageAtCaret(value, selectionStart, attachments);
-                if (image) imagePreview.open(image);
+                openImageAtCaret(e.currentTarget, attachments, imagePreview.open);
                 syncTokensFromTextarea(e.currentTarget);
               }}
               onKeyUp={(e) => syncTokensFromTextarea(e.currentTarget)}
