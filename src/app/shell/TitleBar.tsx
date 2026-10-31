@@ -6,6 +6,7 @@ import {
   DashboardSquare,
   Inbox,
   PanelLeft,
+  PanelRightToggle,
   GitBranch,
   Plus,
   Search,
@@ -15,6 +16,10 @@ import {
   X,
   Zap,
 } from "../../shared/ui/icons";
+import {
+  usePanelsSwapped,
+  useToolsPanelWidthVar,
+} from "../../features/settings/model/panelSide";
 import {
   memo,
   useCallback,
@@ -1049,9 +1054,37 @@ function TitleBarComponent({
     railClosed &&
     Boolean(onOpenInbox || onOpenNotes || onOpenSettings);
   const showRightPanelToggle = inset && Boolean(onToggleRightPanel);
+  // Swapped panels put the sessions sidebar, and so its toggle, on the right.
+  const sessionToggleRight = usePanelsSwapped();
+  useToolsPanelWidthVar(sessionToggleRight);
   // A Mono's own overview holds its changes; app views have none beside them.
   const rightPanelOff = !!mono || rightPanelUnavailable;
   const changesDot = rightPanelDot && !rightPanelOff;
+  const rightPanelButton = (
+    <IconButton
+      label={
+        changesDot
+          ? `Toggle right sidebar (${MOD}${SHIFT}B, uncommitted changes)`
+          : `Toggle right sidebar (${MOD}${SHIFT}B)`
+      }
+      active={rightPanelOpen && !rightPanelOff}
+      disabled={rightPanelOff}
+      onClick={onToggleRightPanel}
+    >
+      <span className="relative grid">
+        <GitBranch
+          className={`size-3.5 ${changesDot ? "overview-tab-icon-with-dot" : ""}`}
+          strokeWidth={1.75}
+        />
+        {changesDot ? (
+          <span
+            aria-hidden
+            className="absolute -top-[2px] -right-[2px] size-1.5 rounded-full bg-accent"
+          />
+        ) : null}
+      </span>
+    </IconButton>
+  );
   const trailingControls =
     showTrailingActions ||
     showRightPanelToggle ||
@@ -1062,29 +1095,20 @@ function TitleBarComponent({
           // Clear of the window's right edge, like the traffic lights' inset
           // on the left.
           <div className="flex items-center pl-1.5 pr-3">
-            <IconButton
-              label={
-                changesDot
-                  ? `Toggle right sidebar (${MOD}${SHIFT}B, uncommitted changes)`
-                  : `Toggle right sidebar (${MOD}${SHIFT}B)`
-              }
-              active={rightPanelOpen && !rightPanelOff}
-              disabled={rightPanelOff}
-              onClick={onToggleRightPanel}
-            >
-              <span className="relative grid">
-                <GitBranch
-                  className={`size-3.5 ${changesDot ? "overview-tab-icon-with-dot" : ""}`}
-                  strokeWidth={1.75}
-                />
-                {changesDot ? (
-                  <span
-                    aria-hidden
-                    className="absolute -top-[2px] -right-[2px] size-1.5 rounded-full bg-accent"
-                  />
-                ) : null}
-              </span>
-            </IconButton>
+            {sessionToggleRight ? (
+              onToggleSessionSidebar ? (
+                <span data-sidebar-peek-trigger className="flex">
+                  <IconButton
+                    label={`Toggle Sidebar (${MOD}B)`}
+                    onClick={onToggleSessionSidebar}
+                  >
+                    <PanelRightToggle className="size-3.5" strokeWidth={1.75} />
+                  </IconButton>
+                </span>
+              ) : null
+            ) : (
+              rightPanelButton
+            )}
           </div>
         ) : null}
         {mono && (onToggleMonoOverview || onOpenMonoSettings) ? (
@@ -1142,7 +1166,8 @@ function TitleBarComponent({
             // Center the toggle over the sidebar's project icon.
             className={`shrink-0 ${trafficLightsVisible ? "w-[78px]" : "w-2.5"}`}
           />
-          {onToggleSessionSidebar ? (
+          {sessionToggleRight && showRightPanelToggle ? rightPanelButton : null}
+          {onToggleSessionSidebar && !sessionToggleRight ? (
             // Hovering the toggle peeks a collapsed sidebar out.
             <span data-sidebar-peek-trigger className="flex">
               <IconButton

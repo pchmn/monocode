@@ -26,6 +26,10 @@ import {
 } from "../features/monos/model/monoSessionCompletion";
 import { acceptQuickLaunch } from "./model/quickLaunchSession";
 import { useWorkspaceNavigation } from "./hooks/useWorkspaceNavigation";
+import {
+  resizeDirection,
+  usePanelsSwapped,
+} from "../features/settings/model/panelSide";
 import { useIdleSessionDetach } from "./hooks/useIdleSessionDetach";
 import { HarnessEventQueue } from "./model/harnessFlush";
 import { noteStreamApplied } from "../features/sessions/model/streamingPerformance";
@@ -1397,9 +1401,9 @@ function Workspace({
     setRightPanelOpenState(next);
     setRightPanelClosing(!next);
   }, []);
-  // Its handle sits on the left edge, so dragging left widens it.
+  const panelsSwapped = usePanelsSwapped();
   const rightPanelResize = useDragResize({
-    direction: "left",
+    direction: resizeDirection("tools", panelsSwapped),
     min: RIGHT_PANEL_WIDTH_MIN,
     max: () =>
       Math.min(RIGHT_PANEL_WIDTH_MAX, Math.floor(window.innerWidth * 0.5)),

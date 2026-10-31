@@ -24,6 +24,7 @@ import { initializeProviderBinaryPaths } from "./features/providers/model/provid
 // Lets file commands reach a connected machine for `remote://` paths.
 import "./features/connections/model/remoteCommands";
 import "./styles/index.css";
+import "./styles/swapPanels.css";
 
 performance.mark("monocode:bootstrap");
 // Let local boot IPC overlap loading/evaluating the workspace UI.
