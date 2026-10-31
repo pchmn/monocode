@@ -3,7 +3,7 @@ export function ImageTokenRuns({ text }: { text: string }) {
     <>
       {text.split(/(\[Image #\d+\])/).map((part, index) =>
         index % 2 ? (
-          <span key={index} className="text-mention">
+          <span key={index} className="rounded-sm bg-accent/15 text-accent">
             {part}
           </span>
         ) : (

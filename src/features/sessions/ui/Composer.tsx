@@ -101,7 +101,10 @@ import { ComposerRunner } from "./ComposerRunner";
 import { ContextMeter } from "./ContextMeter";
 import { AttachmentChip } from "./AttachmentChip";
 import { ImageTokenRuns } from "./ImageTokenRuns";
+import { useImageTokenPreview } from "./ImageTokenPreview";
 import {
+  applyAtomicTokenKey,
+  imageAtCaret,
   orphanedImages,
   pastedImageAttacher,
   removeImageToken,
@@ -1495,6 +1498,7 @@ export function Composer({
     if (disabled) return;
     if (isImeComposition(e.nativeEvent)) return;
     if (creatingSkill) return;
+    if (applyAtomicTokenKey(e)) return;
     if (
       e.key === "Enter" &&
       !e.shiftKey &&
@@ -1653,6 +1657,7 @@ export function Composer({
     ref.current?.focus();
   };
 
+  const imagePreview = useImageTokenPreview();
   const attachPasted = pastedImageAttacher(attachmentsRef, addAttachments);
 
   const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
@@ -2146,7 +2151,14 @@ export function Composer({
               onKeyDown={onKeyDown}
               onPaste={onPaste}
               onScroll={(e) => syncHighlightScroll(e.currentTarget)}
-              onClick={(e) => syncTokensFromTextarea(e.currentTarget)}
+              onClick={(e) => {
+                const { value, selectionStart, selectionEnd } = e.currentTarget;
+                const image =
+                  selectionStart === selectionEnd &&
+                  imageAtCaret(value, selectionStart, attachments);
+                if (image) imagePreview.open(image);
+                syncTokensFromTextarea(e.currentTarget);
+              }}
               onKeyUp={(e) => syncTokensFromTextarea(e.currentTarget)}
               onSelect={(e) => syncTokensFromTextarea(e.currentTarget)}
               onInput={(e) => {
@@ -2177,6 +2189,7 @@ export function Composer({
                 syncTokensFromTextarea(el);
               }}
             />
+            {imagePreview.node}
           </div>
 
           <div
