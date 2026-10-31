@@ -63,6 +63,7 @@ export function ApprovalSheet({ blocks, cwd, onApproval }: Props) {
       );
       if (!action) return;
       e.preventDefault();
+      e.stopPropagation();
       if (action.type === "move") {
         setSelected(action.index);
         return;
@@ -70,8 +71,9 @@ export function ApprovalSheet({ blocks, cwd, onApproval }: Props) {
       const decision = OPTIONS[action.index]?.decision;
       if (decision) live.current.onApproval(requestId, decision);
     };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    // Capture phase: the composer's own Enter handler would otherwise submit first.
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => document.removeEventListener("keydown", onKeyDown, true);
   }, [requestId]);
 
   if (!current || requestId === undefined) return null;
@@ -80,7 +82,7 @@ export function ApprovalSheet({ blocks, cwd, onApproval }: Props) {
   return (
     <div
       ref={rootRef}
-      className="mb-2 rounded-xl border border-dashed border-content/20 bg-content/5 px-3 py-2"
+      className="mx-1.5 mb-2 rounded-xl border border-dashed border-content/20 bg-content/5 px-3 py-2"
     >
       <div className="mb-1.5 flex items-center gap-2 text-[12px]">
         <span className="shrink-0 text-amber-400">Approval needed</span>
