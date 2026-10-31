@@ -6,6 +6,7 @@ import {
   DashboardSquare,
   Inbox,
   PanelLeft,
+  PanelRightToggle,
   GitBranch,
   Plus,
   Search,
@@ -15,6 +16,7 @@ import {
   X,
   Zap,
 } from "../../shared/ui/icons";
+import { usePanelsSwapped } from "../../features/settings/model/panelSide";
 import {
   memo,
   useCallback,
@@ -1049,6 +1051,8 @@ function TitleBarComponent({
     railClosed &&
     Boolean(onOpenInbox || onOpenNotes || onOpenSettings);
   const showRightPanelToggle = inset && Boolean(onToggleRightPanel);
+  // Swapped panels put the sessions sidebar, and so its toggle, on the right.
+  const sessionToggleRight = usePanelsSwapped();
   // A Mono's own overview holds its changes; app views have none beside them.
   const rightPanelOff = !!mono || rightPanelUnavailable;
   const changesDot = rightPanelDot && !rightPanelOff;
@@ -1085,6 +1089,16 @@ function TitleBarComponent({
                 ) : null}
               </span>
             </IconButton>
+            {onToggleSessionSidebar && sessionToggleRight ? (
+              <span data-sidebar-peek-trigger className="ml-0.5 flex">
+                <IconButton
+                  label={`Toggle Sidebar (${MOD}B)`}
+                  onClick={onToggleSessionSidebar}
+                >
+                  <PanelRightToggle className="size-3.5" strokeWidth={1.75} />
+                </IconButton>
+              </span>
+            ) : null}
           </div>
         ) : null}
         {mono && (onToggleMonoOverview || onOpenMonoSettings) ? (
@@ -1142,7 +1156,7 @@ function TitleBarComponent({
             // Center the toggle over the sidebar's project icon.
             className={`shrink-0 ${trafficLightsVisible ? "w-[78px]" : "w-2.5"}`}
           />
-          {onToggleSessionSidebar ? (
+          {onToggleSessionSidebar && !sessionToggleRight ? (
             // Hovering the toggle peeks a collapsed sidebar out.
             <span data-sidebar-peek-trigger className="flex">
               <IconButton
