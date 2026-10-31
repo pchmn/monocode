@@ -100,11 +100,6 @@ beforeEach(() => {
     removeItem: (key: string) => stored.delete(key),
     clear: () => stored.clear(),
   });
-  // Inactive-sessions group is collapsed by default; expand it so listed rows render.
-  stored.set(
-    "monocode.inactiveSessionsCollapsed",
-    JSON.stringify({ "/workspace/project": true }),
-  );
   props = {
     cwd: "/workspace/project",
     open: true,
@@ -1134,13 +1129,7 @@ describe("sidebar new session rows", () => {
       );
     // Dev builds replay mount effects; the row must still animate, once.
     const render = () =>
-      root.render(
-        createElement(
-          StrictMode,
-          null,
-          createElement(Sidebar, { ...props, openSessions: props.sessions }),
-        ),
-      );
+      root.render(createElement(StrictMode, null, createElement(Sidebar, props)));
     act(() => render());
     expect(animate).not.toHaveBeenCalled();
 
@@ -1398,7 +1387,6 @@ describe("sidebar orchestration card", () => {
         },
       },
     ];
-    props.openSessions = props.sessions;
     props.activeSessionId = "another-session";
     props.busySessionIds = new Set();
     act(() => render());

@@ -308,6 +308,8 @@ type Props = {
   activeSessionId?: string;
   /** Open tabs, including blank ones not yet in history. */
   openSessions?: readonly SessionSummary[];
+  /** Sessions shown in a workspace tab; `openSessions` also keeps closed tabs loaded. */
+  tabSessionIds?: ReadonlySet<string>;
   status: "idle" | "error";
   /** First listing for this project has not arrived yet. */
   pending: boolean;
@@ -432,6 +434,7 @@ function SidebarComponent({
   approvalSessionIds,
   activeSessionId,
   openSessions = [],
+  tabSessionIds,
   status,
   pending,
   onSelectSession: onSelectLocalSession,
@@ -860,8 +863,8 @@ function SidebarComponent({
   };
   const { inactiveGroup, setInactiveCollapsed } = useInactiveSessions({
     cwd,
-    disabled: searchNarrowed || remoteProject,
-    openSessionIds: openSessions.map((session) => session.id),
+    disabled: searchNarrowed || remoteProject || !tabSessionIds,
+    openSessionIds: [...(tabSessionIds ?? [])],
     busyIds: listedBusySessionIds,
     approvalIds: listedApprovalSessionIds,
     activeId: activeListedSessionId,
