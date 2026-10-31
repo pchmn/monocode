@@ -1,3 +1,4 @@
+import { GRUVBOX_THEME } from "./gruvboxTheme";
 /** Colour themes for the inset workspace. Each one paints the shell around the
  * card, the card itself, text, accent and the markdown link/heading colours,
  * with its own dark and light palette. "Default" sets nothing, so the
@@ -566,52 +567,7 @@ export const WORKSPACE_THEMES: readonly WorkspaceTheme[] = [
       },
     },
   },
-  {
-    id: "gruvbox",
-    label: "Gruvbox Material",
-    dark: {
-      surface: "#222121",
-      panel: "#292828",
-      panelSolid: "#292828",
-      content: "#d4be98",
-      accent: "#a9b665",
-      link: "#a9b665",
-      heading: "#ea6962",
-      syntax: {
-        keyword: "#ea6962",
-        callable: "#a9b665",
-        string: "#d8a657",
-        type: "#7daea3",
-        tag: "#e78a4e",
-        number: "#d3869b",
-        comment: "#928374",
-        property: "#d4be98",
-        meta: "#89b482",
-        invalid: "#f44747",
-      },
-    },
-    light: {
-      surface: "#f2e5bc",
-      panel: "#fbf1c7",
-      panelSolid: "#fbf1c7",
-      content: "#654735",
-      accent: "#6c782e",
-      link: "#6c782e",
-      heading: "#c14a4a",
-      syntax: {
-        keyword: "#c14a4a",
-        callable: "#6c782e",
-        string: "#b47109",
-        type: "#45707a",
-        tag: "#c35e0a",
-        number: "#945e80",
-        comment: "#928374",
-        property: "#654735",
-        meta: "#4c7a5d",
-        invalid: "#c14a4a",
-      },
-    },
-  },
+  GRUVBOX_THEME,
 ];
 
 const BY_ID = new Map(WORKSPACE_THEMES.map((theme) => [theme.id, theme]));
