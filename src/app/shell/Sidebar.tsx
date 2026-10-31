@@ -113,6 +113,7 @@ import {
   folderAccent,
   folderContaining,
   folderShellFill,
+  loadInactiveSessionsCollapsed,
   loadPinnedSessionsCollapsed,
   loadReminderSessionsCollapsed,
   loadSessionFolders,
@@ -121,6 +122,7 @@ import {
   removeSessionFromFolder,
   renameFolder,
   reorderSessionFolders,
+  saveInactiveSessionsCollapsed,
   savePinnedSessionsCollapsed,
   saveReminderSessionsCollapsed,
   saveSessionFolders,
@@ -735,6 +737,9 @@ function SidebarComponent({
   const [reminderSessionsCollapsed, setReminderSessionsCollapsed] = useState(
     () => loadReminderSessionsCollapsed(cwd),
   );
+  const [inactiveSessionsCollapsed, setInactiveSessionsCollapsed] = useState(
+    () => loadInactiveSessionsCollapsed(cwd),
+  );
   const [sessionDrop, setSessionDrop] = useState<SessionListDropTarget | null>(
     null,
   );
@@ -857,6 +862,18 @@ function SidebarComponent({
       .map((reminder) => reminder.sessionId),
     collapsed: reminderSessionsCollapsed,
   };
+  const inactiveGroup =
+    searchNarrowed || remoteProject
+      ? undefined
+      : {
+          activeIds: new Set([
+            ...openSessions.map((session) => session.id),
+            ...listedBusySessionIds,
+            ...listedApprovalSessionIds,
+            ...(activeListedSessionId ? [activeListedSessionId] : []),
+          ]),
+          collapsed: inactiveSessionsCollapsed,
+        };
   const ungroupedVisible = ungroupedSessions(
     listedVisibleSessions,
     sessionFolders,
@@ -876,6 +893,7 @@ function SidebarComponent({
     ungroupedVisible,
     pinnedSessionsCollapsed,
     reminderGroup,
+    inactiveGroup,
   );
   const sessionListEntries = buildSessionList(
     listedVisibleSessions,
@@ -883,13 +901,14 @@ function SidebarComponent({
     shownUngrouped,
     pinnedSessionsCollapsed,
     reminderGroup,
+    inactiveGroup,
   );
   const firstLooseSessionIndex = sessionListEntries.findIndex(
     (entry) => entry.kind === "session",
   );
   // Reminders, folders and Pinned come first, under one label.
   const firstGroupIndex = sessionListEntries.findIndex(
-    (entry) => entry.kind !== "session",
+    (entry) => entry.kind !== "session" && entry.kind !== "inactive",
   );
   const groupFollows = (index: number) => {
     const next = sessionListEntries[index + 1];
@@ -1290,6 +1309,7 @@ function SidebarComponent({
     setSessionFolders(loadSessionFolders(cwd));
     setPinnedSessionsCollapsed(loadPinnedSessionsCollapsed(cwd));
     setReminderSessionsCollapsed(loadReminderSessionsCollapsed(cwd));
+    setInactiveSessionsCollapsed(loadInactiveSessionsCollapsed(cwd));
     setRenamingFolderId(null);
     setFolderMenu(null);
     setSessionDrop(null);
@@ -2736,15 +2756,22 @@ function SidebarComponent({
                   }`}
                 >
                   {sessionListEntries.map((entry, index) => {
-                    if (entry.kind === "pinned" || entry.kind === "reminders") {
+                    if (
+                      entry.kind === "pinned" ||
+                      entry.kind === "reminders" ||
+                      entry.kind === "inactive"
+                    ) {
                       const isReminders = entry.kind === "reminders";
+                      const isInactive = entry.kind === "inactive";
                       const expanded = searchNarrowed || !entry.collapsed;
                       const beforeUngrouped =
                         sessionListEntries[index + 1]?.kind === "session";
                       const groupItem = (
                         <li
                           key={`${entry.kind}-sessions`}
-                          data-pinned-sessions={isReminders ? undefined : ""}
+                          data-pinned-sessions={
+                            isReminders || isInactive ? undefined : ""
+                          }
                           data-reminder-sessions={isReminders ? "" : undefined}
                           className={`relative ${
                             inset
@@ -2770,7 +2797,11 @@ function SidebarComponent({
                                       name: "Reminders",
                                       customColor: REMINDERS_COLOR,
                                     }
-                                  : { name: "Pinned" }
+                                  : {
+                                      name: isInactive
+                                        ? "Inactive sessions"
+                                        : "Pinned",
+                                    }
                               }
                               sessions={entry.sessions}
                               expanded={expanded}
@@ -2786,7 +2817,12 @@ function SidebarComponent({
                                 listedApprovalSessionIds.has(session.id),
                               )}
                               groupIcon={
-                                isReminders ? (
+                                isInactive ? (
+                                  <Archive
+                                    className={inset ? "size-4" : "size-3.5"}
+                                    strokeWidth={1.75}
+                                  />
+                                ) : isReminders ? (
                                   <Clock
                                     className={inset ? "size-4" : "size-3.5"}
                                     strokeWidth={1.75}
@@ -2803,6 +2839,11 @@ function SidebarComponent({
                               onToggle={() => {
                                 if (searchNarrowed) return;
                                 const collapsed = !entry.collapsed;
+                                if (isInactive) {
+                                  setInactiveSessionsCollapsed(collapsed);
+                                  saveInactiveSessionsCollapsed(cwd, collapsed);
+                                  return;
+                                }
                                 if (isReminders) {
                                   setReminderSessionsCollapsed(collapsed);
                                   saveReminderSessionsCollapsed(cwd, collapsed);

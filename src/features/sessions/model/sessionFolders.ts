@@ -9,6 +9,7 @@ const KEY = "monocode.sessionFolders";
 const CHANGE_EVENT = "monocode:session-folders-change";
 const PINNED_COLLAPSED_KEY = "monocode.pinnedSessionsCollapsed";
 const REMINDERS_COLLAPSED_KEY = "monocode.reminderSessionsCollapsed";
+const INACTIVE_COLLAPSED_KEY = "monocode.inactiveSessionsCollapsed";
 
 export type SessionFolder = {
   id: string;
@@ -35,6 +36,11 @@ export type SessionListEntry =
     }
   | {
       kind: "pinned";
+      collapsed: boolean;
+      sessions: SessionSummary[];
+    }
+  | {
+      kind: "inactive";
       collapsed: boolean;
       sessions: SessionSummary[];
     }
@@ -113,6 +119,7 @@ export function buildSessionList(
   ungrouped: SessionSummary[],
   pinnedCollapsed = false,
   reminderGroup?: { sessionIds: readonly string[]; collapsed: boolean },
+  inactiveGroup?: { activeIds: ReadonlySet<string>; collapsed: boolean },
 ): SessionListEntry[] {
   const byId = new Map(visible.map((session) => [session.id, session]));
   const reminderIds = new Set(reminderGroup?.sessionIds);
@@ -148,8 +155,19 @@ export function buildSessionList(
       sessions: pinned,
     });
   }
+  const inactive: SessionSummary[] = [];
   for (const session of remaining) {
-    if (!session.pinned) entries.push({ kind: "session", session });
+    if (session.pinned) continue;
+    if (inactiveGroup && !inactiveGroup.activeIds.has(session.id)) {
+      inactive.push(session);
+    } else entries.push({ kind: "session", session });
+  }
+  if (inactive.length > 0) {
+    entries.push({
+      kind: "inactive",
+      collapsed: inactiveGroup?.collapsed ?? false,
+      sessions: inactive,
+    });
   }
   return entries;
 }
@@ -164,7 +182,11 @@ export function sessionListNavigationIds(
       ids.push(entry.session.id);
       continue;
     }
-    if (entry.kind === "pinned" || entry.kind === "reminders") {
+    if (
+      entry.kind === "pinned" ||
+      entry.kind === "reminders" ||
+      entry.kind === "inactive"
+    ) {
       if (!entry.collapsed || expandCollapsed) {
         ids.push(...entry.sessions.map((session) => session.id));
       }
@@ -476,10 +498,15 @@ export function rebaseSessionFolderSettings(from: string, to: string): void {
       delete folders[oldKey];
       localStorage.setItem(KEY, JSON.stringify(folders));
     }
-    for (const storeKey of [PINNED_COLLAPSED_KEY, REMINDERS_COLLAPSED_KEY]) {
+    for (const storeKey of [
+      PINNED_COLLAPSED_KEY,
+      REMINDERS_COLLAPSED_KEY,
+      INACTIVE_COLLAPSED_KEY,
+    ]) {
       const raw = localStorage.getItem(storeKey);
       const parsed: unknown = raw ? JSON.parse(raw) : {};
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) continue;
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+        continue;
       const state = { ...(parsed as Record<string, unknown>) };
       if (!(oldKey in state)) continue;
       if (!(newKey in state)) state[newKey] = state[oldKey];
@@ -497,6 +524,11 @@ export function loadPinnedSessionsCollapsed(cwd: string): boolean {
 
 export function loadReminderSessionsCollapsed(cwd: string): boolean {
   return loadGroupCollapsed(cwd, REMINDERS_COLLAPSED_KEY);
+}
+
+export function loadInactiveSessionsCollapsed(cwd: string): boolean {
+  // Collapsed unless the user explicitly expanded it.
+  return !loadGroupCollapsed(cwd, INACTIVE_COLLAPSED_KEY);
 }
 
 function loadGroupCollapsed(cwd: string, storeKey: string): boolean {
@@ -529,6 +561,14 @@ export function saveReminderSessionsCollapsed(
   collapsed: boolean,
 ): void {
   saveGroupCollapsed(cwd, collapsed, REMINDERS_COLLAPSED_KEY);
+}
+
+export function saveInactiveSessionsCollapsed(
+  cwd: string,
+  collapsed: boolean,
+): void {
+  // Stored inverted (true = expanded) so the default stays collapsed.
+  saveGroupCollapsed(cwd, !collapsed, INACTIVE_COLLAPSED_KEY);
 }
 
 function saveGroupCollapsed(
