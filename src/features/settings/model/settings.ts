@@ -687,7 +687,7 @@ export function saveFollowUpBehavior(value: FollowUpBehavior) {
   }
 }
 
-export type FileTabMode = "pane" | "workspace";
+export type FileTabMode = "pane" | "workspace" | "stacked";
 
 export const FILE_TAB_MODE_DEFAULT: FileTabMode = "pane";
 
@@ -695,7 +695,9 @@ export const FILE_TAB_MODE_DEFAULT: FileTabMode = "pane";
 export function loadFileTabMode(): FileTabMode {
   try {
     const raw = localStorage.getItem(FILE_TAB_MODE_KEY);
-    return raw === "pane" || raw === "workspace" ? raw : FILE_TAB_MODE_DEFAULT;
+    return raw === "pane" || raw === "workspace" || raw === "stacked"
+      ? raw
+      : FILE_TAB_MODE_DEFAULT;
   } catch {
     return FILE_TAB_MODE_DEFAULT;
   }
@@ -707,6 +709,13 @@ export function saveFileTabMode(value: FileTabMode) {
   } catch {
     // private mode / quota
   }
+  if (typeof window !== "undefined")
+    window.dispatchEvent(new Event(FILE_TAB_MODE_KEY));
+}
+
+export function subscribeFileTabMode(onChange: () => void) {
+  window.addEventListener(FILE_TAB_MODE_KEY, onChange);
+  return () => window.removeEventListener(FILE_TAB_MODE_KEY, onChange);
 }
 
 export const TAB_ANIMATIONS_ENABLED_DEFAULT = false;
