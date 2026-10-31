@@ -100,6 +100,7 @@ import { AccessPicker } from "./AccessPicker";
 import { ComposerRunner } from "./ComposerRunner";
 import { ContextMeter } from "./ContextMeter";
 import { AttachmentChip } from "./AttachmentChip";
+import { clearOnDoubleEscape } from "./doubleEscapeClear";
 import { BranchPicker } from "../../source-control/ui/BranchPicker";
 import { WorktreePicker } from "../../source-control/ui/WorktreePicker";
 import {
@@ -1484,6 +1485,7 @@ export function Composer({
     setPasteError(null);
     syncHasValue("", []);
   };
+  const lastEscapeRef = useRef(0);
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (disabled) return;
     if (isImeComposition(e.nativeEvent)) return;
@@ -1603,6 +1605,8 @@ export function Composer({
         setSlash(null);
       }
     }
+
+    if (clearOnDoubleEscape(e, lastEscapeRef)) return;
 
     if (
       e.key === "ArrowUp" &&
