@@ -33,6 +33,7 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 import { AttachmentChip } from "./AttachmentChip";
+import { SentImageTokens } from "./SentImageTokens";
 import { GeneratedImage } from "./GeneratedImage";
 import { MonocodeSparkles } from "./MonocodeSparkles";
 import { OrchestratorConstellation } from "./OrchestratorConstellation";
@@ -2819,7 +2820,10 @@ function UserMessageBlock({
                   }}
                   className={`min-w-0 whitespace-pre-wrap break-words font-sans text-sm ${expanded ? "" : "line-clamp-4"}`}
                 >
-                  {displayText}
+                  <SentImageTokens
+                    text={displayText}
+                    attachments={block.attachments ?? []}
+                  />
                 </pre>
               ) : null}
               {overflows ? (
