@@ -8,7 +8,9 @@ import {
   fileMentionsInText,
   mentionLabel,
   mentionTokenAt,
+  parentMentionQuery,
   rankMentionFiles,
+  rankParentEntries,
   replaceMentionToken,
   sharedMentionIndex,
   withMentionDirectories,
@@ -416,5 +418,42 @@ describe("applyFileMentionsToTurn", () => {
       "/p",
     );
     expect(out).toBe("look at @notes/read-me.md~2");
+  });
+});
+
+describe("parent directory mentions", () => {
+  it("resolves the listed directory against the working directory", () => {
+    expect(parentMentionQuery("../", "/a/b/proj")).toEqual({
+      dir: "/a/b",
+      prefix: "../",
+      filter: "",
+    });
+    expect(parentMentionQuery("../../x/ba", "/a/b/proj")).toEqual({
+      dir: "/a/x",
+      prefix: "../../x/",
+      filter: "ba",
+    });
+    expect(parentMentionQuery("src/", "/a/b/proj")).toBeNull();
+  });
+
+  it("lists folders first and writes the full label", () => {
+    const entries = [
+      { name: "z.md", path: "/a/z.md", isDir: false, ignored: false },
+      { name: "lib", path: "/a/lib", isDir: true, ignored: false },
+    ];
+    expect(rankParentEntries(entries, "../", "").map((f) => f.relative)).toEqual([
+      "../lib",
+      "../z.md",
+    ]);
+    expect(rankParentEntries(entries, "../", "z").map((f) => f.relative)).toEqual([
+      "../z.md",
+    ]);
+  });
+
+  it("spells out the absolute path of a parent mention", async () => {
+    list.mockResolvedValueOnce([]);
+    expect(await applyFileMentionsToTurn("see @../x/y.ts.", "/a/proj")).toContain(
+      "- @../x/y.ts → /a/x/y.ts",
+    );
   });
 });
