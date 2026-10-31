@@ -11,6 +11,7 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import { ApprovalSheet } from "./ApprovalSheet";
 import { Composer } from "./Composer";
 import type { Worktree } from "../../source-control/model/worktrees";
 import {
@@ -1148,6 +1149,13 @@ const LocalSessionPane = memo(function LocalSessionPane({
               inert={btw.open}
               className="mx-auto w-full max-w-4xl shrink-0"
             >
+              {session.worktreeRemoved ? null : (
+                <ApprovalSheet
+                  blocks={session.blocks}
+                  cwd={workCwd}
+                  onApproval={approve}
+                />
+              )}
               {agent ? (
                 <>
                   <MessageQueue
