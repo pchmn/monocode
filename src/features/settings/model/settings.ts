@@ -291,7 +291,7 @@ export const SETTINGS_INDEX: SettingsEntry[] = [
     section: "appearance",
     label: "Workspace theme",
     keywords:
-      "color colour palette scheme preset inset harbor moss ember orchid",
+      "color colour palette scheme preset inset harbor moss ember orchid gruvbox",
   },
   {
     id: "accent-color",

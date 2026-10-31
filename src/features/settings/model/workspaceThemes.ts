@@ -1,3 +1,4 @@
+import { GRUVBOX_THEME } from "./gruvboxTheme";
 /** Colour themes for the inset workspace. Each one paints the shell around the
  * card, the card itself, text, accent and the markdown link/heading colours,
  * with its own dark and light palette. "Default" sets nothing, so the
@@ -14,7 +15,8 @@ export type WorkspaceThemeId =
   | "rosewood"
   | "glacier"
   | "arcade"
-  | "ink";
+  | "ink"
+  | "gruvbox";
 
 export type WorkspacePalette = {
   /** The shell behind the sidebar, tabs and footer. Also the native glass tint. */
@@ -565,6 +567,7 @@ export const WORKSPACE_THEMES: readonly WorkspaceTheme[] = [
       },
     },
   },
+  GRUVBOX_THEME,
 ];
 
 const BY_ID = new Map(WORKSPACE_THEMES.map((theme) => [theme.id, theme]));

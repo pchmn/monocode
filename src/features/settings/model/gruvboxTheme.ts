@@ -1,0 +1,48 @@
+import type { WorkspaceTheme } from "./workspaceThemes";
+
+export const GRUVBOX_THEME: WorkspaceTheme = {
+  id: "gruvbox",
+  label: "Gruvbox Material",
+  dark: {
+    surface: "#222121",
+    panel: "#292828",
+    panelSolid: "#292828",
+    content: "#d4cfc7",
+    accent: "#a9b665",
+    link: "#a9b665",
+    heading: "#ea6962",
+    syntax: {
+      keyword: "#ea6962",
+      callable: "#a9b665",
+      string: "#d8a657",
+      type: "#7daea3",
+      tag: "#e78a4e",
+      number: "#d3869b",
+      comment: "#928374",
+      property: "#d4be98",
+      meta: "#89b482",
+      invalid: "#f44747",
+    },
+  },
+  light: {
+    surface: "#f2e5bc",
+    panel: "#fbf1c7",
+    panelSolid: "#fbf1c7",
+    content: "#3c3836",
+    accent: "#6c782e",
+    link: "#6c782e",
+    heading: "#c14a4a",
+    syntax: {
+      keyword: "#c14a4a",
+      callable: "#6c782e",
+      string: "#b47109",
+      type: "#45707a",
+      tag: "#c35e0a",
+      number: "#945e80",
+      comment: "#928374",
+      property: "#654735",
+      meta: "#4c7a5d",
+      invalid: "#c14a4a",
+    },
+  },
+};

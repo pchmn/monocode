@@ -1,4 +1,9 @@
 import { memo, useMemo, useSyncExternalStore } from "react";
+import {
+  getGruvboxIcons,
+  gruvboxSvg,
+  subscribeGruvboxIcons,
+} from "./gruvboxIcons";
 
 type Props = {
   name: string;
@@ -55,7 +60,14 @@ export const FileTypeIcon = memo(function FileTypeIcon({
       ? icons.getFolderIcon({ folderName: name, isOpen, isRoot })
       : resolveFileIcon(icons, name)
     : "";
-  const svg = icons?.getIconSvg(iconName) ?? "";
+  const gruvbox = useSyncExternalStore(
+    subscribeGruvboxIcons,
+    getGruvboxIcons,
+    getGruvboxIcons,
+  );
+  const svg =
+    (gruvbox && gruvboxSvg(gruvbox, name, isDir, iconName)) ||
+    (icons?.getIconSvg(iconName) ?? "");
   // React compares this prop by identity. A fresh object replaces the SVG
   // subtree even when the glyph is unchanged (for example, on resize).
   const markup = useMemo(() => ({ __html: svg }), [svg]);
