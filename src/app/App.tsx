@@ -602,6 +602,7 @@ import {
   tabCommandForKeybinding,
   tabCommandKeybinding,
 } from "../features/workspace/model/tabKeys";
+import { titlesAsSession } from "../features/workspace/model/stackedLayout";
 import {
   canTabVisitBack,
   canTabVisitForward,
@@ -14897,6 +14898,11 @@ function toTitleTab(
       (tab.terminalPanes ?? []).some((pane) => pane.id === tab.focusedId));
   const focused =
     sessions.find((session) => session.id === tab.focusedId) ?? tabSessions[0];
+  const sessionTitle = titlesAsSession(
+    tab.layout,
+    tabSessions.map((session) => session.id),
+    tab.editorPanes,
+  );
 
   const seen = new Set<HarnessId>();
   const harnesses: HarnessId[] = [];
@@ -14985,9 +14991,9 @@ function toTitleTab(
     harnesses,
     busyHarnesses,
     doneHarnesses,
-    files,
+    files: sessionTitle && !fileFocused ? [] : files,
     multiPane,
-    fileFocused,
+    fileFocused: fileFocused && !sessionTitle,
     blank: isBlankWorkspaceTab(tab, sessions),
     dirty: tab.editorPanes.some((pane) =>
       pane.files.some(

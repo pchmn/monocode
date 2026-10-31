@@ -4,6 +4,7 @@ import {
   type EditorPane,
   type LayoutNode,
 } from "./layout";
+import { loadFileTabMode } from "../../settings/model/settings";
 
 export type StackedPair = { sessionId: string; paneId: string };
 export type StackedSurface = "session" | "file";
@@ -31,4 +32,16 @@ export function stackedSurface(
   focusedId: string,
 ): StackedSurface {
   return focusedId === pair.paneId ? "file" : "session";
+}
+
+/** In sub-tabs mode the top tab is titled by the session, with the file as its subtitle. */
+export function titlesAsSession(
+  layout: LayoutNode,
+  sessionIds: readonly string[],
+  editorPanes: readonly EditorPane[],
+): boolean {
+  return (
+    loadFileTabMode() === "stacked" &&
+    stackedPair(layout, sessionIds, editorPanes) !== null
+  );
 }
