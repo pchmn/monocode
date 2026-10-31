@@ -433,6 +433,11 @@ import {
   type RemoveWorktree,
 } from "../../source-control/model/worktrees";
 import type { Session } from "../../sessions/model/session";
+import {
+  loadSwapSidePanels,
+  saveSwapSidePanels,
+  subscribeSwapSidePanels,
+} from "../model/panelSide";
 
 /**
  * The `data-setting-id` Settings should reveal when it opens: one of the ids in
@@ -2247,6 +2252,11 @@ function AppearancePage({ appearance }: { appearance: AppearanceSettings }) {
   // fixed tint and blur, so the tint and translucency groups only belong to
   // the classic layout. Its one glass switch lives with the theme instead.
   const inset = appearance.insetLayout;
+  const swapPanels = useSyncExternalStore(
+    subscribeSwapSidePanels,
+    loadSwapSidePanels,
+    () => false,
+  );
 
   return (
     <>
@@ -2480,6 +2490,19 @@ function AppearancePage({ appearance }: { appearance: AppearanceSettings }) {
             onChange={(value) => appearance.onInsetLayout(value === "focused")}
           />
         </Row>
+        {inset ? (
+          <Row
+            id="swap-side-panels"
+            label="Swap side panels"
+            description="Explorer, Changes and History on the left, sessions on the right."
+          >
+            <Toggle
+              label="Swap side panels"
+              on={swapPanels}
+              onChange={saveSwapSidePanels}
+            />
+          </Row>
+        ) : null}
         <Row
           id="collapsed-project-rail"
           label="Collapsed project rail"

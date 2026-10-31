@@ -159,6 +159,10 @@ import {
 import type { InstalledUpdate } from "../model/updateNotice";
 import { TAB_GROUP_COLORS } from "../../features/workspace/model/tabGroups";
 import { useDragResize } from "../../shared/hooks/useDragResize";
+import {
+  resizeDirection,
+  usePanelsSwapped,
+} from "../../features/settings/model/panelSide";
 import { useGitFileStatuses } from "../../features/source-control/hooks/useGitFileStatuses";
 import { useLockOverscroll } from "../../shared/hooks/useLockOverscroll";
 import { useProjectDiffStats } from "../../features/source-control/hooks/useProjectDiffStats";
@@ -681,6 +685,7 @@ function SidebarComponent({
       : gitCwd || cwd;
   const minWidth = inset ? INSET_MIN_WIDTH : MIN_WIDTH;
   const resize = useDragResize({
+    direction: resizeDirection("sessions", usePanelsSwapped()),
     min: minWidth,
     max: () => Math.min(MAX_WIDTH, Math.floor(window.innerWidth * 0.5)),
     defaultWidth: DEFAULT_WIDTH,
