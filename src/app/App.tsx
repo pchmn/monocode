@@ -14680,40 +14680,6 @@ function Workspace({
                   ) : null}
                   {insetLayout ? null : usageFooter}
                 </div>
-                {insetLayout ? (
-                  // Part of the card: the project tools beside the
-                  // workspace, behind a hairline.
-                  <div
-                    ref={setRightPanelRef}
-                    inert={rightPanelClosing || undefined}
-                    className={
-                      insetRightPanelShown
-                        ? "relative flex h-full shrink-0 flex-col overflow-hidden border-l border-stroke"
-                        : "hidden"
-                    }
-                  >
-                    <div
-                      ref={setRightPanelHost}
-                      aria-label="Project tools"
-                      className="flex min-h-0 flex-1 flex-col"
-                    />
-                    <div
-                      role="separator"
-                      aria-orientation="vertical"
-                      aria-label="Resize right sidebar"
-                      aria-valuenow={rightPanelResize.width}
-                      aria-valuemin={RIGHT_PANEL_WIDTH_MIN}
-                      aria-valuemax={RIGHT_PANEL_WIDTH_MAX}
-                      className={`absolute inset-y-0 -left-px z-10 w-1.5 cursor-col-resize touch-none ${
-                        rightPanelResize.dragging
-                          ? "bg-content/15"
-                          : "hover:bg-content/10"
-                      }`}
-                      onPointerDown={rightPanelResize.onPointerDown}
-                      onDoubleClick={rightPanelResize.onDoubleClick}
-                    />
-                  </div>
-                ) : null}
               </div>
               {insetLayout
                 ? (usageFooter ??
@@ -14724,6 +14690,38 @@ function Workspace({
                   />)
                 : null}
             </div>
+            {insetLayout ? (
+              <div
+                ref={setRightPanelRef}
+                inert={rightPanelClosing || undefined}
+                className={
+                  insetRightPanelShown
+                    ? "relative flex h-full shrink-0 flex-col overflow-hidden"
+                    : "hidden"
+                }
+              >
+                <div
+                  ref={setRightPanelHost}
+                  aria-label="Project tools"
+                  className="flex min-h-0 flex-1 flex-col"
+                />
+                <div
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label="Resize right sidebar"
+                  aria-valuenow={rightPanelResize.width}
+                  aria-valuemin={RIGHT_PANEL_WIDTH_MIN}
+                  aria-valuemax={RIGHT_PANEL_WIDTH_MAX}
+                  className={`absolute inset-y-0 -left-px z-10 w-1.5 cursor-col-resize touch-none ${
+                    rightPanelResize.dragging
+                      ? "bg-content/15"
+                      : "hover:bg-content/10"
+                  }`}
+                  onPointerDown={rightPanelResize.onPointerDown}
+                  onDoubleClick={rightPanelResize.onDoubleClick}
+                />
+              </div>
+            ) : null}
           </div>
 
           {filePickerOpen ? (

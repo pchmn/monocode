@@ -5,7 +5,6 @@ html.panels-swapped .inset-shell > div:has(> .inset-rail-host) {
 }
 
 html.panels-swapped .inset-card {
-  flex-direction: row-reverse;
   margin-left: 0.375rem;
   margin-right: 0;
 }
@@ -21,12 +20,7 @@ html.panels-swapped
   margin-right: 0.375rem;
 }
 
-html.panels-swapped .inset-card > div:has(> [aria-label="Project tools"]) {
-  border-left-width: 0;
-  border-right-width: 1px;
-}
-
-html.panels-swapped .inset-card [aria-label="Resize right sidebar"] {
+html.panels-swapped [aria-label="Resize right sidebar"] {
   left: auto;
   right: -1px;
 }
