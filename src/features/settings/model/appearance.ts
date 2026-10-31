@@ -378,6 +378,18 @@ export function saveWorkspaceTheme(value: WorkspaceThemeId) {
  * the window with the previous theme until the next apply.
  */
 let appliedWorkspaceTheme: WorkspaceThemeId = WORKSPACE_THEME_DEFAULT;
+const workspaceThemeListeners = new Set<() => void>();
+
+export function subscribeWorkspaceTheme(listener: () => void) {
+  workspaceThemeListeners.add(listener);
+  return () => {
+    workspaceThemeListeners.delete(listener);
+  };
+}
+
+export function getAppliedWorkspaceTheme() {
+  return appliedWorkspaceTheme;
+}
 
 /** Sets both schemes' palettes at once; the stylesheet picks one by class, so
  * a scheme flip needs no reapply. Only the inset layout reads them. */
@@ -393,6 +405,7 @@ export function applyWorkspaceTheme(value: WorkspaceThemeId) {
     "has-workspace-theme",
     next !== WORKSPACE_THEME_DEFAULT,
   );
+  for (const listener of workspaceThemeListeners) listener();
   refreshNativeTint();
   return next;
 }

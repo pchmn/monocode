@@ -47,6 +47,10 @@ Native chat file icons and the Dark+ token palette reuse the React UI's
 react-material-icon-theme 1.2.0 and @shikijs/themes assets. Their MIT license
 notices are included alongside the assets in crates/monocode-gpui/assets.
 
+The React UI's Gruvbox workspace theme uses icons from gruvbox-material-icons
+(navernoedenis, MIT License, Copyright (c) 2025 navernoedenis), bundled in
+src/features/files/model/gruvboxIcons.json by scripts/generate-gruvbox-icons.mjs.
+
 The native editor's analysis and formatting bundles reuse CodeMirror, Lezer,
 the Replit Svelte grammar and Prettier under their MIT licenses. Package versions and complete license notices are included in
 crates/monocode-gpui/assets/native-editor.LICENSE.txt. The bundle is generated
