@@ -6,6 +6,7 @@ import {
   useReducer,
   useRef,
   useState,
+  useSyncExternalStore,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
@@ -53,6 +54,12 @@ import {
   type ComposerTurnOptions,
 } from "../../sessions/model/session";
 import { FilePane } from "../../files/ui/FilePane";
+import {
+  loadFileTabMode,
+  subscribeFileTabMode,
+} from "../../settings/model/settings";
+import { stackedPair, stackedSurface } from "../model/stackedLayout";
+import { StackedTabs } from "./StackedTabs";
 import { SessionPane } from "../../sessions/ui/SessionPane";
 import type { TranscriptPool } from "../../sessions/ui/TranscriptPool";
 import type { SessionFolderTarget } from "../../sessions/model/sessionFolders";
@@ -317,7 +324,23 @@ function PaneTreeComponent({
 
   const tree = draft ?? layout;
   const leaves = layoutLeaves(tree);
-  const sashes = layoutSashes(tree);
+  const stackedMode =
+    useSyncExternalStore(subscribeFileTabMode, loadFileTabMode) === "stacked";
+  const stacked = stackedMode
+    ? stackedPair(
+        layout,
+        sessions.map((entry) => entry.id),
+        editorPanes,
+      )
+    : null;
+  const stackedLeafId = stacked
+    ? stackedSurface(stacked, focusedId) === "file"
+      ? stacked.paneId
+      : stacked.sessionId
+    : null;
+  const sashes = stacked ? [] : layoutSashes(tree);
+  // Stacking changes no layout rects, so a slide would only be noise.
+  const wasStacked = useRef(false);
 
   // A pane split into an existing layout pushes in from the edge it was
   // added on, and a closed file pane slides back out the same way. Its
@@ -336,7 +359,7 @@ function PaneTreeComponent({
   const slide = useRef<{ stop: () => void } | null>(null);
   const [, rerender] = useReducer((tick: number) => tick + 1, 0);
   const previousLeaves = knownLeaves.current;
-  if (previousLeaves && visible && !draft) {
+  if (previousLeaves && visible && !draft && !stacked && !wasStacked.current) {
     const current = new Set(leaves.map((leaf) => leaf.id));
     const removed = [...previousLeaves.values()].filter(
       (leaf) => !current.has(leaf.id),
@@ -365,6 +388,7 @@ function PaneTreeComponent({
       slideFrom.current = previousLeaves;
     }
   }
+  wasStacked.current = !!stacked;
   knownLeaves.current = new Map(leaves.map((leaf) => [leaf.id, leaf]));
   for (const leaf of leaves) leavingPanes.current.delete(leaf.id);
   for (const id of shownEditorPanes.current.keys()) {
@@ -376,7 +400,9 @@ function PaneTreeComponent({
       shownEditorPanes.current.set(pane.id, pane);
   }
   const rendered: { leaf: LayoutLeaf; leaving?: LeavingPane }[] = leaves.map(
-    (leaf) => ({ leaf }),
+    (leaf) => ({
+      leaf: stacked ? { ...leaf, rect: { x: 0, y: 0, w: 1, h: 1 } } : leaf,
+    }),
   );
   // Leaving panes keep their place, so React moves no live pane's DOM.
   for (const leaving of leavingPanes.current.values()) {
@@ -386,7 +412,7 @@ function PaneTreeComponent({
     });
   }
   // A closing pane still counts until it has slid out.
-  const inSplit = rendered.length > 1;
+  const inSplit = rendered.length > 1 && !stacked;
 
   useLayoutEffect(() => {
     const from = slideFrom.current;
@@ -695,7 +721,7 @@ function PaneTreeComponent({
     [],
   );
 
-  return (
+  const treeElement = (
     <div ref={treeRef} className="relative h-full min-h-0 min-w-0">
       {rendered.map(({ leaf, leaving }) => {
         const editorPane = leaving
@@ -705,6 +731,7 @@ function PaneTreeComponent({
           ? undefined
           : sessions.find((entry) => entry.id === leaf.id);
         const dragging = drop?.fromId === leaf.id;
+        const stackHidden = !!stacked && leaf.id !== stackedLeafId;
         const onPaneDragStart =
           inSplit && !leaving ? paneDragStartFor(leaf.id) : undefined;
         const backgroundStyle = {
@@ -735,6 +762,7 @@ function PaneTreeComponent({
               top: `${leaf.rect.y * 100}%`,
               width: `${leaf.rect.w * 100}%`,
               height: `${leaf.rect.h * 100}%`,
+              display: stackHidden ? "none" : undefined,
               ...backgroundStyle,
             }}
           >
@@ -752,9 +780,9 @@ function PaneTreeComponent({
                 <FilePane
                   pane={editorPane}
                   deferBody={!leaving && enteringPanes.current.has(leaf.id)}
-                  visible={visible}
+                  visible={visible && !stackHidden}
                   focused={!leaving && focusedId === editorPane.id}
-                  showTabs={inSplit || editorPane.files.length > 1}
+                  showTabs={!stacked && (inSplit || editorPane.files.length > 1)}
                   dirtyFileIds={dirtyFileIds}
                   fileErrorCounts={fileErrorCounts}
                   sessions={sessions}
@@ -786,7 +814,7 @@ function PaneTreeComponent({
                         sessionWorkCwd(session),
                       ),
                   )}
-                  visible={visible}
+                  visible={visible && !stackHidden}
                   focused={focusedId === session.id}
                   addToChatTarget={addToChatSessionId === session.id}
                   inSplit={inSplit}
@@ -869,6 +897,28 @@ function PaneTreeComponent({
           onCancel={() => setDraft(null)}
         />
       ))}
+    </div>
+  );
+  if (!stackedMode) return treeElement;
+  return (
+    <div className="flex h-full min-h-0 min-w-0 flex-col">
+      {stacked ? (
+        <StackedTabs
+          stacked={stacked}
+          pane={editorPanes.find((entry) => entry.id === stacked.paneId)!}
+          session={sessions.find((entry) => entry.id === stacked.sessionId)}
+          focusedId={focusedId}
+          dirtyFileIds={dirtyFileIds}
+          fileErrorCounts={fileErrorCounts}
+          onFocus={onFocus}
+          onSelectFile={onSelectFile}
+          onCloseFile={onCloseFile}
+          onCloseOtherFiles={onCloseOtherFiles}
+          onPinFile={onPinFile}
+          onReorderFiles={onReorderFiles}
+        />
+      ) : null}
+      <div className="min-h-0 min-w-0 flex-1">{treeElement}</div>
     </div>
   );
 }

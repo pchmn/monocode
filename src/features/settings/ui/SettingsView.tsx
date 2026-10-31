@@ -968,7 +968,7 @@ function GeneralPage({
         <Row
           id="file-tabs"
           label="File tabs"
-          description="Open files beside the active chat, or give each file a normal tab in the top bar. Top-bar files can still be combined into split panes."
+          description="Open files beside the active chat, give each file a normal tab in the top bar, or show the chat and its files as sub-tabs. Top-bar files can still be combined into split panes."
         >
           <Segmented
             label="File tabs"
@@ -976,6 +976,7 @@ function GeneralPage({
             options={[
               { value: "pane", label: "Beside chat" },
               { value: "workspace", label: "Top bar" },
+              { value: "stacked", label: "Sub-tabs" },
             ]}
             onChange={onFileTabMode}
           />
