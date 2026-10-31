@@ -143,6 +143,7 @@ import {
 import { resolveTabGroupLogo } from "../../workspace/model/tabGroups";
 import { useComposerSkills } from "./useComposerSkills";
 import { Popover } from "../../../shared/ui/Popover";
+import { SessionStatusLine } from "./SessionStatusLine";
 import { UsageLimitNotice } from "./UsageLimitNotice";
 import { UsageLimitAccountPicker } from "./UsageLimitAccountPicker";
 import { consumePlanCommand, PLAN_COMMAND } from "../model/plan";
@@ -232,6 +233,7 @@ type Props = {
   remoteSession?: boolean;
   remoteFeatures?: { attachments: boolean; plan: boolean; draft: boolean };
   context?: ContextUsage;
+  costUsd?: number;
   compactSupported?: boolean;
   quoteRequest?: QuoteRequest;
   initialDraft?: string;
@@ -360,6 +362,7 @@ export function Composer({
   remoteSession = false,
   remoteFeatures,
   context,
+  costUsd,
   compactSupported = false,
   quoteRequest,
   initialDraft,
@@ -1817,7 +1820,13 @@ export function Composer({
           />
         </>
       )}
-      <div className="ml-auto flex shrink-0 items-center">
+      <div className="ml-auto flex min-w-0 shrink items-center gap-2">
+        <SessionStatusLine
+          context={context}
+          costUsd={costUsd}
+          cwd={remoteSession ? "" : executionCwd}
+          branch={branch}
+        />
         <ContextMeter
           usage={context}
           onCompact={

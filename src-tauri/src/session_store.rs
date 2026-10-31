@@ -121,6 +121,8 @@ pub struct SessionUpsert {
     #[serde(default)]
     pub context_window: Option<i64>,
     #[serde(default)]
+    pub cost_usd: Option<f64>,
+    #[serde(default)]
     pub branch: Option<String>,
     #[serde(default)]
     pub worktree_cwd: Option<String>,
@@ -200,6 +202,8 @@ pub struct SessionRecord {
     pub context_used: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub context_window: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cost_usd: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub branch: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -790,6 +794,7 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
         ("branch", "TEXT"),
         ("context_used", "INTEGER"),
         ("context_window", "INTEGER"),
+        ("cost_usd", "REAL"),
         ("archived", "INTEGER NOT NULL DEFAULT 0"),
         ("worktree_cwd", "TEXT"),
         ("has_user_message", "INTEGER NOT NULL DEFAULT 0"),
@@ -1241,8 +1246,8 @@ pub(crate) fn upsert_session(
            provider_session_id, blocks_json, created_at, updated_at, branch,
            context_used, context_window, worktree_cwd, has_user_message,
            linked_work_item_json, provider_account_id, worktree_removed, is_draft,
-           automation_id, queued_messages_json, queue_status, sidebar_hidden
-         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24)
+           automation_id, queued_messages_json, queue_status, sidebar_hidden, cost_usd
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25)
          ON CONFLICT(id) DO UPDATE SET
            cwd = excluded.cwd,
            harness = excluded.harness,
@@ -1265,7 +1270,8 @@ pub(crate) fn upsert_session(
            automation_id = excluded.automation_id,
            queued_messages_json = excluded.queued_messages_json,
            queue_status = excluded.queue_status,
-           sidebar_hidden = excluded.sidebar_hidden",
+           sidebar_hidden = excluded.sidebar_hidden,
+           cost_usd = excluded.cost_usd",
         params![
             session.id,
             session.cwd,
@@ -1291,6 +1297,7 @@ pub(crate) fn upsert_session(
             queued_messages_json,
             session.queue_status,
             i64::from(session.sidebar_hidden),
+            session.cost_usd,
         ],
     )?;
 
@@ -1954,7 +1961,7 @@ fn get_session_record(
                 provider_session_id, {blocks}, created_at, updated_at,
                 context_used, context_window, branch, worktree_cwd,
                 linked_work_item_json, provider_account_id, worktree_removed,
-                automation_id, queued_messages_json, queue_status, sidebar_hidden
+                automation_id, queued_messages_json, queue_status, sidebar_hidden, cost_usd
          FROM sessions
          WHERE id = ?1 AND inbox_ask IS NULL"
         ),
@@ -1998,6 +2005,7 @@ fn get_session_record(
                 queue_status: row.get(20)?,
                 context_used: row.get(11)?,
                 context_window: row.get(12)?,
+                cost_usd: row.get(22)?,
                 branch: row.get(13)?,
                 worktree_cwd: row.get(14)?,
                 worktree_removed: row.get::<_, i64>(17)? != 0,
@@ -2204,6 +2212,7 @@ mod tests {
             queue_status: None,
             context_used: None,
             context_window: None,
+            cost_usd: None,
             branch: None,
             worktree_cwd: None,
             worktree_removed: false,

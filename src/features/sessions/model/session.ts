@@ -490,6 +490,8 @@ export type Session = {
   providerAccountId?: string;
   /** Context-window level reported by the harness. Absent until it reports. */
   context?: ContextUsage;
+  /** Lifetime spend in USD, summed across turns and process restarts. */
+  costUsd?: number;
   /**
    * Composer switched providers, but the previous child is still live.
    * Handoff runs on the next send, not on picker change.

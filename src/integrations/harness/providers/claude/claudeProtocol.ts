@@ -1142,6 +1142,18 @@ function contextUsedFromUsage(usage: Record<string, unknown> | null): number {
   );
 }
 
+/** `total_cost_usd` is cumulative per CLI process, so spend is the step from the last reading. */
+export function costFromResult(
+  rec: Record<string, unknown>,
+  seen: number,
+): { total: number; delta: number } | undefined {
+  const total = rec.total_cost_usd;
+  if (typeof total !== "number" || !Number.isFinite(total) || total < 0) {
+    return undefined;
+  }
+  return { total, delta: total >= seen ? total - seen : total };
+}
+
 /** Aggregate token accounting for the completed Claude turn. */
 export function turnMetricsFromResult(
   rec: Record<string, unknown>,

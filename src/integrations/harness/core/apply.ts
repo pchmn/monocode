@@ -142,6 +142,8 @@ export function applyHarnessEvent(
           window: event.window,
         }),
       };
+    case "cost":
+      return { ...session, costUsd: (session.costUsd ?? 0) + event.usd };
     case "turn.metrics":
       return mergeTurnMetrics(session, event);
     case "tasks.updated":
