@@ -23,6 +23,7 @@ import {
   assistantThinkingBlocks,
   assistantToolUses,
   contextFromResult,
+  costFromResult,
   contextUsedFromAssistant,
   turnMetricsFromResult,
   buildClaudeSpawnArgs,
@@ -160,6 +161,8 @@ type Live = {
   /** TaskCreate/TaskUpdate items, keyed by Claude's task id. */
   claudeTasks: Map<string, TaskListItem>;
   turnResultSeen: boolean;
+  /** `total_cost_usd` last reported by this process; the CLI resets it per process. */
+  costSeen: number;
   /** Latest `rate_limit_event` refused requests; reported when the turn ends. */
   usageLimit: { resetsAt?: number } | null;
   cancelled: boolean;
@@ -498,6 +501,7 @@ async function ensureLive(input: HarnessSessionInput): Promise<Live> {
     taskNotes: [],
     claudeTasks,
     turnResultSeen: false,
+    costSeen: 0,
     usageLimit: null,
     cancelled: false,
     muteUpdates: false,
@@ -980,6 +984,11 @@ function handleResult(live: Live, rec: Record<string, unknown>): void {
   if (!live.manualCompaction) {
     const context = contextFromResult(rec);
     if (context) live.onEvent({ type: "context", ...context });
+  }
+  const cost = costFromResult(rec, live.costSeen);
+  if (cost) {
+    live.costSeen = cost.total;
+    if (cost.delta > 0) live.onEvent({ type: "cost", usd: cost.delta });
   }
   const metrics = turnMetricsFromResult(rec);
   if (metrics) live.onEvent({ type: "turn.metrics", ...metrics });

@@ -679,6 +679,13 @@ const LocalSessionPane = memo(function LocalSessionPane({
       hideBranchPicker={!!session.inboxAsk || managed}
       hideTopBar={!!session.inboxAsk}
       context={session.context}
+      statusInfo={{
+        costUsd: session.costUsd,
+        pr:
+          session.linkedWorkItem?.kind === "pr"
+            ? session.linkedWorkItem
+            : undefined,
+      }}
       quoteRequest={quoteRequest}
       initialDraft={
         draftRef.current ??

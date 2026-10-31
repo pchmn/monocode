@@ -150,6 +150,8 @@ export type HarnessEvent =
     }
   /** Context-window level after the harness's latest request. */
   | { type: "context"; used?: number; window?: number }
+  /** Dollars spent since the last cost event (not a running total). */
+  | { type: "cost"; usd: number }
   /** Provider token accounting for the active user turn. */
   | ({ type: "turn.metrics" } & TurnMetrics);
 

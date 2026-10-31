@@ -96,6 +96,7 @@ type SessionRecord = {
   queueStatus?: MessageQueueStatus;
   contextUsed?: number | null;
   contextWindow?: number | null;
+  costUsd?: number | null;
   branch?: string | null;
   worktreeCwd?: string | null;
   worktreeRemoved?: boolean;
@@ -121,6 +122,7 @@ type SessionUpsertPayload = {
   queueStatus?: MessageQueueStatus;
   contextUsed?: number;
   contextWindow?: number;
+  costUsd?: number;
   branch?: string;
   worktreeCwd?: string;
   worktreeRemoved?: boolean;
@@ -179,6 +181,7 @@ function persistableMeta(
     ...(session.context?.window
       ? { contextWindow: session.context.window }
       : {}),
+    ...(session.costUsd ? { costUsd: session.costUsd } : {}),
     ...(session.branch ? { branch: session.branch } : {}),
     ...(session.worktreeCwd ? { worktreeCwd: session.worktreeCwd } : {}),
     ...(session.worktreeRemoved ? { worktreeRemoved: true } : {}),
@@ -1525,6 +1528,7 @@ function recordToSession(record: SessionRecord): Session {
       ? { automationId: record.automationId }
       : {}),
     ...(contextFromRecord(record) ?? {}),
+    ...(record.costUsd && record.costUsd > 0 ? { costUsd: record.costUsd } : {}),
   };
 }
 
