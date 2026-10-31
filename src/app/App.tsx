@@ -14991,7 +14991,7 @@ function toTitleTab(
     harnesses,
     busyHarnesses,
     doneHarnesses,
-    files,
+    files: sessionTitle && !fileFocused ? [] : files,
     multiPane,
     fileFocused: fileFocused && !sessionTitle,
     blank: isBlankWorkspaceTab(tab, sessions),
