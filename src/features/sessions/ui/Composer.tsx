@@ -26,7 +26,6 @@ import {
 import {
   attachmentsFromFiles,
   filesFromClipboard,
-  imageToken,
   mergeAttachments,
   pickAttachments,
   revokeAttachment,
@@ -85,7 +84,6 @@ import {
   captureDraft,
   dropPastedText,
   insertRestoredText,
-  type CapturedDraft,
 } from "../../../shared/lib/draftRestore";
 import {
   createBlankSkill,
@@ -102,6 +100,12 @@ import { AccessPicker } from "./AccessPicker";
 import { ComposerRunner } from "./ComposerRunner";
 import { ContextMeter } from "./ContextMeter";
 import { AttachmentChip } from "./AttachmentChip";
+import { ImageTokenRuns } from "./ImageTokenRuns";
+import {
+  orphanedImages,
+  pastedImageAttacher,
+  removeImageToken,
+} from "./inlineImagePaste";
 import { BranchPicker } from "../../source-control/ui/BranchPicker";
 import { WorktreePicker } from "../../source-control/ui/WorktreePicker";
 import {
@@ -791,14 +795,7 @@ export function Composer({
       }
       const next = previous.filter((file) => file.id !== id);
       attachmentsRef.current = next;
-      const field = ref.current;
-      const token = removed?.imageNumber ? imageToken(removed.imageNumber) : "";
-      const at = token && field ? field.value.indexOf(token) : -1;
-      if (field && at >= 0) {
-        const end = at + token.length;
-        field.setRangeText("", at, field.value[end] === " " ? end + 1 : end);
-        field.dispatchEvent(new Event("input", { bubbles: true }));
-      }
+      removeImageToken(ref.current, removed);
       draftRevisionRef.current += 1;
       setAttachments(next);
       setPasteError(null);
@@ -1656,28 +1653,7 @@ export function Composer({
     ref.current?.focus();
   };
 
-  const attachPasted = (
-    pasted: Attachment[],
-    captured: CapturedDraft | null,
-  ) => {
-    let last = Math.max(
-      0,
-      ...attachmentsRef.current.map((file) => file.imageNumber ?? 0),
-    );
-    const numbered = pasted.map((file) =>
-      file.kind === "image" && captured
-        ? { ...file, imageNumber: ++last }
-        : file,
-    );
-    const tokens = numbered.flatMap((file) =>
-      file.imageNumber ? [imageToken(file.imageNumber)] : [],
-    );
-    if (captured && tokens.length) {
-      const glued = /\S/.test(captured.value[captured.start - 1] ?? "");
-      insertRestoredText(captured, `${glued ? " " : ""}${tokens.join(" ")} `);
-    }
-    addAttachments(numbered);
-  };
+  const attachPasted = pastedImageAttacher(attachmentsRef, addAttachments);
 
   const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
     setPasteError(null);
@@ -1979,7 +1955,7 @@ export function Composer({
                   el.value = `${el.value} `;
                   resizeComposer(el);
                   setDraft(el.value);
-                  syncHasValue(el.value, attachments);
+                  syncHasValue(el.value, attachmentsRef.current);
                   el.setSelectionRange(el.value.length, el.value.length);
                 } else {
                   el.setSelectionRange(cursor, cursor);
@@ -2179,14 +2155,9 @@ export function Composer({
                 resizeComposer(el);
                 draftRevisionRef.current += 1;
                 setDraft(el.value);
-                for (const file of attachmentsRef.current) {
-                  if (
-                    file.imageNumber &&
-                    !el.value.includes(imageToken(file.imageNumber))
-                  ) {
-                    removeAttachment(file.id);
-                  }
-                }
+                orphanedImages(el.value, attachmentsRef.current).forEach(
+                  (file) => removeAttachment(file.id),
+                );
                 setSelectedMcp((current) => {
                   const retained = current.filter(
                     (tag) => taggedMcpServers(el.value, [tag]).length > 0,
@@ -2619,22 +2590,6 @@ function FileMentionRuns({
           </span>
         ) : (
           <ImageTokenRuns key={index} text={part.text} />
-        ),
-      )}
-    </>
-  );
-}
-
-function ImageTokenRuns({ text }: { text: string }) {
-  return (
-    <>
-      {text.split(/(\[Image #\d+\])/).map((part, index) =>
-        index % 2 ? (
-          <span key={index} className="text-mention">
-            {part}
-          </span>
-        ) : (
-          part
         ),
       )}
     </>

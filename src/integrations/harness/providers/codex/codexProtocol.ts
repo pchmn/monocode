@@ -9,11 +9,11 @@ import type {
 import {
   attachmentPath,
   attachmentPathText,
-  interleaveAttachments,
   isVisionImage,
   normalizeImageMime,
   promptText,
 } from "../../../../features/sessions/model/attachments";
+import { interleaveAttachments } from "../../../../features/sessions/model/inlineImages";
 import { displayPath } from "../../../../shared/lib/paths";
 import { normalizeTaskListStatus } from "../../../../features/sessions/model/taskList";
 import {

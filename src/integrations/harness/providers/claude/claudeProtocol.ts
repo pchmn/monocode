@@ -7,9 +7,9 @@ import type {
 } from "../../../../features/sessions/model/session";
 import {
   attachmentPathText,
-  interleaveAttachments,
   promptText,
 } from "../../../../features/sessions/model/attachments";
+import { interleaveAttachments } from "../../../../features/sessions/model/inlineImages";
 import { parseResetTimestamp } from "../../../../features/providers/model/rateLimits";
 import {
   isTaskListToolName,
