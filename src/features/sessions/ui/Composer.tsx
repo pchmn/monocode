@@ -143,7 +143,11 @@ import {
 import { resolveTabGroupLogo } from "../../workspace/model/tabGroups";
 import { useComposerSkills } from "./useComposerSkills";
 import { Popover } from "../../../shared/ui/Popover";
-import { SessionStatusLine, type SessionStatusInfo } from "./SessionStatusLine";
+import {
+  SessionContextText,
+  SessionStatusLine,
+  type SessionStatusInfo,
+} from "./SessionStatusLine";
 import { UsageLimitNotice } from "./UsageLimitNotice";
 import { UsageLimitAccountPicker } from "./UsageLimitAccountPicker";
 import { consumePlanCommand, PLAN_COMMAND } from "../model/plan";
@@ -1821,18 +1825,18 @@ export function Composer({
         </>
       )}
       <div className="ml-auto flex min-w-0 shrink items-center gap-2">
-        <SessionStatusLine
-          context={context}
-          info={statusInfo}
-          cwd={remoteSession ? "" : executionCwd}
-          branch={branch}
-        />
+        <SessionContextText context={context} />
         <ContextMeter
           usage={context}
           onCompact={
             compactSupported && !worktreeRemoved ? onCompactContext : undefined
           }
           compactDisabled={busy}
+        />
+        <SessionStatusLine
+          info={statusInfo}
+          cwd={remoteSession ? "" : executionCwd}
+          branch={branch}
         />
       </div>
     </div>

@@ -11,9 +11,11 @@ import {
 describe("status line formatting", () => {
   it("formats tokens, percent and cost", () => {
     expect(formatContextText({ used: 157_800, window: 1_000_000 })).toBe(
-      "157.8k tokens (16%)",
+      "158k tokens (16%)",
     );
     expect(formatContextText({ used: 980 })).toBe("980 tokens");
+    expect(formatStatusTokens(25_040)).toBe("25k");
+    expect(formatStatusTokens(999_600)).toBe("1.0M");
     expect(formatStatusTokens(1_200_000)).toBe("1.2M");
     expect(formatCost(5.321)).toBe("$5.32");
   });

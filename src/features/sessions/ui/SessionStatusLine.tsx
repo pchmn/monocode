@@ -44,13 +44,21 @@ function useBranchPr(cwd: string, branch: string | undefined): Pr {
   return pr;
 }
 
+/** Sits before the context ring; cost and PR follow it in `SessionStatusLine`. */
+export function SessionContextText({ context }: { context?: ContextUsage }) {
+  if (!context) return null;
+  return (
+    <span className="truncate text-[11px] text-content/45">
+      {formatContextText(context)}
+    </span>
+  );
+}
+
 export function SessionStatusLine({
-  context,
   info,
   cwd,
   branch,
 }: {
-  context?: ContextUsage;
   info?: SessionStatusInfo;
   cwd: string;
   branch?: string;
@@ -58,10 +66,7 @@ export function SessionStatusLine({
   const costUsd = info?.costUsd;
   const lookedUp = useBranchPr(info?.pr ? "" : cwd, branch);
   const pr = info?.pr ?? lookedUp;
-  const parts = [
-    context ? formatContextText(context) : null,
-    costUsd ? formatCost(costUsd) : null,
-  ].filter((part): part is string => part != null);
+  const parts = costUsd ? [formatCost(costUsd)] : [];
   if (parts.length === 0 && !pr) return null;
   return (
     <div className="flex min-w-0 items-center gap-1 truncate text-[11px] text-content/45">
