@@ -152,6 +152,7 @@ import {
 } from "../../notes";
 import { resolveTabGroupLogo } from "../../workspace/model/tabGroups";
 import { useComposerSkills } from "./useComposerSkills";
+import { clearOnDoubleEscape } from "./doubleEscapeClear";
 import { Popover } from "../../../shared/ui/Popover";
 import {
   SessionContextText,
@@ -1521,6 +1522,7 @@ export function Composer({
     setPasteError(null);
     syncHasValue("", []);
   };
+  const lastEscapeRef = useRef(0);
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (disabled) return;
     if (isImeComposition(e.nativeEvent)) return;
@@ -1642,6 +1644,8 @@ export function Composer({
         setSlash(null);
       }
     }
+
+    if (clearOnDoubleEscape(e, lastEscapeRef)) return;
 
     if (
       e.key === "ArrowUp" &&
