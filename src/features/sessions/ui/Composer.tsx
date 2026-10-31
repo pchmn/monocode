@@ -48,19 +48,14 @@ import {
   fileMentionParts,
   mentionLabel,
   mentionTokenAt,
-  parentMentionQuery,
   rankMentionFiles,
-  rankParentEntries,
   replaceMentionToken,
   sharedMentionIndex,
   type MentionIndex,
   type MentionToken,
 } from "../../files/model/fileMentions";
-import {
-  listDir,
-  type FsEntry,
-  type ProjectFile,
-} from "../../../platform/tauri/fs";
+import type { ProjectFile } from "../../../platform/tauri/fs";
+import { parentMentionPick, useParentMentions } from "./useParentMentions";
 import {
   composeInboxMessage,
   type InboxComposerCard,
@@ -625,34 +620,13 @@ export function Composer({
   );
   const mentionIndexRef = useRef<MentionIndex>(mentionIndex);
   mentionIndexRef.current = mentionIndex;
-  const parentQuery = useMemo(
-    () =>
-      mentionOpen && looksLikeProject(executionCwd)
-        ? parentMentionQuery(mention?.query ?? "", executionCwd)
-        : null,
-    [executionCwd, mention?.query, mentionOpen],
+  const parentFiles = useParentMentions(
+    mentionOpen && looksLikeProject(executionCwd),
+    executionCwd,
+    mention?.query ?? "",
   );
-  const parentDir = parentQuery?.dir;
-  const [parentEntries, setParentEntries] = useState<FsEntry[]>([]);
-  useEffect(() => {
-    if (!parentDir) return;
-    let cancelled = false;
-    listDir(parentDir)
-      .then((entries) => !cancelled && setParentEntries(entries))
-      .catch(() => !cancelled && setParentEntries([]));
-    return () => {
-      cancelled = true;
-    };
-  }, [parentDir]);
-  const rankedFiles = useMemo(() => {
+  const localFiles = useMemo(() => {
     if (!mentionOpen) return [];
-    if (parentQuery) {
-      return rankParentEntries(
-        parentEntries,
-        parentQuery.prefix,
-        parentQuery.filter,
-      );
-    }
     const fileHits = looksLikeProject(executionCwd)
       ? rankMentionFiles(
           files,
@@ -665,16 +639,8 @@ export function Composer({
       : [];
     const seen = new Set(noteHits.map((file) => file.path));
     return [...noteHits, ...fileHits.filter((file) => !seen.has(file.path))];
-  }, [
-    executionCwd,
-    files,
-    mention?.query,
-    mentionOpen,
-    notes,
-    notesEnabled,
-    parentEntries,
-    parentQuery,
-  ]);
+  }, [executionCwd, files, mention?.query, mentionOpen, notes, notesEnabled]);
+  const rankedFiles = parentFiles ?? localFiles;
 
   const syncHasValue = useCallback(
     (text: string, files: Attachment[]) => {
@@ -1167,22 +1133,21 @@ export function Composer({
         setMention(null);
         return;
       }
-      const parent = token.query.startsWith("../");
-      const intoDir = parent && Boolean(file.isDir);
-      const label = parent
-        ? file.relative + (intoDir ? "/" : "")
-        : isNoteMentionPath(file.path)
+      const parentPick = parentMentionPick(token.query, file);
+      const label =
+        parentPick?.label ??
+        (isNoteMentionPath(file.path)
           ? file.relative
-          : mentionLabel(file, mentionIndexRef.current);
+          : mentionLabel(file, mentionIndexRef.current));
       const next = replaceMentionToken(el.value, token, label);
       el.value = next;
       resizeComposer(el);
       let cursor = token.start + label.length + 1;
-      if (!intoDir && next[cursor] === " ") cursor += 1;
+      if (!parentPick?.intoDir && next[cursor] === " ") cursor += 1;
       el.setSelectionRange(cursor, cursor);
       setDraft(next);
       syncHasValue(next, attachmentsRef.current);
-      setMention(intoDir ? mentionTokenAt(next, cursor) : null);
+      setMention(parentPick?.intoDir ? mentionTokenAt(next, cursor) : null);
       el.focus();
     },
     [syncHasValue],

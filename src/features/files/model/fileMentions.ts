@@ -1,6 +1,6 @@
 import { loadProjectFiles, rankProjectFiles, type RankedFile } from "./fileIndex";
-import type { FsEntry, ProjectFile } from "../../../platform/tauri/fs";
-import { joinPath } from "../../../shared/lib/paths";
+import type { ProjectFile } from "../../../platform/tauri/fs";
+import { parentMentionLines } from "./parentMentions";
 import { isMarkdownBlockquotePosition } from "../../sessions/model/quoteDraft";
 
 export type MentionToken = {
@@ -45,7 +45,7 @@ const TRAILING_PUNCTUATION = new Set([
   "/",
 ]);
 const MAX_QUERY = 120;
-const MAX_PICKER = 30;
+export const MAX_PICKER = 30;
 
 /** Mention token that contains `cursor`, if the user is typing `@file`. */
 export function mentionTokenAt(
@@ -65,38 +65,6 @@ export function mentionTokenAt(
   if (typed.includes("@") || typed.length > MAX_QUERY) return null;
 
   return { start, end, query: typed };
-}
-
-/** `../foo/ba` → directory to list (relative to `cwd`), label prefix and name filter. */
-export function parentMentionQuery(
-  query: string,
-  cwd: string,
-): { dir: string; prefix: string; filter: string } | null {
-  if (!query.startsWith("../")) return null;
-  const cut = query.lastIndexOf("/") + 1;
-  const prefix = query.slice(0, cut);
-  return { dir: joinPath(cwd, prefix), prefix, filter: query.slice(cut) };
-}
-
-/** Entries of a parent directory as picker rows; `relative` is the label to write. */
-export function rankParentEntries(
-  entries: FsEntry[],
-  prefix: string,
-  filter: string,
-): RankedFile[] {
-  const files = entries
-    .filter((entry) => isTokenSafe(entry.name))
-    .map((entry) => ({ ...entry, relative: entry.name }));
-  const hits = filter
-    ? rankProjectFiles(files, filter, [], MAX_PICKER)
-    : files
-        .sort(
-          (a, b) =>
-            Number(b.isDir) - Number(a.isDir) || a.name.localeCompare(b.name),
-        )
-        .slice(0, MAX_PICKER)
-        .map((file) => ({ ...file, score: 0, positions: [] }));
-  return hits.map((hit) => ({ ...hit, relative: prefix + hit.name }));
 }
 
 export function replaceMentionToken(
@@ -269,10 +237,7 @@ export async function applyFileMentionsToTurn(
   const lines = fileMentionsInText(text, index.labels)
     .filter((hit) => hit.label !== hit.file.relative)
     .map((hit) => `- @${hit.label} → ${hit.file.relative}`);
-  for (const [, token] of text.matchAll(/(?:^|\s)@(\.\.\/\S*)/g)) {
-    const label = token!.replace(/[,;:!?)\]}"'.]+$/, "");
-    lines.push(`- @${label} → ${joinPath(cwd, label)}`);
-  }
+  lines.push(...parentMentionLines(text, cwd));
   if (lines.length === 0) return text;
 
   return [text, "", "---", "Referenced with @ above:", ...lines].join("\n");
@@ -395,7 +360,7 @@ function encodeMentionToken(relative: string): string | null {
   return isTokenSafe(encoded) ? encoded : null;
 }
 
-function isTokenSafe(value: string): boolean {
+export function isTokenSafe(value: string): boolean {
   return (
     value.length > 0 &&
     value.length <= MAX_QUERY &&
