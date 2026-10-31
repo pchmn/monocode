@@ -79,6 +79,8 @@ import { useTrafficLightsVisible } from "../../platform/tauri/useTrafficLightsVi
 import { copyText } from "../../platform/tauri/clipboard";
 import { resolveModel } from "../../features/sessions/model/models";
 import type { OpenFileFn } from "../../features/search/model/search";
+import { buildSessionListWithInactive } from "../../features/sessions/model/inactiveSessions";
+import { useInactiveSessions } from "./useInactiveSessions";
 import { sessionDisplayTitle } from "../../features/sessions/model/session";
 import { ParticleText } from "../../shared/ui/ParticleText";
 import { nextUnseenFinishedSessions } from "../../features/sessions/model/sessionDone";
@@ -107,7 +109,6 @@ import {
 import {
   addSessionToFolder,
   applySessionListDrop,
-  buildSessionList,
   createFolderWithSessions,
   dissolveFolder,
   folderAccent,
@@ -307,6 +308,8 @@ type Props = {
   activeSessionId?: string;
   /** Open tabs, including blank ones not yet in history. */
   openSessions?: readonly SessionSummary[];
+  /** Sessions shown in a workspace tab; `openSessions` also keeps closed tabs loaded. */
+  tabSessionIds?: ReadonlySet<string>;
   status: "idle" | "error";
   /** First listing for this project has not arrived yet. */
   pending: boolean;
@@ -431,6 +434,7 @@ function SidebarComponent({
   approvalSessionIds,
   activeSessionId,
   openSessions = [],
+  tabSessionIds,
   status,
   pending,
   onSelectSession: onSelectLocalSession,
@@ -857,6 +861,14 @@ function SidebarComponent({
       .map((reminder) => reminder.sessionId),
     collapsed: reminderSessionsCollapsed,
   };
+  const { inactiveGroup, setInactiveCollapsed } = useInactiveSessions({
+    cwd,
+    disabled: searchNarrowed || remoteProject || !tabSessionIds,
+    openSessionIds: [...(tabSessionIds ?? [])],
+    busyIds: listedBusySessionIds,
+    approvalIds: listedApprovalSessionIds,
+    activeId: activeListedSessionId,
+  });
   const ungroupedVisible = ungroupedSessions(
     listedVisibleSessions,
     sessionFolders,
@@ -870,26 +882,28 @@ function SidebarComponent({
     activeUngroupedIndex,
   );
   const shownUngrouped = ungroupedVisible.slice(0, shownUngroupedCount);
-  const fullSessionListEntries = buildSessionList(
+  const fullSessionListEntries = buildSessionListWithInactive(
     listedVisibleSessions,
     sessionFolders,
     ungroupedVisible,
     pinnedSessionsCollapsed,
     reminderGroup,
+    inactiveGroup,
   );
-  const sessionListEntries = buildSessionList(
+  const sessionListEntries = buildSessionListWithInactive(
     listedVisibleSessions,
     sessionFolders,
     shownUngrouped,
     pinnedSessionsCollapsed,
     reminderGroup,
+    inactiveGroup,
   );
   const firstLooseSessionIndex = sessionListEntries.findIndex(
     (entry) => entry.kind === "session",
   );
   // Reminders, folders and Pinned come first, under one label.
   const firstGroupIndex = sessionListEntries.findIndex(
-    (entry) => entry.kind !== "session",
+    (entry) => entry.kind !== "session" && entry.kind !== "inactive",
   );
   const groupFollows = (index: number) => {
     const next = sessionListEntries[index + 1];
@@ -2736,15 +2750,17 @@ function SidebarComponent({
                   }`}
                 >
                   {sessionListEntries.map((entry, index) => {
-                    if (entry.kind === "pinned" || entry.kind === "reminders") {
+                    if (entry.kind !== "session" && entry.kind !== "folder") {
                       const isReminders = entry.kind === "reminders";
+                      const isInactive = entry.kind === "inactive";
+                      const isPinned = entry.kind === "pinned";
                       const expanded = searchNarrowed || !entry.collapsed;
                       const beforeUngrouped =
                         sessionListEntries[index + 1]?.kind === "session";
                       const groupItem = (
                         <li
                           key={`${entry.kind}-sessions`}
-                          data-pinned-sessions={isReminders ? undefined : ""}
+                          data-pinned-sessions={isPinned ? "" : undefined}
                           data-reminder-sessions={isReminders ? "" : undefined}
                           className={`relative ${
                             inset
@@ -2770,7 +2786,11 @@ function SidebarComponent({
                                       name: "Reminders",
                                       customColor: REMINDERS_COLOR,
                                     }
-                                  : { name: "Pinned" }
+                                  : {
+                                      name: isInactive
+                                        ? "Inactive sessions"
+                                        : "Pinned",
+                                    }
                               }
                               sessions={entry.sessions}
                               expanded={expanded}
@@ -2786,7 +2806,12 @@ function SidebarComponent({
                                 listedApprovalSessionIds.has(session.id),
                               )}
                               groupIcon={
-                                isReminders ? (
+                                isInactive ? (
+                                  <Archive
+                                    className={inset ? "size-4" : "size-3.5"}
+                                    strokeWidth={1.75}
+                                  />
+                                ) : isReminders ? (
                                   <Clock
                                     className={inset ? "size-4" : "size-3.5"}
                                     strokeWidth={1.75}
@@ -2803,6 +2828,10 @@ function SidebarComponent({
                               onToggle={() => {
                                 if (searchNarrowed) return;
                                 const collapsed = !entry.collapsed;
+                                if (isInactive) {
+                                  setInactiveCollapsed(collapsed);
+                                  return;
+                                }
                                 if (isReminders) {
                                   setReminderSessionsCollapsed(collapsed);
                                   saveReminderSessionsCollapsed(cwd, collapsed);

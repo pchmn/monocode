@@ -4275,6 +4275,7 @@ function Workspace({
     [onClosePane, onCloseTab, tabCloseScope],
   );
 
+  const tabSessionIds = useMemo(() => openSessionIds(tabs), [tabs]);
   /** Open tabs per workspace in the sidebar's project, keyed by worktree
    * path, so the switcher can show what each worktree still has open. */
   const worktreeTabStats = useMemo(() => {
@@ -13987,6 +13988,7 @@ function Workspace({
       cwd={sidebarCwd}
       gitCwd={gitCwd}
       worktreeTabStats={worktreeTabStats}
+      tabSessionIds={tabSessionIds}
       onSelectWorkspace={onSelectWorkspace}
       workspaceSwitchPending={
         workspaceNavigation.pending?.project === sidebarCwd
