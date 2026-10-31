@@ -7,6 +7,7 @@ import type {
 } from "../../../../features/sessions/model/session";
 import {
   attachmentPathText,
+  interleaveAttachments,
   promptText,
 } from "../../../../features/sessions/model/attachments";
 import { parseResetTimestamp } from "../../../../features/providers/model/rateLimits";
@@ -198,16 +199,16 @@ export function buildClaudeUserMessage(input: {
     promptText(input.text, input.attachments ?? []),
     input.effort,
   );
-  const content: Array<Record<string, unknown>> = [];
-  if (text) content.push({ type: "text", text });
-  for (const attachment of input.attachments ?? []) {
-    content.push(
+  const content = interleaveAttachments<Record<string, unknown>>(
+    text,
+    input.attachments ?? [],
+    (body) => ({ type: "text", text: body }),
+    (attachment) =>
       imageContentBlock(attachment) ?? {
         type: "text",
         text: attachmentPathText(attachment),
       },
-    );
-  }
+  );
   return {
     type: "user",
     session_id: "",

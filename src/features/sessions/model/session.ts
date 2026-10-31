@@ -261,6 +261,8 @@ export type Attachment = {
   data?: string;
   /** Object URL for in-session thumbnails. Not persisted. */
   previewUrl?: string;
+  /** `N` of the `[Image #N]` token marking where a pasted image sits in the text. */
+  imageNumber?: number;
 };
 
 export type MonoSessionCompletion = {
