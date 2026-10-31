@@ -100,7 +100,7 @@ beforeEach(() => {
     removeItem: (key: string) => stored.delete(key),
     clear: () => stored.clear(),
   });
-  // Closed-tab sessions sit in a group collapsed by default; these tests need them listed.
+  // Inactive-sessions group is collapsed by default; expand it so listed rows render.
   stored.set(
     "monocode.inactiveSessionsCollapsed",
     JSON.stringify({ "/workspace/project": true }),

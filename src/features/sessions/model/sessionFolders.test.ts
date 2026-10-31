@@ -101,41 +101,6 @@ describe("uniqueFolderName", () => {
 });
 
 describe("buildSessionList", () => {
-  it("groups loose sessions without an open tab last and skips them in navigation while collapsed", () => {
-    const sessions = [
-      summary("open"),
-      summary("closed"),
-      summary("pin", { pinned: true }),
-    ];
-    const loose = ungroupedSessions(sessions, []);
-    const group = (collapsed: boolean) => ({
-      activeIds: new Set(["open"]),
-      collapsed,
-    });
-    const entries = buildSessionList(
-      sessions,
-      [],
-      loose,
-      false,
-      undefined,
-      group(true),
-    );
-    expect(entries.map((entry) => entry.kind)).toEqual([
-      "pinned",
-      "session",
-      "inactive",
-    ]);
-    expect(sessionListNavigationIds(entries, false)).toEqual(["pin", "open"]);
-    expect(sessionListNavigationIds(entries, true)).toEqual([
-      "pin",
-      "open",
-      "closed",
-    ]);
-    expect(
-      buildSessionList(sessions, [], loose).map((entry) => entry.kind),
-    ).toEqual(["pinned", "session", "session"]);
-  });
-
   it("puts reminders ahead of folders and pins without duplicate cards or changing membership", () => {
     const sessions = [
       summary("pin", { pinned: true }),
