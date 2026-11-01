@@ -145,6 +145,9 @@ pub fn dispatch(app: &AppHandle, id: &str) {
             let _ = app.emit("toggle_autosave", enabled);
         }
         "quit" => crate::window::request_quit(app),
+        "open_code_workspace" => {
+            let _ = app.emit(id, ());
+        }
         "close_other_tabs" | "next_tab" | "prev_tab" | "back_tab" | "forward_tab"
         | "split_right" | "split_down" | "focus_left" | "focus_right" | "focus_up"
         | "focus_down" | "sidebar_opacity" | "open_project" | "go_to_file" | "open_search"
@@ -223,6 +226,8 @@ fn build(
         "App: Open Project",
         overrides,
     )?;
+    let open_code_workspace =
+        MenuItemBuilder::with_id("open_code_workspace", "Open VS Code Workspace…").build(app)?;
     let go_to_file = menu_item(
         app,
         "go_to_file",
@@ -456,6 +461,7 @@ fn build(
     let file = SubmenuBuilder::with_id(app, "file", "File")
         .item(&new_window)
         .item(&open_project)
+        .item(&open_code_workspace)
         .item(&open_search)
         .item(&go_to_file)
         .item(&command_palette)

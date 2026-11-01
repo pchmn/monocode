@@ -320,7 +320,8 @@ export function projectName(cwd: string): string {
   const trimmed = trimSlash(cwd);
   if (/^[A-Za-z]:$/.test(trimmed)) return trimmed;
   const parts = trimmed.split("/").filter(Boolean);
-  return parts[parts.length - 1] ?? trimmed;
+  const name = parts[parts.length - 1] ?? trimmed;
+  return name.replace(/(.)\.code-workspace$/i, "$1");
 }
 
 /**

@@ -82,6 +82,7 @@ const GIT_STATUS_COLOR: Record<string, string> = {
 type Props = {
   cwd: string;
   compactHeader?: boolean;
+  hideHeader?: boolean;
   /** Display identity for the root when it differs from the physical folder. */
   rootLabel?: string;
   onOpenFile: OpenFileFn;
@@ -252,6 +253,7 @@ function explorerItems(
 export const FileTree = memo(function FileTree({
   cwd,
   compactHeader = false,
+  hideHeader = false,
   rootLabel,
   onOpenFile,
   onOpenTerminal,
@@ -1013,42 +1015,44 @@ export const FileTree = memo(function FileTree({
         onKeyDown={onKeyDown}
         onContextMenu={onBackgroundMenu}
       >
-        <PaneHeader
-          compact={compactHeader}
-          role="toolbar"
-          aria-label="Explorer"
-          onContextMenu={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-        >
-          <HeaderIcon label="New File" onClick={() => startCreate(false)}>
-            <FilePlus className="size-3.5" strokeWidth={1.75} />
-          </HeaderIcon>
-          <HeaderIcon label="New Folder" onClick={() => startCreate(true)}>
-            <FolderPlus className="size-3.5" strokeWidth={1.75} />
-          </HeaderIcon>
-          <HeaderIcon
-            label="Collapse All"
-            onClick={() => {
-              setCreating(null);
-              setRenaming(null);
-              const next = new Set([cwd]);
-              saveExpanded(cwd, next);
-              setExpanded(next);
+        {hideHeader ? null : (
+          <PaneHeader
+            compact={compactHeader}
+            role="toolbar"
+            aria-label="Explorer"
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
             }}
           >
-            <FoldVertical className="size-3.5" strokeWidth={1.75} />
-          </HeaderIcon>
-          {onSearch ? (
-            <HeaderIcon
-              label={`Search in files (${MOD}Shift+F)`}
-              onClick={onSearch}
-            >
-              <Search className="size-3.5" strokeWidth={1.75} />
+            <HeaderIcon label="New File" onClick={() => startCreate(false)}>
+              <FilePlus className="size-3.5" strokeWidth={1.75} />
             </HeaderIcon>
-          ) : null}
-        </PaneHeader>
+            <HeaderIcon label="New Folder" onClick={() => startCreate(true)}>
+              <FolderPlus className="size-3.5" strokeWidth={1.75} />
+            </HeaderIcon>
+            <HeaderIcon
+              label="Collapse All"
+              onClick={() => {
+                setCreating(null);
+                setRenaming(null);
+                const next = new Set([cwd]);
+                saveExpanded(cwd, next);
+                setExpanded(next);
+              }}
+            >
+              <FoldVertical className="size-3.5" strokeWidth={1.75} />
+            </HeaderIcon>
+            {onSearch ? (
+              <HeaderIcon
+                label={`Search in files (${MOD}Shift+F)`}
+                onClick={onSearch}
+              >
+                <Search className="size-3.5" strokeWidth={1.75} />
+              </HeaderIcon>
+            ) : null}
+          </PaneHeader>
+        )}
         <div className="flex h-8 shrink-0 items-center">
           <button
             type="button"

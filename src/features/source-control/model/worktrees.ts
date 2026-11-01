@@ -8,6 +8,7 @@ import {
 import { isFilesystemTab, type FilePaneTab } from "../../workspace/model/layout";
 import { isEqualOrInside, parentPath, pathKey } from "../../../shared/lib/paths";
 import { isBlankSession } from "../../projects/model/projectReturn";
+import { isCodeWorkspace, loadCodeWorkspace } from "../../projects/model/codeWorkspace";
 import { newSession, sessionWorkCwd, type Session } from "../../sessions/model/session";
 
 export type Worktree = {
@@ -24,8 +25,34 @@ export type Worktree = {
 };
 export type Worktrees = { worktrees: Worktree[]; defaultRoot: string };
 
-export const listWorktrees = (cwd: string) =>
-  invokeWorkspace<Worktrees>("git_worktrees", { cwd });
+export function workspaceFolderWorktree(path: string, isMain = false): Worktree {
+  return {
+    path,
+    branch: null,
+    head: "",
+    isMain,
+    locked: false,
+    prunable: false,
+    missing: false,
+    dirty: null,
+    unpushed: null,
+    sessionIds: [],
+  };
+}
+
+export async function listWorktrees(cwd: string): Promise<Worktrees> {
+  if (!isCodeWorkspace(cwd))
+    return invokeWorkspace<Worktrees>("git_worktrees", { cwd });
+  // A workspace's folders are its working copies; the file itself stands for "all folders".
+  const folders = await loadCodeWorkspace(cwd);
+  return {
+    worktrees: [
+      workspaceFolderWorktree(cwd, true),
+      ...folders.map((folder) => workspaceFolderWorktree(folder.path)),
+    ],
+    defaultRoot: "",
+  };
+}
 
 export async function createWorktree(
   cwd: string,

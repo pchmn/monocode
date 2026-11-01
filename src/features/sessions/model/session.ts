@@ -14,6 +14,7 @@ import {
   resolveModel,
 } from "./models";
 import { loadProjectProviderSettings } from "./projectProviders";
+import { projectWorkDir } from "../../projects/model/codeWorkspace";
 
 export type HarnessId =
   | "claude"
@@ -592,6 +593,9 @@ export function newSession(
     title: HARNESS_LABEL[harness],
     cwd,
     blocks: [],
+    ...(projectWorkDir(cwd) !== cwd
+      ? { worktreeCwd: projectWorkDir(cwd) }
+      : {}),
   };
 }
 
@@ -799,5 +803,5 @@ export function sessionWorkCwd(session: {
   cwd: string;
   worktreeCwd?: string;
 }): string {
-  return session.worktreeCwd || session.cwd;
+  return session.worktreeCwd || projectWorkDir(session.cwd);
 }

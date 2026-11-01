@@ -233,6 +233,7 @@ describe("path relations", () => {
       displayPath("C:\\Users\\me\\app\\src\\a.ts", "C:/Users/me/app"),
     ).toBe("src/a.ts");
     expect(projectName("C:\\Users\\me\\app")).toBe("app");
+    expect(projectName("/Users/me/sabri.code-workspace")).toBe("sabri");
   });
 
   it("compares Windows paths without case", () => {

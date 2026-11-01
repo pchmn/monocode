@@ -1,4 +1,9 @@
 import { sessionConversationPage } from "../features/agent-app/model/sessionConversation";
+import {
+  isCodeWorkspace,
+  loadCodeWorkspace,
+  projectWorkDir,
+} from "../features/projects/model/codeWorkspace";
 import { useMobileWorkspace } from "../features/mobile/hooks/useMobileWorkspace";
 import { hasMobileAttachments, mobileAttachments } from "../features/mobile/model/mobileAttachments";
 import {
@@ -229,6 +234,7 @@ import {
   basename,
   homeDir,
   notifyGitChanged,
+  pickCodeWorkspace,
   pickFolders,
   type GitFileDiffKind,
   type GitHistoryCommit,
@@ -2161,11 +2167,12 @@ function Workspace({
     !loadedProjects.has(sidebarCwdKey) &&
     !historyFailed;
   const gitCwd =
-    activeFile?.cwd ?? (active ? sessionWorkCwd(active) : sidebarCwd);
+    activeFile?.cwd ??
+    (active ? sessionWorkCwd(active) : projectWorkDir(sidebarCwd));
   const terminalCwd = newTerminalCwd({
     activeFile,
     session: active,
-    fallback: sidebarCwd,
+    fallback: projectWorkDir(sidebarCwd),
   });
   const gitCwdBranches = useProjectBranches(
     gitCwd,
@@ -6570,6 +6577,19 @@ function Workspace({
     // the last one selected ends up focused.
     openProjects(await pickFolders());
   }, [openProjects]);
+
+  const pickCodeWorkspaceProject = useCallback(async () => {
+    const path = await pickCodeWorkspace();
+    if (!path) return;
+    // Its first session needs the folders to pick a working directory.
+    await loadCodeWorkspace(path);
+    openProjects([path]);
+  }, [openProjects]);
+
+  useEffect(() => {
+    for (const { path } of recents)
+      if (isCodeWorkspace(path)) void loadCodeWorkspace(path);
+  }, [recents]);
 
   const onPlaceSessionInFolder = useCallback(
     (sessionId: string, target: SessionFolderTarget) => {
@@ -12904,6 +12924,7 @@ function Workspace({
     onOpenInbox,
     onOpenNotes,
     pickProject,
+    pickCodeWorkspaceProject,
     onNewTerminal,
     onNewTerminalTab,
     onToggleProjectTerminal,
@@ -12936,6 +12957,7 @@ function Workspace({
     onOpenInbox,
     onOpenNotes,
     pickProject,
+    pickCodeWorkspaceProject,
     onNewTerminal,
     onNewTerminalTab,
     onToggleProjectTerminal,
@@ -13230,6 +13252,9 @@ function Workspace({
       ),
       listen("open_project", () => {
         void actions.current.pickProject();
+      }),
+      listen("open_code_workspace", () => {
+        void actions.current.pickCodeWorkspaceProject();
       }),
       listen("go_to_file", () => run("go_to_file", actions.current.onGoToFile)),
       listen("open_command_palette", () =>
@@ -14266,6 +14291,7 @@ function Workspace({
                         onCloseOtherTabs={onCloseOtherTabs}
                         onCloseAllTabs={onCloseAllTabs}
                         onPickProject={pickProject}
+                        onPickCodeWorkspace={pickCodeWorkspaceProject}
                         onFindInProject={onFindInProject}
                         onSearch={onOpenSearch}
                         onOpenInbox={onOpenInbox}

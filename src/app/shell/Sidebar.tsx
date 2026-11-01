@@ -188,6 +188,10 @@ import {
   type ExplorerMenuItem,
 } from "../../features/files/ui/ExplorerMenu";
 import { FileTree } from "../../features/files/ui/FileTree";
+import {
+  useCodeWorkspaceFolders,
+  type CodeWorkspaceFolder,
+} from "../../features/projects/model/codeWorkspace";
 import { HarnessIcon } from "../../features/sessions/ui/HarnessIcon";
 import { SessionCardPreview } from "../../features/sessions/ui/SessionCardPreview";
 import { LiveAgentsPreview } from "../../features/sessions/ui/LiveAgentsPreview";
@@ -423,6 +427,31 @@ type Props = {
   /** A Mono fills the main area, which has no project sidebar. */
   monoViewActive?: boolean;
 };
+
+function WorkspaceFolderTree({
+  folder,
+  enabled,
+  ...actions
+}: {
+  folder: CodeWorkspaceFolder;
+  enabled: boolean;
+} & Pick<
+  ComponentProps<typeof FileTree>,
+  "onOpenFile" | "onOpenTerminal" | "onFileMoved" | "onFileDeleted"
+>) {
+  const gitStatuses = useGitFileStatuses(folder.path, enabled);
+  return (
+    <div className="shrink-0">
+      <FileTree
+        cwd={folder.path}
+        rootLabel={folder.name}
+        hideHeader
+        gitStatuses={gitStatuses}
+        {...actions}
+      />
+    </div>
+  );
+}
 
 function SidebarComponent({
   cwd,
@@ -1060,9 +1089,10 @@ function SidebarComponent({
   if (panesOpen && paneTab === "files") {
     explorer.current = { cwd: gitRoot, rootLabel: explorerRootLabel };
   }
+  const workspaceFolders = useCodeWorkspaceFolders(cwd);
   const gitStatuses = useGitFileStatuses(
     gitRoot,
-    panesOpen && paneTab === "files",
+    panesOpen && paneTab === "files" && !workspaceFolders,
   );
   const changeStats = useProjectDiffStats(gitRoot, panesOpen);
 
@@ -2506,7 +2536,21 @@ function SidebarComponent({
         />
       ) : cwd && cwd !== "~" ? (
         <div className="flex min-h-0 flex-1 flex-col">
-          {explorer.current ? (
+          {workspaceFolders ? (
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-none">
+              {workspaceFolders.map((folder) => (
+                <WorkspaceFolderTree
+                  key={folder.path}
+                  folder={folder}
+                  enabled={panesOpen && paneTab === "files"}
+                  onOpenFile={onOpenFile}
+                  onOpenTerminal={onOpenTerminal}
+                  onFileMoved={onFileMoved}
+                  onFileDeleted={onFileDeleted}
+                />
+              ))}
+            </div>
+          ) : explorer.current ? (
             <FileTree
               key={explorer.current.cwd}
               cwd={explorer.current.cwd}
