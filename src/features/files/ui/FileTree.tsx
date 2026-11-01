@@ -1,16 +1,10 @@
-import {
-  ChevronDown,
-  ChevronRight,
-  FilePlus,
-  FolderPlus,
-  FoldVertical,
-  Search,
-} from "../../../shared/ui/icons";
+import { ChevronDown, ChevronRight } from "../../../shared/ui/icons";
 import {
   createContext,
   memo,
   useContext,
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
   useSyncExternalStore,
@@ -18,6 +12,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
+  type Ref,
 } from "react";
 import {
   leafName,
@@ -70,7 +65,7 @@ import {
 } from "../../../shared/lib/drag";
 import { ExplorerMenu, type ExplorerMenuItem } from "./ExplorerMenu";
 import { FileTypeIcon } from "./FileTypeIcon";
-import { PaneHeader } from "../../../shared/ui/PaneHeader";
+import { ExplorerToolbar, type ExplorerActions } from "./ExplorerToolbar";
 
 const GIT_STATUS_COLOR: Record<string, string> = {
   modified: "text-amber-400",
@@ -92,6 +87,7 @@ type Props = {
   onFileDeleted?: (path: string) => void;
   onSearch?: () => void;
   gitStatuses?: GitStatusMap;
+  actionsRef?: Ref<ExplorerActions>;
 };
 
 type Creating = { id: number; parent: string; isDir: boolean };
@@ -262,6 +258,7 @@ export const FileTree = memo(function FileTree({
   onFileDeleted,
   onSearch,
   gitStatuses,
+  actionsRef,
 }: Props) {
   const [expanded, setExpanded] = useState(() => loadExpanded(cwd));
   const [selectedPath, setSelectedPath] = useState(() => loadSelected(cwd));
@@ -497,6 +494,19 @@ export const FileTree = memo(function FileTree({
     expandDirs([cwd, parent]);
     setCreating({ id: Date.now(), parent, isDir });
   };
+
+  const actions: ExplorerActions = {
+    newFile: () => startCreate(false),
+    newFolder: () => startCreate(true),
+    collapseAll: () => {
+      setCreating(null);
+      setRenaming(null);
+      const next = new Set(workspaceRoot ? [] : [cwd]);
+      saveExpanded(cwd, next);
+      setExpanded(next);
+    },
+  };
+  useImperativeHandle(actionsRef, () => actions);
 
   const startRename = (path: string) => {
     if (path === cwd) return;
@@ -1016,45 +1026,8 @@ export const FileTree = memo(function FileTree({
         onKeyDown={onKeyDown}
         onContextMenu={onBackgroundMenu}
       >
-        <PaneHeader
-          className={workspaceRoot ? "hidden" : ""}
-          compact={compactHeader}
-          role="toolbar"
-          aria-label="Explorer"
-          onContextMenu={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-        >
-          <HeaderIcon label="New File" onClick={() => startCreate(false)}>
-            <FilePlus className="size-3.5" strokeWidth={1.75} />
-          </HeaderIcon>
-          <HeaderIcon label="New Folder" onClick={() => startCreate(true)}>
-            <FolderPlus className="size-3.5" strokeWidth={1.75} />
-          </HeaderIcon>
-          <HeaderIcon
-            label="Collapse All"
-            onClick={() => {
-              setCreating(null);
-              setRenaming(null);
-              const next = new Set([cwd]);
-              saveExpanded(cwd, next);
-              setExpanded(next);
-            }}
-          >
-            <FoldVertical className="size-3.5" strokeWidth={1.75} />
-          </HeaderIcon>
-          {onSearch ? (
-            <HeaderIcon
-              label={`Search in files (${MOD}Shift+F)`}
-              onClick={onSearch}
-            >
-              <Search className="size-3.5" strokeWidth={1.75} />
-            </HeaderIcon>
-          ) : null}
-        </PaneHeader>
         <div
-          className={`flex shrink-0 items-center ${workspaceRoot ? "h-7.5" : "h-8"}`}
+          className={`flex shrink-0 items-center ${workspaceRoot ? "h-7.5" : compactHeader ? "h-8" : "h-9"}`}
         >
           <button
             type="button"
@@ -1098,6 +1071,9 @@ export const FileTree = memo(function FileTree({
               {name}
             </span>
           </button>
+          {workspaceRoot ? null : (
+            <ExplorerToolbar onSearch={onSearch} {...actions} />
+          )}
         </div>
         <div
           ref={lockOverscroll}
@@ -1137,36 +1113,6 @@ export const FileTree = memo(function FileTree({
     </TreeCtx.Provider>
   );
 });
-
-function HeaderIcon({
-  label,
-  onClick,
-  active = false,
-  children,
-}: {
-  label: string;
-  onClick?: () => void;
-  active?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      aria-pressed={active || undefined}
-      onMouseDown={(e) => e.preventDefault()}
-      onClick={onClick}
-      className={`flex h-6 min-w-0 flex-1 items-center justify-center self-center rounded-md ${
-        active
-          ? "bg-selection text-content"
-          : "text-content/50 hover:bg-content/5 hover:text-content"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
 
 function TreeChildren({
   parent,
