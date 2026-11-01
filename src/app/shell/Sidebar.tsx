@@ -2515,6 +2515,7 @@ function SidebarComponent({
             <WorkspaceFolderTrees
               folders={workspaceFolders}
               enabled={panesOpen && paneTab === "files"}
+              workspace={cwd}
               onOpenFile={onOpenFile}
               onOpenTerminal={onOpenTerminal}
               onFileMoved={onFileMoved}
