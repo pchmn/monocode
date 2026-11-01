@@ -4,6 +4,7 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
+import { pickCodeWorkspace } from "../model/codeWorkspace";
 import { useTabGroupLogos } from "../hooks/useTabGroupLogos";
 import { useProjectAppearance } from "../hooks/useProjectAppearance";
 import { basename } from "../../../platform/tauri/fs";
@@ -551,6 +552,20 @@ export function ProjectPickerPopover({
             >
               <Plus className="size-4 shrink-0" strokeWidth={1.75} />
               <span>New project</span>
+            </button>
+          ) : null}
+          {onOpenProject ? (
+            <button
+              type="button"
+              onClick={async () => {
+                onDismiss();
+                const path = await pickCodeWorkspace();
+                if (path) onSelectProject(path);
+              }}
+              className="flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-[13px] text-content/75 hover:bg-content/8 hover:text-content"
+            >
+              <Plus className="size-4 shrink-0" strokeWidth={1.75} />
+              <span>Open VS Code workspace…</span>
             </button>
           ) : null}
         </div>

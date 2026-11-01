@@ -345,7 +345,10 @@ export function resolveTabGroupLabel(
   overrides?: Record<string, string>,
   fallback = "Group",
 ): string {
-  return overrides?.[project]?.trim() || fallback;
+  return (
+    overrides?.[project]?.trim() ||
+    fallback.replace(/(.)\.code-workspace$/i, "$1")
+  );
 }
 
 export function resolveTabGroupColorIndex(

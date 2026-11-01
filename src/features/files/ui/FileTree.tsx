@@ -82,6 +82,8 @@ const GIT_STATUS_COLOR: Record<string, string> = {
 type Props = {
   cwd: string;
   compactHeader?: boolean;
+  /** One root among a VS Code workspace's folders: no toolbar, root drawn as a folder row. */
+  workspaceRoot?: boolean;
   /** Display identity for the root when it differs from the physical folder. */
   rootLabel?: string;
   onOpenFile: OpenFileFn;
@@ -252,6 +254,7 @@ function explorerItems(
 export const FileTree = memo(function FileTree({
   cwd,
   compactHeader = false,
+  workspaceRoot = false,
   rootLabel,
   onOpenFile,
   onOpenTerminal,
@@ -1014,6 +1017,7 @@ export const FileTree = memo(function FileTree({
         onContextMenu={onBackgroundMenu}
       >
         <PaneHeader
+          className={workspaceRoot ? "hidden" : ""}
           compact={compactHeader}
           role="toolbar"
           aria-label="Explorer"
@@ -1049,7 +1053,9 @@ export const FileTree = memo(function FileTree({
             </HeaderIcon>
           ) : null}
         </PaneHeader>
-        <div className="flex h-8 shrink-0 items-center">
+        <div
+          className={`flex shrink-0 items-center ${workspaceRoot ? "h-7.5" : "h-8"}`}
+        >
           <button
             type="button"
             data-explorer-root
@@ -1079,7 +1085,16 @@ export const FileTree = memo(function FileTree({
                 <ChevronRight className="size-3.5" strokeWidth={1.75} />
               )}
             </span>
-            <span className="min-w-0 truncate text-[11px] font-semibold tracking-[0.08em] text-content/50 uppercase">
+            {workspaceRoot ? (
+              <span className="grid size-4 shrink-0 place-items-center text-content/60">
+                <span
+                  className={`size-2.5 rounded-full border-[1.5px] border-current ${rootOpen ? "" : "bg-current"}`}
+                />
+              </span>
+            ) : null}
+            <span
+              className={`min-w-0 truncate ${workspaceRoot ? "text-[14px] leading-label text-content" : "text-[11px] font-semibold tracking-[0.08em] text-content/50 uppercase"}`}
+            >
               {name}
             </span>
           </button>
@@ -1097,7 +1112,7 @@ export const FileTree = memo(function FileTree({
             <div role="tree" aria-label={`${name} files`}>
               <TreeChildren
                 parent={cwd}
-                depth={0}
+                depth={workspaceRoot ? 1 : 0}
                 entries={children}
                 loading={children === null && !error}
                 error={error}

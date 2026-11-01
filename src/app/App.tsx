@@ -1,4 +1,9 @@
 import { sessionConversationPage } from "../features/agent-app/model/sessionConversation";
+import {
+  isCodeWorkspace,
+  loadCodeWorkspace,
+  projectWorkDir,
+} from "../features/projects/model/codeWorkspace";
 import { useMobileWorkspace } from "../features/mobile/hooks/useMobileWorkspace";
 import { hasMobileAttachments, mobileAttachments } from "../features/mobile/model/mobileAttachments";
 import {
@@ -2161,11 +2166,12 @@ function Workspace({
     !loadedProjects.has(sidebarCwdKey) &&
     !historyFailed;
   const gitCwd =
-    activeFile?.cwd ?? (active ? sessionWorkCwd(active) : sidebarCwd);
+    activeFile?.cwd ??
+    (active ? sessionWorkCwd(active) : projectWorkDir(sidebarCwd));
   const terminalCwd = newTerminalCwd({
     activeFile,
     session: active,
-    fallback: sidebarCwd,
+    fallback: projectWorkDir(sidebarCwd),
   });
   const gitCwdBranches = useProjectBranches(
     gitCwd,
@@ -6570,6 +6576,11 @@ function Workspace({
     // the last one selected ends up focused.
     openProjects(await pickFolders());
   }, [openProjects]);
+
+  useEffect(() => {
+    for (const { path } of recents)
+      if (isCodeWorkspace(path)) void loadCodeWorkspace(path);
+  }, [recents]);
 
   const onPlaceSessionInFolder = useCallback(
     (sessionId: string, target: SessionFolderTarget) => {

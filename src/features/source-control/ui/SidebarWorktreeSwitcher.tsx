@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useProjectWorktrees } from "../hooks/useProjectWorktrees";
 import { useWorktreeFocus, type WorktreeFocus } from "../model/worktreeFocus";
+import { useCodeWorkspaceFolders } from "../../projects/model/codeWorkspace";
 import { createWorktree } from "../model/worktrees";
 import { pathKey, prettyCwd } from "../../../shared/lib/paths";
 import { Popover } from "../../../shared/ui/Popover";
@@ -101,19 +102,24 @@ export function SidebarWorktreeSwitcher({
     data?.worktrees.filter((tree) => !tree.isMain && !tree.missing) ?? [];
   const createName = query.trim();
   const normalizedQuery = createName.toLocaleLowerCase();
+  const folders = useCodeWorkspaceFolders(cwd);
   const rows = [
     {
       path: main?.path ?? cwd,
       branch: main?.branch ?? null,
       isMain: true,
-      label: main?.branch ?? "Project folder",
-      detail: "Project folder · all sessions",
+      label: main?.branch ?? (folders ? "All folders" : "Project folder"),
+      detail: folders ? "Workspace · all sessions" : "Project folder · all sessions",
     },
     ...worktrees.map((tree) => ({
       path: tree.path,
       branch: tree.branch,
       isMain: false,
-      label: tree.branch ?? `Detached ${tree.head.slice(0, 7)}`,
+      label:
+        tree.branch ??
+        folders?.find((folder) => pathKey(folder.path) === pathKey(tree.path))
+          ?.name ??
+        `Detached ${tree.head.slice(0, 7)}`,
       detail: prettyCwd(tree.path),
     })),
   ].filter((tree) =>
@@ -223,11 +229,15 @@ export function SidebarWorktreeSwitcher({
   const focused =
     focus &&
     worktrees.find((tree) => pathKey(tree.path) === pathKey(focus.path));
+  const focusFolder =
+    focus &&
+    folders?.find((folder) => pathKey(folder.path) === pathKey(focus.path))
+      ?.name;
   const title = focus
-    ? (focused?.branch ?? focus.branch ?? "Detached worktree")
+    ? (focused?.branch ?? focus.branch ?? focusFolder ?? "Detached worktree")
     : "Workspace";
   const worktreeTitle = focus
-    ? `${focus.branch ?? "detached"}\n${prettyCwd(focus.path)}`
+    ? `${focus.branch ?? focusFolder ?? "detached"}\n${prettyCwd(focus.path)}`
     : (main?.branch ?? "Project folder");
   const busyIcon =
     pending || creating ? (
@@ -291,7 +301,7 @@ export function SidebarWorktreeSwitcher({
           <span className="min-w-0 truncate">{project.name}</span>
           {focus ? (
             <span className="min-w-0 shrink-[2] truncate font-normal text-content/45">
-              {focused?.branch ?? focus.branch ?? "detached"}
+              {focused?.branch ?? focus.branch ?? focusFolder ?? "detached"}
             </span>
           ) : null}
           {busyIcon ?? (
@@ -350,10 +360,12 @@ export function SidebarWorktreeSwitcher({
                 className="size-4 shrink-0 text-content/55"
                 strokeWidth={1.75}
               />
-              <span className="min-w-0 flex-1 truncate">Switch worktree</span>
+              <span className="min-w-0 flex-1 truncate">
+                {folders ? "Switch folder" : "Switch worktree"}
+              </span>
               <span className="min-w-0 max-w-24 shrink truncate text-[11px] text-content/40">
                 {focus
-                  ? (focused?.branch ?? focus.branch ?? "detached")
+                  ? (focused?.branch ?? focus.branch ?? focusFolder ?? "detached")
                   : (main?.branch ?? "")}
               </span>
               <ChevronRight

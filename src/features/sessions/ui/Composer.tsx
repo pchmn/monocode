@@ -119,6 +119,12 @@ import {
 } from "../../workspace/ui/WorkspacePicker";
 import type { Worktree } from "../../source-control/model/worktrees";
 import { CwdPicker } from "../../projects/ui/CwdPicker";
+import { WorkspaceFolderPicker } from "../../projects/ui/WorkspaceFolderPicker";
+import {
+  askWorkspaceFolder,
+  isCodeWorkspace,
+  workspaceFolderWorktree,
+} from "../../projects/model/codeWorkspace";
 import { FileMentionPicker } from "./FileMentionPicker";
 import { McpServerPicker } from "./McpServerPicker";
 import { FileTypeIcon } from "../../files/ui/FileTypeIcon";
@@ -522,6 +528,7 @@ export function Composer({
   const remote = remoteSession;
   // Local indexes (files, skills) must never read a remote session's path.
   const localCwd = remote ? "" : executionCwd;
+  const codeWorkspace = !remote && isCodeWorkspace(cwd);
   // Inactive tabs stay mounted. Their composers let go of the project listing
   // and pick it up again when shown.
   const fileCwd = enabled ? localCwd : "";
@@ -1323,6 +1330,7 @@ export function Composer({
 
   const submit = (value: string) => {
     if (disabled || worktreeRemoved || submitLockRef.current) return;
+    if (codeWorkspace && sessionId && askWorkspaceFolder(sessionId)) return;
     submitLockRef.current = true;
     void completeSubmit(value).finally(() => {
       submitLockRef.current = false;
@@ -1813,7 +1821,18 @@ export function Composer({
           onClose={() => ref.current?.focus()}
         />
       ) : null}
+      {codeWorkspace && onWorktreeChange ? (
+        <WorkspaceFolderPicker
+          sessionId={sessionId}
+          workspace={cwd}
+          executionCwd={executionCwd}
+          enabled={enabled && !busy}
+          onSelect={(path) => onWorktreeChange(workspaceFolderWorktree(path))}
+          onClose={() => ref.current?.focus()}
+        />
+      ) : null}
       {hideBranchPicker ? null : draftWorkspace &&
+        !codeWorkspace &&
         onWorkspaceModeChange &&
         onWorktreeBaseChange ? (
         <>
@@ -1851,7 +1870,7 @@ export function Composer({
         />
       ) : (
         <>
-          {onWorktreeChange ? (
+          {onWorktreeChange && !codeWorkspace ? (
             <WorkspaceIdentity
               worktree={pathKey(cwd) !== pathKey(executionCwd)}
             />

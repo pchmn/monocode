@@ -14,6 +14,10 @@ import {
   resolveModel,
 } from "./models";
 import { loadProjectProviderSettings } from "./projectProviders";
+import {
+  projectWorkDir,
+  withWorkspaceFolder,
+} from "../../projects/model/codeWorkspace";
 
 export type HarnessId =
   | "claude"
@@ -583,7 +587,7 @@ export function newSession(
   modelSettings?: Record<string, string>,
 ): Session {
   const resolved = resolveModel(harness, model ?? preferredModelId(harness));
-  return {
+  return withWorkspaceFolder({
     id: crypto.randomUUID(),
     harness,
     model: resolved.id,
@@ -592,7 +596,7 @@ export function newSession(
     title: HARNESS_LABEL[harness],
     cwd,
     blocks: [],
-  };
+  });
 }
 
 /** New conversation using the Providers defaults. */
@@ -799,5 +803,5 @@ export function sessionWorkCwd(session: {
   cwd: string;
   worktreeCwd?: string;
 }): string {
-  return session.worktreeCwd || session.cwd;
+  return session.worktreeCwd || projectWorkDir(session.cwd);
 }
