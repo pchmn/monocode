@@ -32,6 +32,16 @@ vi.mock("../../core/child", () => ({
     onExit = exit;
   },
   writeChild,
+  hasHeadlessChildBackend: () => false,
+}));
+
+const subagentLogs = new Map<string, string[]>();
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: async (command: string, args: { agentId: string; offset: number }) => {
+    if (command !== "claude_subagent_log") throw new Error(command);
+    const lines = subagentLogs.get(args.agentId) ?? [];
+    return { lines: lines.slice(args.offset), offset: lines.length };
+  },
 }));
 
 const {
@@ -1396,6 +1406,60 @@ describe("claude subagents", () => {
     expect(events.some((event) => event.type === "message.completed")).toBe(
       true,
     );
+  });
+
+  it("mirrors a backgrounded subagent's trail from its transcript file", async () => {
+    const { events } = await startTurn("s1");
+    subagentLogs.set("t_bg", [
+      JSON.stringify({ type: "user", message: { content: "Brief" } }),
+      JSON.stringify({
+        type: "assistant",
+        message: {
+          id: "msg_sub",
+          content: [
+            { type: "text", text: "Reading the module." },
+            { type: "tool_use", id: "toolu_sub_read", name: "Read", input: { file_path: "/repo/a.ts" } },
+          ],
+        },
+      }),
+      JSON.stringify({
+        type: "user",
+        message: { content: [{ type: "tool_result", tool_use_id: "toolu_sub_read", content: "ok" }] },
+      }),
+    ]);
+    emit({
+      type: "assistant",
+      session_id: "sess_1",
+      message: {
+        content: [
+          { type: "tool_use", id: "toolu_bg", name: "Agent", input: { description: "Review" } },
+        ],
+      },
+    });
+    emit({
+      type: "system",
+      subtype: "task_started",
+      task_id: "t_bg",
+      tool_use_id: "toolu_bg",
+      description: "Review",
+      task_type: "local_agent",
+      is_backgrounded: true,
+    });
+
+    const steps = () =>
+      events.filter(
+        (event): event is Extract<HarnessEvent, { type: "agent.step" }> =>
+          event.type === "agent.step" && event.callId === "toolu_bg",
+      );
+    await waitFor(
+      () => steps().some((step) => step.stepId === "toolu_sub_read" && step.status === "completed"),
+      "subagent steps",
+    );
+    expect(steps().map((step) => step.stepId)).toEqual([
+      "msg_sub:text",
+      "toolu_sub_read",
+      "toolu_sub_read",
+    ]);
   });
 
   it("ignores the empty result a resume emits for a replayed background task", async () => {
