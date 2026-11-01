@@ -35,6 +35,7 @@ import {
   resizeDirection,
   usePanelsSwapped,
 } from "../features/settings/model/panelSide";
+import { useStackedPanels } from "../features/settings/model/stackedPanels";
 import { useIdleSessionDetach } from "./hooks/useIdleSessionDetach";
 import { HarnessEventQueue } from "./model/harnessFlush";
 import { noteStreamApplied } from "../features/sessions/model/streamingPerformance";
@@ -1414,6 +1415,7 @@ function Workspace({
     setRightPanelClosing(!next);
   }, []);
   const panelsSwapped = usePanelsSwapped();
+  const stackedPanels = useStackedPanels();
   const rightPanelResize = useDragResize({
     direction: resizeDirection("tools", panelsSwapped),
     min: RIGHT_PANEL_WIDTH_MIN,
@@ -13895,6 +13897,7 @@ function Workspace({
     !settingsOpen &&
     !monoCovers &&
     !activeAppView &&
+    !stackedPanels &&
     looksLikeProject(sidebarCwd);
   // The right panel grows from the card's edge and pushes the workspace. Its
   // own contents keep their full width and ride its edge.

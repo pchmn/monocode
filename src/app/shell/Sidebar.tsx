@@ -43,6 +43,8 @@ import {
 } from "../../shared/ui/icons";
 import { createPortal } from "react-dom";
 import { useProjectSwipe } from "./useProjectSwipe";
+import { StackedToolsPane } from "./StackedToolsPane";
+import { useStackedPanels } from "../../features/settings/model/stackedPanels";
 import {
   Fragment,
   memo,
@@ -1060,6 +1062,9 @@ function SidebarComponent({
       : null
     : tab;
   const panesOpen = paneHost ? paneTab != null : panelOpen;
+  const stacked = useStackedPanels();
+  const [stackedHost, setStackedHost] = useState<HTMLDivElement | null>(null);
+  const toolsHost = stacked ? stackedHost : paneHost?.host;
   const explorer = useRef<{ cwd: string; rootLabel?: string } | null>(null);
   if (panesOpen && paneTab === "files") {
     explorer.current = { cwd: gitRoot, rootLabel: explorerRootLabel };
@@ -3234,6 +3239,9 @@ function SidebarComponent({
           onClose={() => setLinkingSession(null)}
         />
       ) : null}
+      {stacked && paneHost ? (
+        <StackedToolsPane onHost={setStackedHost} shown={!!paneTab} />
+      ) : null}
       <div
         role="separator"
         aria-orientation="vertical"
@@ -3346,7 +3354,7 @@ function SidebarComponent({
     >
       {rails}
       {sidebarVisible ? sidebarContent : null}
-      {paneHost?.host && paneTab
+      {paneHost && toolsHost && paneTab
         ? createPortal(
             <RightPanel
               tab={paneHost.tab}
@@ -3362,7 +3370,7 @@ function SidebarComponent({
               {changesPane}
               {graphPane}
             </RightPanel>,
-            paneHost.host,
+            toolsHost,
           )
         : null}
       {drawerRendered ? (
