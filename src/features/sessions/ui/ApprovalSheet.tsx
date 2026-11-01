@@ -27,7 +27,10 @@ export function ApprovalSheet({ blocks, cwd, onApproval }: Props) {
   const live = useRef({ selected, onApproval });
   live.current = { selected, onApproval };
 
-  useEffect(() => setSelected(0), [requestId]);
+  useEffect(() => {
+    setSelected(0);
+    listboxRef.current?.focus({ preventScroll: true });
+  }, [requestId]);
 
   useEffect(() => {
     if (requestId === undefined) return;
