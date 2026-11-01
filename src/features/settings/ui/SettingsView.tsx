@@ -438,6 +438,7 @@ import {
   saveSwapSidePanels,
   subscribeSwapSidePanels,
 } from "../model/panelSide";
+import { useStopSessionsOnTabClose } from "../../sessions/model/stopOnTabClose";
 
 /**
  * The `data-setting-id` Settings should reveal when it opens: one of the ids in
@@ -853,6 +854,7 @@ function GeneralPage({
   const [notificationPermission, setNotificationPermission] =
     useState<NotificationPermission>(cachedNotificationPermission);
   const [notesEnabled, setNotesEnabled] = useState(loadNotesEnabled);
+  const [stopOnTabClose, setStopOnTabClose] = useStopSessionsOnTabClose();
   const [liveAgentsEnabled, setLiveAgentsEnabled] = useState(
     loadLiveAgentsEnabled,
   );
@@ -995,6 +997,17 @@ function GeneralPage({
             label="Tab animations"
             on={tabAnimationsEnabled}
             onChange={onTabAnimationsEnabled}
+          />
+        </Row>
+        <Row
+          id="stop-sessions-on-tab-close"
+          label="Stop sessions when closing their tab"
+          description="Closing a session's tab stops its agent and the tasks it left running in the background, as closing a terminal would. An agent still working asks first. The session stays in your history."
+        >
+          <Toggle
+            label="Stop sessions when closing their tab"
+            on={stopOnTabClose}
+            onChange={setStopOnTabClose}
           />
         </Row>
         <Row

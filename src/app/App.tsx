@@ -118,6 +118,7 @@ import {
   isBackgroundOnly,
   usePublishBackgroundTasks,
 } from "../features/sessions/model/backgroundTasks";
+import { sessionsToStopOnClose } from "../features/sessions/model/stopOnTabClose";
 import { ResourcePressureNotice } from "../features/notifications/ui/ResourcePressureNotice";
 import { HarnessUpdateNotice } from "../features/providers/ui/HarnessUpdateNotice";
 import { NewLayoutNotice } from "./shell/NewLayoutNotice";
@@ -3609,7 +3610,14 @@ function Workspace({
           const ok = await confirmCloseTerminals(terminals);
           if (!ok) return;
         }
+        const stopping = await sessionsToStopOnClose(
+          sessionsRef.current,
+          leafIds(closing.layout),
+        );
+        if (!stopping) return;
         finishClose();
+        for (const sessionId of stopping)
+          void stopSessionRef.current(sessionId);
       })();
     },
     [activateTab, persistSession, refreshHistory, sidebarCwd, tabCloseScope],
@@ -3676,7 +3684,14 @@ function Workspace({
           const ok = await confirmCloseTerminals(terminals);
           if (!ok) return;
         }
+        const stopping = await sessionsToStopOnClose(
+          sessionsRef.current,
+          closing.flatMap((tab) => leafIds(tab.layout)),
+        );
+        if (!stopping) return;
         finishClose();
+        for (const sessionId of stopping)
+          void stopSessionRef.current(sessionId);
       })();
     },
     [activateTab, persistSession, refreshHistory, sidebarCwd],
@@ -3985,8 +4000,15 @@ function Workspace({
       // A view tab opens in a transition; clearing alongside it keeps the
       // blank tab from painting before the view.
       const finishClear = () => {
-        if (neighborId && isViewTab(neighborId)) startTransition(clear);
-        else clear();
+        void sessionsToStopOnClose(sessionsRef.current, [oldSession.id]).then(
+          (stopping) => {
+            if (!stopping) return;
+            if (neighborId && isViewTab(neighborId)) startTransition(clear);
+            else clear();
+            for (const sessionId of stopping)
+              void stopSessionRef.current(sessionId);
+          },
+        );
       };
 
       // The caller already confirmed unsaved files.
