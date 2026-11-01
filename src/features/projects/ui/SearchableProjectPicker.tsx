@@ -4,6 +4,7 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
+import { pickCodeWorkspace } from "../model/codeWorkspace";
 import { useTabGroupLogos } from "../hooks/useTabGroupLogos";
 import { useProjectAppearance } from "../hooks/useProjectAppearance";
 import { basename } from "../../../platform/tauri/fs";
@@ -63,7 +64,6 @@ type Props = {
   compact?: boolean;
   onSelectProject: (path: string) => void;
   onOpenProject?: () => void;
-  onOpenCodeWorkspace?: () => void;
   /** Opens the project's context menu; the search input receives focus back. */
   onProjectContextMenu?: (
     path: string,
@@ -89,7 +89,6 @@ export function SearchableProjectPicker({
   compact = false,
   onSelectProject,
   onOpenProject,
-  onOpenCodeWorkspace,
   onProjectContextMenu,
   projectMenuActive = false,
   monos,
@@ -214,7 +213,6 @@ export function SearchableProjectPicker({
           onDismiss={closePicker}
           onSelectProject={onSelectProject}
           onOpenProject={onOpenProject}
-          onOpenCodeWorkspace={onOpenCodeWorkspace}
           onProjectContextMenu={onProjectContextMenu}
           projectMenuActive={projectMenuActive}
           monos={monos}
@@ -246,7 +244,6 @@ type ProjectPickerPopoverProps = Pick<
   Props,
   | "onSelectProject"
   | "onOpenProject"
-  | "onOpenCodeWorkspace"
   | "onProjectContextMenu"
   | "projectMenuActive"
   | "monos"
@@ -270,7 +267,6 @@ export function ProjectPickerPopover({
   onDismiss,
   onSelectProject,
   onOpenProject,
-  onOpenCodeWorkspace,
   onProjectContextMenu,
   projectMenuActive = false,
   monos,
@@ -558,12 +554,13 @@ export function ProjectPickerPopover({
               <span>New project</span>
             </button>
           ) : null}
-          {onOpenCodeWorkspace ? (
+          {onOpenProject ? (
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 onDismiss();
-                onOpenCodeWorkspace();
+                const path = await pickCodeWorkspace();
+                if (path) onSelectProject(path);
               }}
               className="flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-[13px] text-content/75 hover:bg-content/8 hover:text-content"
             >

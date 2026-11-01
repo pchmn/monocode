@@ -1016,44 +1016,43 @@ export const FileTree = memo(function FileTree({
         onKeyDown={onKeyDown}
         onContextMenu={onBackgroundMenu}
       >
-        {workspaceRoot ? null : (
-          <PaneHeader
-            compact={compactHeader}
-            role="toolbar"
-            aria-label="Explorer"
-            onContextMenu={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
+        <PaneHeader
+          className={workspaceRoot ? "hidden" : ""}
+          compact={compactHeader}
+          role="toolbar"
+          aria-label="Explorer"
+          onContextMenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
+          <HeaderIcon label="New File" onClick={() => startCreate(false)}>
+            <FilePlus className="size-3.5" strokeWidth={1.75} />
+          </HeaderIcon>
+          <HeaderIcon label="New Folder" onClick={() => startCreate(true)}>
+            <FolderPlus className="size-3.5" strokeWidth={1.75} />
+          </HeaderIcon>
+          <HeaderIcon
+            label="Collapse All"
+            onClick={() => {
+              setCreating(null);
+              setRenaming(null);
+              const next = new Set([cwd]);
+              saveExpanded(cwd, next);
+              setExpanded(next);
             }}
           >
-            <HeaderIcon label="New File" onClick={() => startCreate(false)}>
-              <FilePlus className="size-3.5" strokeWidth={1.75} />
-            </HeaderIcon>
-            <HeaderIcon label="New Folder" onClick={() => startCreate(true)}>
-              <FolderPlus className="size-3.5" strokeWidth={1.75} />
-            </HeaderIcon>
+            <FoldVertical className="size-3.5" strokeWidth={1.75} />
+          </HeaderIcon>
+          {onSearch ? (
             <HeaderIcon
-              label="Collapse All"
-              onClick={() => {
-                setCreating(null);
-                setRenaming(null);
-                const next = new Set([cwd]);
-                saveExpanded(cwd, next);
-                setExpanded(next);
-              }}
+              label={`Search in files (${MOD}Shift+F)`}
+              onClick={onSearch}
             >
-              <FoldVertical className="size-3.5" strokeWidth={1.75} />
+              <Search className="size-3.5" strokeWidth={1.75} />
             </HeaderIcon>
-            {onSearch ? (
-              <HeaderIcon
-                label={`Search in files (${MOD}Shift+F)`}
-                onClick={onSearch}
-              >
-                <Search className="size-3.5" strokeWidth={1.75} />
-              </HeaderIcon>
-            ) : null}
-          </PaneHeader>
-        )}
+          ) : null}
+        </PaneHeader>
         <div
           className={`flex shrink-0 items-center ${workspaceRoot ? "h-7.5" : "h-8"}`}
         >
@@ -1087,21 +1086,17 @@ export const FileTree = memo(function FileTree({
               )}
             </span>
             {workspaceRoot ? (
-              <>
-                <span className="grid size-4 shrink-0 place-items-center text-content/60">
-                  <span
-                    className={`size-2.5 rounded-full border-[1.5px] border-current ${rootOpen ? "" : "bg-current"}`}
-                  />
-                </span>
-                <span className="min-w-0 truncate text-[14px] leading-label text-content">
-                  {name}
-                </span>
-              </>
-            ) : (
-              <span className="min-w-0 truncate text-[11px] font-semibold tracking-[0.08em] text-content/50 uppercase">
-                {name}
+              <span className="grid size-4 shrink-0 place-items-center text-content/60">
+                <span
+                  className={`size-2.5 rounded-full border-[1.5px] border-current ${rootOpen ? "" : "bg-current"}`}
+                />
               </span>
-            )}
+            ) : null}
+            <span
+              className={`min-w-0 truncate ${workspaceRoot ? "text-[14px] leading-label text-content" : "text-[11px] font-semibold tracking-[0.08em] text-content/50 uppercase"}`}
+            >
+              {name}
+            </span>
           </button>
         </div>
         <div

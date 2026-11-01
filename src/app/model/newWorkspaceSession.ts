@@ -14,11 +14,7 @@ export function newWorkspaceSession(
   return {
     ...newDefaultSession(project, runtimeMode),
     ...(focus && !sameProjectPath(focus.path, project)
-      ? {
-          worktreeCwd: focus.path,
-          branch: focus.branch ?? undefined,
-          workspaceFolderPending: undefined,
-        }
+      ? { worktreeCwd: focus.path, branch: focus.branch ?? undefined }
       : {}),
   };
 }

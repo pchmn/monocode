@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { open } from "@tauri-apps/plugin-dialog";
 import { readTextFile } from "../../../platform/tauri/fs";
 import {
   joinPath,
@@ -7,6 +8,8 @@ import {
   slash,
 } from "../../../shared/lib/paths";
 import { REMOTE_PATH_PREFIX } from "../../../shared/lib/remotePaths";
+import { worktreeFocus } from "../../source-control/model/worktreeFocus";
+import type { Worktree, Worktrees } from "../../source-control/model/worktrees";
 
 export type CodeWorkspaceFolder = { path: string; name: string };
 
@@ -121,8 +124,110 @@ export function useCodeWorkspaceFolders(
   );
 }
 
+/** Starts a workspace session in the sidebar's folder, or in the first one until the user picks. */
+export function withWorkspaceFolder<
+  T extends { id: string; cwd: string; worktreeCwd?: string },
+>(session: T): T {
+  if (!isCodeWorkspace(session.cwd)) return session;
+  const focus = worktreeFocus(session.cwd);
+  const folder = focus?.path ?? projectWorkDir(session.cwd);
+  if (folder === session.cwd) return session;
+  if (!focus) setWorkspaceFolderPending(session.id, true);
+  return { ...session, worktreeCwd: folder };
+}
+
 /** The folder something keyed by `project` should run in: a workspace has no directory of its own. */
 export function projectWorkDir(project: string): string {
   if (!isCodeWorkspace(project)) return project;
   return codeWorkspaceFolders(project)?.[0]?.path ?? project;
+}
+
+export async function pickCodeWorkspace(): Promise<string | null> {
+  const selected = await open({
+    directory: false,
+    multiple: false,
+    title: "Open VS Code workspace",
+    filters: [{ name: "VS Code workspace", extensions: ["code-workspace"] }],
+  });
+  if (typeof selected !== "string" || !selected) return null;
+  // The project's first session needs the folders to pick a working directory.
+  await loadCodeWorkspace(slash(selected));
+  return slash(selected);
+}
+
+// Sessions still on their default folder: the composer asks before the first send.
+const pendingFolders = new Set<string>();
+const pendingListeners = new Set<() => void>();
+
+export function setWorkspaceFolderPending(sessionId: string, pending: boolean) {
+  if (pendingFolders.has(sessionId) === pending) return;
+  if (pending) pendingFolders.add(sessionId);
+  else pendingFolders.delete(sessionId);
+  for (const listener of pendingListeners) listener();
+}
+
+export function isWorkspaceFolderPending(sessionId: string): boolean {
+  return pendingFolders.has(sessionId);
+}
+
+const folderAsks = new Map<string, number>();
+
+/** Opens the session's folder picker when its folder is still unconfirmed; true if it did. */
+export function askWorkspaceFolder(sessionId: string): boolean {
+  if (!pendingFolders.has(sessionId)) return false;
+  folderAsks.set(sessionId, (folderAsks.get(sessionId) ?? 0) + 1);
+  for (const listener of pendingListeners) listener();
+  return true;
+}
+
+export function useWorkspaceFolderAsks(sessionId: string | undefined) {
+  return useSyncExternalStore(
+    (listener) => {
+      pendingListeners.add(listener);
+      return () => pendingListeners.delete(listener);
+    },
+    () => (sessionId ? (folderAsks.get(sessionId) ?? 0) : 0),
+  );
+}
+
+export function useWorkspaceFolderPending(sessionId: string | undefined) {
+  return useSyncExternalStore(
+    (listener) => {
+      pendingListeners.add(listener);
+      return () => pendingListeners.delete(listener);
+    },
+    () => !!sessionId && pendingFolders.has(sessionId),
+  );
+}
+
+export function workspaceFolderWorktree(
+  path: string,
+  isMain = false,
+): Worktree {
+  return {
+    path,
+    branch: null,
+    head: "",
+    isMain,
+    locked: false,
+    prunable: false,
+    missing: false,
+    dirty: null,
+    unpushed: null,
+    sessionIds: [],
+  };
+}
+
+/** A workspace's folders as its working copies; the file itself stands for "all folders". */
+export async function listCodeWorkspaceFolders(
+  file: string,
+): Promise<Worktrees> {
+  const folders = await loadCodeWorkspace(file);
+  return {
+    worktrees: [
+      workspaceFolderWorktree(file, true),
+      ...folders.map((folder) => workspaceFolderWorktree(folder.path)),
+    ],
+    defaultRoot: "",
+  };
 }

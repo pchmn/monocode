@@ -5,7 +5,7 @@ vi.mock("../../../platform/tauri/fs", () => ({
     '{ "folders": [{ "path": "api" }, { "path": "web" }] }',
 }));
 
-import { loadCodeWorkspace } from "./codeWorkspace";
+import { isWorkspaceFolderPending, loadCodeWorkspace } from "./codeWorkspace";
 import { newSession, sessionWorkCwd } from "../../sessions/model/session";
 
 describe("workspace sessions", () => {
@@ -15,7 +15,7 @@ describe("workspace sessions", () => {
     const session = newSession("claude", file);
     expect(session.cwd).toBe(file);
     expect(session.worktreeCwd).toBe("/me/sabri/api");
-    expect(session.workspaceFolderPending).toBe(true);
+    expect(isWorkspaceFolderPending(session.id)).toBe(true);
     expect(sessionWorkCwd({ cwd: file })).toBe("/me/sabri/api");
   });
 });

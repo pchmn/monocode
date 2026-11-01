@@ -234,7 +234,6 @@ import {
   basename,
   homeDir,
   notifyGitChanged,
-  pickCodeWorkspace,
   pickFolders,
   type GitFileDiffKind,
   type GitHistoryCommit,
@@ -6463,20 +6462,8 @@ function Workspace({
   );
 
   const onComposerWorktreeChange = useCallback(
-    async (sessionId: string, tree: Worktree) => {
-      await onWorktreeChange(sessionId, tree, true);
-      // Picking the default folder moves nothing but still answers the question.
-      if (
-        !sessionsRef.current.some(
-          (s) => s.id === sessionId && s.workspaceFolderPending,
-        )
-      )
-        return;
-      sessionsRef.current = sessionsRef.current.map((s) =>
-        s.id === sessionId ? { ...s, workspaceFolderPending: undefined } : s,
-      );
-      setSessions(sessionsRef.current);
-    },
+    (sessionId: string, tree: Worktree) =>
+      onWorktreeChange(sessionId, tree, true),
     [onWorktreeChange],
   );
 
@@ -6588,14 +6575,6 @@ function Workspace({
     // Several folders can be taken at once; each opens as its own project, and
     // the last one selected ends up focused.
     openProjects(await pickFolders());
-  }, [openProjects]);
-
-  const pickCodeWorkspaceProject = useCallback(async () => {
-    const path = await pickCodeWorkspace();
-    if (!path) return;
-    // Its first session needs the folders to pick a working directory.
-    await loadCodeWorkspace(path);
-    openProjects([path]);
   }, [openProjects]);
 
   useEffect(() => {
@@ -12936,7 +12915,6 @@ function Workspace({
     onOpenInbox,
     onOpenNotes,
     pickProject,
-    pickCodeWorkspaceProject,
     onNewTerminal,
     onNewTerminalTab,
     onToggleProjectTerminal,
@@ -12969,7 +12947,6 @@ function Workspace({
     onOpenInbox,
     onOpenNotes,
     pickProject,
-    pickCodeWorkspaceProject,
     onNewTerminal,
     onNewTerminalTab,
     onToggleProjectTerminal,
@@ -13264,9 +13241,6 @@ function Workspace({
       ),
       listen("open_project", () => {
         void actions.current.pickProject();
-      }),
-      listen("open_code_workspace", () => {
-        void actions.current.pickCodeWorkspaceProject();
       }),
       listen("go_to_file", () => run("go_to_file", actions.current.onGoToFile)),
       listen("open_command_palette", () =>
@@ -14141,7 +14115,6 @@ function Workspace({
       onSelectAgent={onSelectLiveAgent}
       onSelectProject={onSelectProject}
       onOpenProject={pickProject}
-      onOpenCodeWorkspace={pickCodeWorkspaceProject}
       onRemoveProject={onRemoveProject}
       monos={sidebarMonos}
       monoViewActive={monoCovers}
@@ -14304,7 +14277,6 @@ function Workspace({
                         onCloseOtherTabs={onCloseOtherTabs}
                         onCloseAllTabs={onCloseAllTabs}
                         onPickProject={pickProject}
-                        onPickCodeWorkspace={pickCodeWorkspaceProject}
                         onFindInProject={onFindInProject}
                         onSearch={onOpenSearch}
                         onOpenInbox={onOpenInbox}

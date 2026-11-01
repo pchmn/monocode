@@ -1,31 +1,38 @@
-import { useRef, useState } from "react";
-import { useCodeWorkspaceFolders } from "../model/codeWorkspace";
+import { useEffect, useRef, useState } from "react";
+import {
+  setWorkspaceFolderPending,
+  useCodeWorkspaceFolders,
+  useWorkspaceFolderAsks,
+  useWorkspaceFolderPending,
+} from "../model/codeWorkspace";
 import { pathKey, prettyCwd } from "../../../shared/lib/paths";
 import { Popover } from "../../../shared/ui/Popover";
 import { Check, Folder } from "../../../shared/ui/icons";
 
 /** Which folder of a VS Code workspace the session runs in. */
 export function WorkspaceFolderPicker({
+  sessionId,
   workspace,
   executionCwd,
-  pending,
-  open,
-  onOpenChange,
   enabled,
   onSelect,
   onClose,
 }: {
+  sessionId?: string;
   workspace: string;
   executionCwd: string;
-  /** Still on the default folder: nothing is marked until the user picks one. */
-  pending: boolean;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   enabled: boolean;
   onSelect: (path: string) => Promise<void>;
   onClose?: () => void;
 }) {
   const folders = useCodeWorkspaceFolders(workspace) ?? [];
+  // Still on the default folder: nothing is marked until the user picks one.
+  const pending = useWorkspaceFolderPending(sessionId);
+  const asks = useWorkspaceFolderAsks(sessionId);
+  const [open, onOpenChange] = useState(pending);
+  useEffect(() => {
+    if (asks) onOpenChange(true);
+  }, [asks]);
   const [error, setError] = useState<string>();
   const anchor = useRef<HTMLDivElement>(null);
   const current = pending
@@ -39,6 +46,7 @@ export function WorkspaceFolderPicker({
   const select = async (path: string) => {
     try {
       await onSelect(path);
+      if (sessionId) setWorkspaceFolderPending(sessionId, false);
       close();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

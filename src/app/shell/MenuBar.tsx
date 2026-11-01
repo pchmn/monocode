@@ -29,7 +29,6 @@ type Props = {
   onCloseOtherTabs?: () => void;
   onCloseAllTabs?: () => void;
   onPickProject?: () => void;
-  onPickCodeWorkspace?: () => void;
   onFindInProject?: () => void;
   onSearch?: () => void;
   onOpenInbox?: () => void;
@@ -51,7 +50,6 @@ export function MenuBar({
   onCloseOtherTabs,
   onCloseAllTabs,
   onPickProject,
-  onPickCodeWorkspace,
   onFindInProject,
   onSearch,
   onOpenInbox,
@@ -155,9 +153,6 @@ export function MenuBar({
         case "open_project":
           onPickProject?.();
           break;
-        case "open_code_workspace":
-          onPickCodeWorkspace?.();
-          break;
         case "open_search":
           onSearch?.();
           break;
@@ -225,7 +220,6 @@ export function MenuBar({
       onNewTerminal,
       onToggleTerminal,
       onPickProject,
-      onPickCodeWorkspace,
       onSearch,
       onOpenInbox,
       onOpenNotes,
@@ -273,11 +267,6 @@ export function MenuBar({
             id: "open_project",
             label: "Open Project…",
             shortcut: shortcut("App: Open Project", `${MOD}O`),
-          },
-          {
-            kind: "item",
-            id: "open_code_workspace",
-            label: "Open VS Code Workspace…",
           },
           {
             kind: "item",

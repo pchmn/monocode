@@ -14,7 +14,10 @@ import {
   resolveModel,
 } from "./models";
 import { loadProjectProviderSettings } from "./projectProviders";
-import { projectWorkDir } from "../../projects/model/codeWorkspace";
+import {
+  projectWorkDir,
+  withWorkspaceFolder,
+} from "../../projects/model/codeWorkspace";
 
 export type HarnessId =
   | "claude"
@@ -504,8 +507,6 @@ export type Session = {
   branch?: string;
   /** Selected working copy; cwd remains the project identity. */
   worktreeCwd?: string;
-  /** A VS Code workspace session still on its default folder; the composer asks before the first send. */
-  workspaceFolderPending?: boolean;
   /** Blank-composer choice; consumed when the first turn starts. */
   workspaceMode?: WorkspaceMode;
   /** Base ref for a worktree that will be created on first send. */
@@ -586,7 +587,7 @@ export function newSession(
   modelSettings?: Record<string, string>,
 ): Session {
   const resolved = resolveModel(harness, model ?? preferredModelId(harness));
-  return {
+  return withWorkspaceFolder({
     id: crypto.randomUUID(),
     harness,
     model: resolved.id,
@@ -595,10 +596,7 @@ export function newSession(
     title: HARNESS_LABEL[harness],
     cwd,
     blocks: [],
-    ...(projectWorkDir(cwd) !== cwd
-      ? { worktreeCwd: projectWorkDir(cwd), workspaceFolderPending: true }
-      : {}),
-  };
+  });
 }
 
 /** New conversation using the Providers defaults. */

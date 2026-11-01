@@ -726,7 +726,6 @@ const LocalSessionPane = memo(function LocalSessionPane({
           : (isEmpty || !!session.workspaceMode) && !session.worktreeCwd)
       }
       workspaceMode={session.workspaceMode}
-      workspaceFolderPending={session.workspaceFolderPending}
       worktreeBase={session.worktreeBase}
       onWorkspaceModeChange={(mode, base) =>
         onWorkspaceModeChange(session.id, mode, base)
