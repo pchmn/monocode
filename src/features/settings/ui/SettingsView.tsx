@@ -289,6 +289,7 @@ import {
   githubStatus,
   type GithubStatus,
 } from "../../inbox/model/githubTasks";
+import { GithubAccountsList } from "../../inbox/ui/GithubAccountsList";
 import {
   disconnectGitlab,
   gitlabConnected,
@@ -1453,6 +1454,7 @@ function GithubSettings() {
           {checking ? "Checking" : "Check again"}
         </SecondaryButton>
       </Row>
+      {status?.connected ? <GithubAccountsList /> : null}
       {error ? (
         <p className="border-b border-content/5 px-4 pb-3 text-[12px] text-red-400/90 last:border-b-0">
           {error}
