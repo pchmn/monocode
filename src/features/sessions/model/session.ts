@@ -504,6 +504,8 @@ export type Session = {
   branch?: string;
   /** Selected working copy; cwd remains the project identity. */
   worktreeCwd?: string;
+  /** A VS Code workspace session still on its default folder; the composer asks before the first send. */
+  workspaceFolderPending?: boolean;
   /** Blank-composer choice; consumed when the first turn starts. */
   workspaceMode?: WorkspaceMode;
   /** Base ref for a worktree that will be created on first send. */
@@ -594,7 +596,7 @@ export function newSession(
     cwd,
     blocks: [],
     ...(projectWorkDir(cwd) !== cwd
-      ? { worktreeCwd: projectWorkDir(cwd) }
+      ? { worktreeCwd: projectWorkDir(cwd), workspaceFolderPending: true }
       : {}),
   };
 }

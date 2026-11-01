@@ -8,25 +8,31 @@ import { Check, Folder } from "../../../shared/ui/icons";
 export function WorkspaceFolderPicker({
   workspace,
   executionCwd,
+  pending,
+  open,
+  onOpenChange,
   enabled,
   onSelect,
   onClose,
 }: {
   workspace: string;
   executionCwd: string;
+  /** Still on the default folder: nothing is marked until the user picks one. */
+  pending: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   enabled: boolean;
   onSelect: (path: string) => Promise<void>;
   onClose?: () => void;
 }) {
   const folders = useCodeWorkspaceFolders(workspace) ?? [];
-  const [open, setOpen] = useState(false);
   const [error, setError] = useState<string>();
   const anchor = useRef<HTMLDivElement>(null);
-  const current = folders.find(
-    (folder) => pathKey(folder.path) === pathKey(executionCwd),
-  );
+  const current = pending
+    ? undefined
+    : folders.find((folder) => pathKey(folder.path) === pathKey(executionCwd));
   const close = () => {
-    setOpen(false);
+    onOpenChange(false);
     setError(undefined);
     onClose?.();
   };
@@ -48,8 +54,8 @@ export function WorkspaceFolderPicker({
         aria-label="Choose workspace folder"
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={() => (open ? close() : setOpen(true))}
-        className="-ml-1.5 flex h-6 min-w-0 max-w-64 items-center gap-1.5 rounded-md px-1.5 text-[12px] text-content/55 hover:bg-content/8 hover:text-content aria-expanded:bg-content/8 aria-expanded:text-content disabled:opacity-40 disabled:hover:bg-transparent active:scale-[0.97]"
+        onClick={() => (open ? close() : onOpenChange(true))}
+        className={`-ml-1.5 flex h-6 min-w-0 max-w-64 items-center gap-1.5 rounded-md px-1.5 text-[12px] ${pending ? "text-accent" : "text-content/55"} hover:bg-content/8 hover:text-content aria-expanded:bg-content/8 aria-expanded:text-content disabled:opacity-40 disabled:hover:bg-transparent active:scale-[0.97]`}
       >
         <Folder className="size-3.5 shrink-0" />
         <span className="min-w-0 flex-1 truncate">

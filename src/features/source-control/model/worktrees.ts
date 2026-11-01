@@ -256,6 +256,7 @@ export function sessionInWorktree(session: Session, tree: Worktree): Session {
   return {
     ...target,
     worktreeRemoved: undefined,
+    workspaceFolderPending: undefined,
     worktreeCwd:
       pathKey(tree.path) === pathKey(session.cwd) ? undefined : tree.path,
     branch: tree.branch ?? undefined,

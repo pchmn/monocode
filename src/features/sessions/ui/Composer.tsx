@@ -278,6 +278,7 @@ type Props = {
   onWorktreeChange?: (tree: Worktree) => Promise<void>;
   draftWorkspace?: boolean;
   workspaceMode?: WorkspaceMode;
+  workspaceFolderPending?: boolean;
   worktreeBase?: string;
   onWorkspaceModeChange?: (mode: WorkspaceMode, base?: string) => void;
   onWorktreeBaseChange?: (base: string) => void;
@@ -406,6 +407,7 @@ export function Composer({
   onWorktreeChange,
   draftWorkspace = false,
   workspaceMode,
+  workspaceFolderPending = false,
   worktreeBase,
   onWorkspaceModeChange,
   onWorktreeBaseChange,
@@ -528,6 +530,9 @@ export function Composer({
   // Local indexes (files, skills) must never read a remote session's path.
   const localCwd = remote ? "" : executionCwd;
   const codeWorkspace = !remote && isCodeWorkspace(cwd);
+  const [folderPickerOpen, setFolderPickerOpen] = useState(
+    codeWorkspace && workspaceFolderPending,
+  );
   // Inactive tabs stay mounted. Their composers let go of the project listing
   // and pick it up again when shown.
   const fileCwd = enabled ? localCwd : "";
@@ -1329,6 +1334,10 @@ export function Composer({
 
   const submit = (value: string) => {
     if (disabled || worktreeRemoved || submitLockRef.current) return;
+    if (codeWorkspace && workspaceFolderPending && onWorktreeChange) {
+      setFolderPickerOpen(true);
+      return;
+    }
     submitLockRef.current = true;
     void completeSubmit(value).finally(() => {
       submitLockRef.current = false;
@@ -1823,6 +1832,9 @@ export function Composer({
         <WorkspaceFolderPicker
           workspace={cwd}
           executionCwd={executionCwd}
+          pending={workspaceFolderPending}
+          open={folderPickerOpen}
+          onOpenChange={setFolderPickerOpen}
           enabled={enabled && !busy}
           onSelect={(path) => onWorktreeChange(workspaceFolderWorktree(path))}
           onClose={() => ref.current?.focus()}

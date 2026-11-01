@@ -6463,8 +6463,20 @@ function Workspace({
   );
 
   const onComposerWorktreeChange = useCallback(
-    (sessionId: string, tree: Worktree) =>
-      onWorktreeChange(sessionId, tree, true),
+    async (sessionId: string, tree: Worktree) => {
+      await onWorktreeChange(sessionId, tree, true);
+      // Picking the default folder moves nothing but still answers the question.
+      if (
+        !sessionsRef.current.some(
+          (s) => s.id === sessionId && s.workspaceFolderPending,
+        )
+      )
+        return;
+      sessionsRef.current = sessionsRef.current.map((s) =>
+        s.id === sessionId ? { ...s, workspaceFolderPending: undefined } : s,
+      );
+      setSessions(sessionsRef.current);
+    },
     [onWorktreeChange],
   );
 
@@ -14129,6 +14141,7 @@ function Workspace({
       onSelectAgent={onSelectLiveAgent}
       onSelectProject={onSelectProject}
       onOpenProject={pickProject}
+      onOpenCodeWorkspace={pickCodeWorkspaceProject}
       onRemoveProject={onRemoveProject}
       monos={sidebarMonos}
       monoViewActive={monoCovers}

@@ -375,6 +375,7 @@ type Props = {
   onSelectAgent?: (sessionId: string) => void;
   onSelectProject?: (path: string) => void;
   onOpenProject?: () => void;
+  onOpenCodeWorkspace?: () => void;
   onRemoveProject?: (path: string, options: { purgeData: boolean }) => void;
   onNew?: () => string | void;
   onNewTerminal?: () => void;
@@ -445,7 +446,7 @@ function WorkspaceFolderTree({
       <FileTree
         cwd={folder.path}
         rootLabel={folder.name}
-        hideHeader
+        workspaceRoot
         gitStatuses={gitStatuses}
         {...actions}
       />
@@ -514,6 +515,7 @@ function SidebarComponent({
   onSelectAgent,
   onSelectProject,
   onOpenProject,
+  onOpenCodeWorkspace,
   onRemoveProject,
   onNew,
   onSearch,
@@ -2210,6 +2212,7 @@ function SidebarComponent({
                 onDismiss={onClose}
                 onSelectProject={onSelectProject}
                 onOpenProject={onOpenProject}
+                onOpenCodeWorkspace={onOpenCodeWorkspace}
                 onProjectContextMenu={headerProjectMenu.open}
                 projectMenuActive={headerProjectMenu.isActive}
               />
@@ -2667,6 +2670,7 @@ function SidebarComponent({
               busy={projectPathBusy(busyProjectPaths, cwd)}
               onSelectProject={onSelectProject}
               onOpenProject={onOpenProject}
+              onOpenCodeWorkspace={onOpenCodeWorkspace}
               onRemoveProject={onRemoveProject}
               onNew={onNew}
               onSearch={onSearch}
@@ -3301,6 +3305,7 @@ function SidebarComponent({
           inboxUnseen={inboxUnseen}
           onSelectProject={onSelectProject}
           onOpenProject={onOpenProject}
+          onOpenCodeWorkspace={onOpenCodeWorkspace}
           onRemoveProject={onRemoveProject}
           onTabChange={onCompactTabPick}
           onSearch={onSearch}
@@ -3482,6 +3487,7 @@ function SidebarProjectPicker({
   busy,
   onSelectProject,
   onOpenProject,
+  onOpenCodeWorkspace,
   onRemoveProject,
   onNew,
   onSearch,
@@ -3500,6 +3506,7 @@ function SidebarProjectPicker({
   busy: boolean;
   onSelectProject: (path: string) => void;
   onOpenProject?: () => void;
+  onOpenCodeWorkspace?: () => void;
   onRemoveProject?: Props["onRemoveProject"];
   onNew?: () => string | void;
   onSearch?: () => void;
@@ -3529,6 +3536,7 @@ function SidebarProjectPicker({
         className="flex-1"
         onSelectProject={onSelectProject}
         onOpenProject={onOpenProject}
+        onOpenCodeWorkspace={onOpenCodeWorkspace}
         onRemoveProject={onRemoveProject}
         onOpenNotificationSettings={onOpenNotificationSettings}
       />
@@ -3616,6 +3624,7 @@ function CompactProjectRail({
   inboxUnseen,
   onSelectProject,
   onOpenProject,
+  onOpenCodeWorkspace,
   onRemoveProject,
   onTabChange,
   onSearch,
@@ -3649,6 +3658,7 @@ function CompactProjectRail({
   inboxUnseen: boolean;
   onSelectProject?: (path: string) => void;
   onOpenProject?: () => void;
+  onOpenCodeWorkspace?: () => void;
   onRemoveProject?: Props["onRemoveProject"];
   onTabChange: (tab: SidebarTab) => void;
   onSearch?: () => void;
@@ -3779,6 +3789,7 @@ function CompactProjectRail({
             className="w-full justify-center"
             onSelectProject={onSelectProject}
             onOpenProject={onOpenProject}
+            onOpenCodeWorkspace={onOpenCodeWorkspace}
             onRemoveProject={onRemoveProject}
             onOpenNotificationSettings={onOpenNotificationSettings}
             monos={pickerMonos}
