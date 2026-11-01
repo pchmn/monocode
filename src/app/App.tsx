@@ -4669,6 +4669,9 @@ function Workspace({
     );
     if (!tab) return false;
     loadedSessionCache.current.delete(sessionId);
+    // Title tabs are filtered by projectCwd; leaving it stale hides the focused tab.
+    const cwd = sessionsRef.current.find((s) => s.id === sessionId)?.cwd;
+    if (cwd && looksLikeProject(cwd)) setProjectCwd(normalizeProjectPath(cwd));
     setActiveTabId(tab.id);
     setTabs((prev) =>
       prev.map((entry) =>
