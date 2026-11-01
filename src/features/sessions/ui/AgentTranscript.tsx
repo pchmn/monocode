@@ -65,6 +65,7 @@ import { ArtifactCard } from "../../artifacts/ui/ArtifactCard";
 import { artifactCards } from "../../artifacts/artifacts";
 
 import { TerminalSpinner } from "./TerminalSpinner";
+import { BackgroundTasksFold } from "./BackgroundTasks";
 import { Popover } from "../../../shared/ui/Popover";
 import { ProjectMascot } from "../../projects/ui/ProjectMascot";
 import { PixelMascot } from "../../projects/ui/PixelMascot";
@@ -1559,6 +1560,9 @@ function AgentTranscriptComponent({
                   onToggle={() => toggleWork(turnId, workOpen)}
                 />
               )}
+              {live && !inlineWork && backgroundTasks?.length ? (
+                <BackgroundTasksFold tasks={backgroundTasks} />
+              ) : null}
             </TurnRow>
           );
           return (
@@ -1910,7 +1914,14 @@ function LiveFoldTitle({
   background?: string[];
   modelName?: string;
 }) {
-  const elapsedMs = useElapsedFrom(startedAt, paused);
+  const elapsedMs = useElapsedFrom(startedAt, paused || !!background?.length);
+  if (background?.length && !paused) {
+    return (
+      <span className="min-w-0 truncate font-sans text-sm text-content/50">
+        {formatWorkingDuration(elapsedMs, modelName, true)}
+      </span>
+    );
+  }
   // Yielding with a command still going is not the end of the turn. The clock
   // keeps running and the line says what it is waiting on.
   const text = paused

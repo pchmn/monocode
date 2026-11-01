@@ -46,6 +46,7 @@ import { FileTypeIcon } from "../../features/files/ui/FileTypeIcon";
 import { HarnessIcon } from "../../features/sessions/ui/HarnessIcon";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { TerminalSpinner } from "../../features/sessions/ui/TerminalSpinner";
+import { BackgroundBadge } from "../../features/sessions/ui/BackgroundTasks";
 import { TabLabel } from "../../shared/ui/TabLabel";
 import { WindowControls } from "./WindowControls";
 import { PixelMascot } from "../../features/projects/ui/PixelMascot";
@@ -95,6 +96,7 @@ export type Tab = {
   harnesses: HarnessId[];
   /** Harnesses with an in-flight turn in this tab. */
   busyHarnesses: HarnessId[];
+  backgroundHarnesses?: HarnessId[];
   /** Harnesses with a finished response that has not been focused yet. */
   doneHarnesses?: HarnessId[];
   /** Open file basenames, active files first. */
@@ -280,11 +282,13 @@ export function titleTabContextCloseIds(
 function TabHarnesses({
   harnesses,
   busyHarnesses,
+  backgroundHarnesses = [],
   doneHarnesses,
   dimmed,
 }: {
   harnesses: HarnessId[];
   busyHarnesses: HarnessId[];
+  backgroundHarnesses?: HarnessId[];
   doneHarnesses: HarnessId[];
   dimmed: boolean;
 }) {
@@ -299,7 +303,9 @@ function TabHarnesses({
       {shown.map((harness, i) => {
         const status = busy.has(harness)
           ? "busy"
-          : done.has(harness)
+          : backgroundHarnesses.includes(harness)
+            ? "background"
+            : done.has(harness)
             ? "done"
             : "idle";
         return (
@@ -312,6 +318,10 @@ function TabHarnesses({
           >
             {status === "busy" ? (
               <TerminalSpinner className="inline-block w-3.5 select-none text-center text-[11px] leading-none text-accent" />
+            ) : status === "background" ? (
+              <BackgroundBadge>
+                <HarnessIcon harness={harness} className="size-3.5 shrink-0" />
+              </BackgroundBadge>
             ) : status === "done" ? (
               <CheckCircle
                 className="size-3.5 shrink-0 text-teal-400"
@@ -432,6 +442,7 @@ function TitleTabItem({
           <TabHarnesses
             harnesses={tab.harnesses}
             busyHarnesses={tab.busyHarnesses}
+            backgroundHarnesses={tab.backgroundHarnesses}
             doneHarnesses={tab.doneHarnesses ?? []}
             dimmed={!active}
           />
