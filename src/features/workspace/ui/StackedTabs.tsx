@@ -1,5 +1,7 @@
 import { HarnessIcon } from "../../sessions/ui/HarnessIcon";
 import { TerminalSpinner } from "../../sessions/ui/TerminalSpinner";
+import { BackgroundBadge } from "../../sessions/ui/BackgroundTasks";
+import { isBackgroundOnly } from "../../sessions/model/backgroundTasks";
 import {
   sessionDisplayTitle,
   type Session,
@@ -55,7 +57,14 @@ export function StackedTabs({
                 : "text-content/50 hover:bg-content/5 hover:text-content"
             }`}
           >
-            {session?.busy ? (
+            {session && isBackgroundOnly(session) ? (
+              <BackgroundBadge tasks={session.backgroundTasks}>
+                <HarnessIcon
+                  harness={session.harness}
+                  className="size-3.5 shrink-0"
+                />
+              </BackgroundBadge>
+            ) : session?.busy ? (
               <TerminalSpinner className="inline-block w-3.5 select-none text-center text-[11px] leading-none text-accent" />
             ) : session ? (
               <HarnessIcon

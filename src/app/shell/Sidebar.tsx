@@ -189,6 +189,8 @@ import {
 } from "../../features/files/ui/ExplorerMenu";
 import { FileTree } from "../../features/files/ui/FileTree";
 import { useCodeWorkspaceFolders } from "../../features/projects/model/codeWorkspace";
+import { BackgroundStatus } from "../../features/sessions/ui/BackgroundTasks";
+import { useSessionBackgroundTasks } from "../../features/sessions/model/backgroundTasks";
 import { WorkspaceFolderTrees } from "../../features/projects/ui/WorkspaceFolderTrees";
 import { HarnessIcon } from "../../features/sessions/ui/HarnessIcon";
 import { SessionCardPreview } from "../../features/sessions/ui/SessionCardPreview";
@@ -5009,6 +5011,7 @@ export const SessionCard = memo(function SessionCard({
     compact && !orchestrationExpanded
       ? null
       : resolveModel(session.harness, session.model).name;
+  const backgroundTasks = useSessionBackgroundTasks(session.id);
   const statusClass = needsApproval
     ? "text-amber-400"
     : busy
@@ -5027,6 +5030,8 @@ export const SessionCard = memo(function SessionCard({
           <CircleAlert className="size-3" strokeWidth={1.75} />
           <span>{orchestration ? "Needs input" : "Need approval"}</span>
         </>
+      ) : busy && backgroundTasks.length ? (
+        <BackgroundStatus tasks={backgroundTasks} />
       ) : busy ? (
         <>
           <TerminalSpinner className="inline-block w-3 select-none text-center text-[11px] leading-none text-accent" />

@@ -114,6 +114,10 @@ import { useDragResize } from "../shared/hooks/useDragResize";
 import { beginLayoutTransition } from "../shared/lib/layoutTransition";
 import { noteProjectStep, Sidebar } from "./shell/Sidebar";
 import { ApprovalToasts } from "../features/sessions/ui/ApprovalToasts";
+import {
+  isBackgroundOnly,
+  usePublishBackgroundTasks,
+} from "../features/sessions/model/backgroundTasks";
 import { ResourcePressureNotice } from "../features/notifications/ui/ResourcePressureNotice";
 import { HarnessUpdateNotice } from "../features/providers/ui/HarnessUpdateNotice";
 import { NewLayoutNotice } from "./shell/NewLayoutNotice";
@@ -1089,6 +1093,8 @@ function titleTabsEqual(a: TitleTab[], b: TitleTab[]): boolean {
       tab.more.join("\u0000") === other.more.join("\u0000") &&
       tab.harnesses.join("\u0000") === other.harnesses.join("\u0000") &&
       tab.busyHarnesses.join("\u0000") === other.busyHarnesses.join("\u0000") &&
+      tab.backgroundHarnesses?.join("\u0000") ===
+        other.backgroundHarnesses?.join("\u0000") &&
       (tab.doneHarnesses ?? []).join("\u0000") ===
         (other.doneHarnesses ?? []).join("\u0000") &&
       tab.files.join("\u0000") === other.files.join("\u0000") &&
@@ -2224,6 +2230,7 @@ function Workspace({
     }
     return ids;
   }, [sessions]);
+  usePublishBackgroundTasks(sessions);
   const busySessionIdsRef = useRef(nextBusySessionIds);
   if (!setsEqual(busySessionIdsRef.current, nextBusySessionIds)) {
     busySessionIdsRef.current = nextBusySessionIds;
@@ -14921,13 +14928,17 @@ function toTitleTab(
   const harnesses: HarnessId[] = [];
   const busySeen = new Set<HarnessId>();
   const busyHarnesses: HarnessId[] = [];
+  const backgroundHarnesses: HarnessId[] = [];
   const doneSeen = new Set<HarnessId>();
   const doneHarnesses: HarnessId[] = [];
   const ordered = focused
     ? [focused, ...tabSessions.filter((session) => session.id !== focused.id)]
     : tabSessions;
   for (const session of ordered) {
-    if (
+    if (isBackgroundOnly(session)) {
+      if (!backgroundHarnesses.includes(session.harness))
+        backgroundHarnesses.push(session.harness);
+    } else if (
       session.busy &&
       !sessionNeedsInput(session) &&
       !busySeen.has(session.harness)
@@ -15003,6 +15014,7 @@ function toTitleTab(
     sessionCount: tabSessions.length,
     harnesses,
     busyHarnesses,
+    backgroundHarnesses,
     doneHarnesses,
     files: sessionTitle && !fileFocused ? [] : files,
     multiPane,
