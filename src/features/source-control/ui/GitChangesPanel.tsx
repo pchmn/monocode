@@ -1672,7 +1672,7 @@ function useDiffIndex(
           // index immediately after the one we just read.
           publishing = true;
           try {
-            notifyGitChanged({ invalidatePending: false });
+            notifyGitChanged({ invalidatePending: false, cwd });
           } finally {
             publishing = false;
           }
@@ -1696,7 +1696,7 @@ function useDiffIndex(
     const timer = window.setInterval(onResume, GIT_POLL_MS);
     window.addEventListener("focus", onResume);
     document.addEventListener("visibilitychange", onResume);
-    const unsubGit = subscribeGitChanged(onResume);
+    const unsubGit = subscribeGitChanged(onResume, cwd);
     return () => {
       cancelled = true;
       window.clearInterval(timer);

@@ -13,6 +13,7 @@ import {
   listSkills,
   pickFolders,
   resolveProjectLocation,
+  subscribeGitChanged,
 } from "./fs";
 
 vi.mock("@tauri-apps/api/core", () => ({
@@ -209,6 +210,25 @@ it("refreshes pre-mutation indexes for both original and new readers", async () 
     finish({ files: ["old"] });
     await expect(fresh).resolves.toEqual({ files: ["new"] });
     await expect(old).resolves.toEqual({ files: ["new"] });
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+it("scopes git-changed events to the matching project tree", () => {
+  vi.stubGlobal("window", new EventTarget());
+  try {
+    const project = vi.fn();
+    const global = vi.fn();
+    const stopProject = subscribeGitChanged(project, "/repo/a");
+    const stopGlobal = subscribeGitChanged(global);
+    notifyGitChanged({ cwd: "/repo/b" });
+    notifyGitChanged({ cwd: "/repo/a/sub" });
+    notifyGitChanged();
+    expect(project).toHaveBeenCalledTimes(2);
+    expect(global).toHaveBeenCalledTimes(3);
+    stopProject();
+    stopGlobal();
   } finally {
     vi.unstubAllGlobals();
   }

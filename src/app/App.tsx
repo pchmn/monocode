@@ -15078,7 +15078,7 @@ function nudgeOpenEditors(event: HarnessEvent, cwd: string) {
     if (!completed) return;
     nudgeWatchedFiles();
     window.setTimeout(() => nudgeWatchedFiles(), 150);
-    notifyGitChanged();
+    notifyGitChanged({ cwd });
     nudgeWorkspace(cwd);
     window.setTimeout(() => nudgeWorkspace(cwd), 150);
     return;
@@ -15103,7 +15103,7 @@ function nudgeOpenEditors(event: HarnessEvent, cwd: string) {
       () => nudgeWatchedFiles(resolved.length > 0 ? resolved : undefined),
       150,
     );
-    notifyGitChanged();
+    notifyGitChanged({ cwd });
     nudgeWorkspace(cwd);
   }
 }
