@@ -270,6 +270,12 @@ export const SETTINGS_INDEX: SettingsEntry[] = [
     label: "Tab animations",
     keywords: "motion open close resize transition",
   },
+  {
+    id: "stop-sessions-on-tab-close",
+    section: "general",
+    label: "Stop sessions when closing their tab",
+    keywords: "kill background process task agent close tab terminal",
+  },
   ...(IS_WIN
     ? [
         {
