@@ -4507,6 +4507,9 @@ fn gh_run_raw(root: &Path, args: &[&str], allow_empty: bool) -> Result<String, S
         .env("GIT_PAGER", "cat");
     crate::harness::apply_gui_env(&mut cmd);
     crate::hide_window_console(&mut cmd);
+    if let Some(token) = crate::github_accounts::token_for(root)? {
+        cmd.env("GH_TOKEN", token);
+    }
     let output = cmd.output().map_err(|error| {
         if error.kind() == ErrorKind::NotFound {
             "GitHub CLI (`gh`) is not installed.".to_string()
@@ -4556,7 +4559,7 @@ pub(crate) fn resolve_repo_path(root: &Path, relative: &str) -> Result<String, S
 /// Any git can start a filter: in an LFS repo `status`, `diff`, `add`, and
 /// checkouts all run `git-lfs`, which a Finder launch's bare PATH lacks. The
 /// cached search path finds it without waiting on the login shell.
-fn git_cmd() -> Command {
+pub(crate) fn git_cmd() -> Command {
     static GIT: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
     // An absolute program and no pre_exec keep Rust on posix_spawn: fork() in this
     // many-threaded process dominated CPU during agent turns (upstream #1132).

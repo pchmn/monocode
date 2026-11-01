@@ -76,6 +76,10 @@ import { useProjectNotificationPreferences } from "../../features/notifications/
 import { useNotificationProjects } from "../../features/notifications/hooks/useNotificationProjects";
 import { updateNotificationPreferences } from "../../features/notifications/model/notificationPreferences";
 import type { ExplorerMenuItem } from "../../features/files/ui/ExplorerMenu";
+import {
+  useGithubAccountMenu,
+  withGithubAccountItem,
+} from "../../features/inbox/hooks/useGithubAccountMenu";
 
 const REVEAL_LABEL = IS_MAC
   ? "Reveal in Finder"
@@ -244,6 +248,7 @@ export function useProjectMenu({
   const notificationPreferences = useProjectNotificationPreferences();
   const menuPath = projectMenu?.path;
   useNotificationProjects(menuPath ? [menuPath] : []);
+  const githubAccountMenu = useGithubAccountMenu(menuPath);
   const readyNotificationProject = menuPath
     ? knownNotificationProject(menuPath)
     : undefined;
@@ -377,6 +382,8 @@ export function useProjectMenu({
           setMenuError(error instanceof Error ? error.message : String(error));
         });
       return false;
+    } else if (action.startsWith("github-account:")) {
+      githubAccountMenu.pick(action);
     } else if (action === "notifications-settings") {
       onOpenNotificationSettings?.(path);
     } else if (action === "pin" || action === "unpin") {
@@ -445,7 +452,7 @@ export function useProjectMenu({
               }
             : undefined
         }
-        extraItems={projectMenuExtraItems(
+        extraItems={withGithubAccountItem(projectMenuExtraItems(
           loadPinnedProjects().some((pinned) =>
             sameProjectPath(pinned, projectMenu.path),
           ),
@@ -459,7 +466,7 @@ export function useProjectMenu({
             loadProjectGroupAssignments(),
           ),
           railOptions,
-        )}
+        ), githubAccountMenu.item)}
         footer={
           menuError ? (
             <p role="alert" className="px-2 py-1 text-xs text-red-400">
