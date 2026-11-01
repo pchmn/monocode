@@ -464,19 +464,31 @@ export function isCheckoutBlockedByChanges(message: string): boolean {
 const GIT_CHANGED = "monocode-git-changed";
 
 /** Tell git UIs (diff pane, branch picker) to reload after a local git mutation. */
-export function notifyGitChanged({ invalidatePending = true } = {}) {
+export function notifyGitChanged({
+  invalidatePending = true,
+  cwd,
+}: { invalidatePending?: boolean; cwd?: string } = {}) {
   // Publishing an already-read index is not a mutation. All actual mutations
   // invalidate both new readers and original callers still awaiting old data.
   if (invalidatePending) {
     gitReadEpoch++;
     pendingGitReads.clear();
   }
-  window.dispatchEvent(new Event(GIT_CHANGED));
+  window.dispatchEvent(new CustomEvent<string | undefined>(GIT_CHANGED, { detail: cwd }));
 }
 
-export function subscribeGitChanged(listener: () => void): () => void {
-  window.addEventListener(GIT_CHANGED, listener);
-  return () => window.removeEventListener(GIT_CHANGED, listener);
+function samePathTree(a: string, b: string): boolean {
+  return a === b || a.startsWith(`${b}/`) || b.startsWith(`${a}/`);
+}
+
+/** With `cwd`, events scoped to an unrelated project are ignored. */
+export function subscribeGitChanged(listener: () => void, cwd?: string): () => void {
+  const onChange = (event: Event) => {
+    const changed = (event as CustomEvent<string | undefined>).detail;
+    if (!cwd || !changed || samePathTree(slash(cwd), slash(changed))) listener();
+  };
+  window.addEventListener(GIT_CHANGED, onChange);
+  return () => window.removeEventListener(GIT_CHANGED, onChange);
 }
 
 export function createPath(

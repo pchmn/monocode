@@ -4557,8 +4557,14 @@ pub(crate) fn resolve_repo_path(root: &Path, relative: &str) -> Result<String, S
 /// checkouts all run `git-lfs`, which a Finder launch's bare PATH lacks. The
 /// cached search path finds it without waiting on the login shell.
 fn git_cmd() -> Command {
-    let mut cmd = Command::new("git");
-    crate::background_work::configure_child(&mut cmd);
+    static GIT: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    // An absolute program and no pre_exec keep Rust on posix_spawn: fork() in this
+    // many-threaded process dominated CPU during agent turns (upstream #1132).
+    let git = GIT.get_or_init(|| {
+        crate::harness::which_in_path(&crate::harness::cached_gui_search_path(), "git")
+            .unwrap_or_else(|| PathBuf::from("git"))
+    });
+    let mut cmd = Command::new(git);
     crate::hide_window_console(&mut cmd);
     cmd.env("PATH", crate::harness::cached_gui_search_path());
     cmd
