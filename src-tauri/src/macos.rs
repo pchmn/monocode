@@ -924,7 +924,13 @@ fn relaunch_from_dev_bundle(version: &str, bundle_version: &str) -> Result<(), S
     // UNUserNotificationCenter refuses authorization, without prompting,
     // unless the signing identifier matches CFBundleIdentifier.
     let signed = Command::new("/usr/bin/codesign")
-        .args(["--force", "--sign", "-", "--identifier", DEV_BUNDLE_ID])
+        .args([
+            "--force",
+            "--sign",
+            "-",
+            "--identifier",
+            crate::DEV_IDENTIFIER,
+        ])
         .arg(&app)
         .status()
         .map(|status| status.success())
@@ -961,13 +967,10 @@ fn write_dev_bundle_icons(
     Ok(())
 }
 
-/// Must match `CFBundleIdentifier` in the generated dev bundle plist and tauri.conf.json.
 #[cfg(debug_assertions)]
 const DEV_BUNDLE_DEFAULT_NAME: &str = "MonoCode";
 #[cfg(debug_assertions)]
 const DEV_BUNDLE_NAME_ENV: &str = "MONOCODE_DEV_APP_NAME";
-#[cfg(debug_assertions)]
-const DEV_BUNDLE_ID: &str = "com.monocode.desktop";
 #[cfg(debug_assertions)]
 const DEV_ICNS: &[u8] = include_bytes!("../icons/icon.icns");
 #[cfg(debug_assertions)]
@@ -1020,6 +1023,7 @@ fn dev_bundle_plist(app_name: &str, version: &str, bundle_version: &str) -> Vec<
     let app_name = escape_plist_text(app_name);
     let version = escape_plist_text(version);
     let bundle_version = escape_plist_text(bundle_version);
+    let identifier = crate::DEV_IDENTIFIER;
     format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -1036,7 +1040,7 @@ fn dev_bundle_plist(app_name: &str, version: &str, bundle_version: &str) -> Vec<
 	<key>CFBundleIconName</key>
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.monocode.desktop</string>
+	<string>{identifier}</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
