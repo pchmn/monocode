@@ -39,7 +39,6 @@ import {
   Settings,
   StickyNote,
   Zap,
-  type IconComponent,
 } from "../../shared/ui/icons";
 import { createPortal } from "react-dom";
 import { useProjectSwipe } from "./useProjectSwipe";
@@ -197,7 +196,8 @@ import { SessionCardPreview } from "../../features/sessions/ui/SessionCardPrevie
 import { LiveAgentsPreview } from "../../features/sessions/ui/LiveAgentsPreview";
 import { ProjectRail } from "./ProjectRail";
 import { InboxNotificationMenu } from "../../features/inbox/ui/InboxNotificationMenu";
-import { RailAction, RailSearch } from "./RailAction";
+import { RailAction } from "./RailAction";
+import { SidebarNavRow } from "./SidebarNavRow";
 import { TerminalSpinner } from "../../features/sessions/ui/TerminalSpinner";
 import { DevModeSlot, IconButton, TabVisitNav } from "./TitleBar";
 import { ProjectSearch } from "../../features/projects/ui/ProjectSearch";
@@ -2459,7 +2459,7 @@ function SidebarComponent({
   ) : null;
 
   const navList = inset ? (
-    <SidebarNavList
+    <SidebarNavRow
       search={
         onSearch ? { active: searchActive, onClick: onSearch } : undefined
       }
@@ -4340,66 +4340,6 @@ function SidebarSectionLabel({
           rows' trailing edge (their padding and border). */}
       {children ? <span className="-mr-[5px] flex">{children}</span> : null}
     </div>
-  );
-}
-
-type SidebarNavItem = {
-  label: string;
-  icon: IconComponent;
-  shortcut?: string;
-  active?: boolean;
-  dot?: boolean;
-  onClick: () => void;
-  onOpenContextMenu?: (x: number, y: number) => void;
-};
-
-/** The inset sidebar's links to the app-wide views, under the project. */
-function SidebarNavList({
-  search,
-  items,
-}: {
-  /** The project rail's search field, above the links. */
-  search?: { active: boolean; onClick: () => void };
-  items: readonly (SidebarNavItem | false | undefined)[];
-}) {
-  const shown = items.filter((item): item is SidebarNavItem => !!item);
-  if (!search && !shown.length) return null;
-  return (
-    <nav
-      aria-label="Views"
-      className="flex shrink-0 flex-col gap-px px-2 pb-3 pt-1"
-    >
-      {/* The project rail's search and rows, so the two layouts read the
-          same. */}
-      {search ? (
-        <>
-          <RailSearch
-            label="Search"
-            icon={Search}
-            onClick={search.onClick}
-            active={search.active}
-            shortcut={`${MOD}K`}
-            ariaLabel={`Search (${MOD}K)`}
-          />
-          <div className="mt-0.5" />
-        </>
-      ) : null}
-      {shown.map(
-        ({ label, icon, shortcut, active, dot, onClick, onOpenContextMenu }) => (
-          <RailAction
-            key={label}
-            label={label}
-            icon={icon}
-            shortcut={shortcut}
-            active={active}
-            dot={dot}
-            ariaLabel={dot ? `${label}, new items` : undefined}
-            onClick={onClick}
-            onOpenContextMenu={onOpenContextMenu}
-          />
-        ),
-      )}
-    </nav>
   );
 }
 
