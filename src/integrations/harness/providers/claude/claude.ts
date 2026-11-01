@@ -74,6 +74,11 @@ import {
   type ClaudeControlRequest,
 } from "./claudeProtocol";
 import { isAgentToolName } from "../../core/preview";
+import {
+  followClaudeSubagentLog,
+  stopClaudeSubagentLog,
+  stopClaudeSubagentLogs,
+} from "./claudeSubagentLog";
 import { joinStreamText, snapshotRemainder } from "../../core/streamText";
 import {
   questionPromptTitle,
@@ -362,6 +367,7 @@ export async function stopClaudeSession(sessionId: string): Promise<void> {
   liveByThread.delete(sessionId);
   if (live) {
     live.muteUpdates = true;
+    stopClaudeSubagentLogs(live);
     for (const [, pending] of live.approvals) pending.resolve("deny");
     live.approvals.clear();
     for (const [, pending] of live.questions)
@@ -593,6 +599,7 @@ async function runTurn(live: Live, input: SendTurnInput): Promise<void> {
   live.toolsByIndex.clear();
   live.toolsById.clear();
   live.agentTasks.clear();
+  stopClaudeSubagentLogs(live);
   live.backgroundTasks.clear();
   live.backgroundRows.clear();
   clearAwaitingResume(live);
@@ -1225,6 +1232,7 @@ function handleAgentLifecycle(
       description: started.description,
       backgrounded: started.backgrounded,
     });
+    followBackgroundAgent(live, started.taskId);
     upsertAgentTool(
       live,
       started.toolUseId,
@@ -1259,6 +1267,7 @@ function handleAgentLifecycle(
     const task = live.agentTasks.get(updated.taskId);
     if (task && updated.backgrounded !== undefined) {
       task.backgrounded = updated.backgrounded;
+      followBackgroundAgent(live, updated.taskId);
     }
     if (task && updated.description) task.description = updated.description;
     const background = live.backgroundTasks.get(updated.taskId);
@@ -1362,6 +1371,16 @@ function handleToolProgress(live: Live, rec: Record<string, unknown>): void {
       ...(progress.subagentType ? { agentType: progress.subagentType } : {}),
     });
   }
+}
+
+function followBackgroundAgent(live: Live, taskId: string): void {
+  const toolUseId = live.agentTasks.get(taskId)?.toolUseId;
+  if (!toolUseId || !live.agentTasks.get(taskId)?.backgrounded) return;
+  followClaudeSubagentLog(live, taskId, (rec) => {
+    const mirrored = { ...rec, parent_tool_use_id: toolUseId };
+    if (rec.type === "assistant") handleAssistant(live, mirrored);
+    else if (rec.type === "user") handleUser(live, mirrored);
+  });
 }
 
 /**
@@ -1556,6 +1575,7 @@ function completeAgentTask(
 ): void {
   const task = live.agentTasks.get(taskId);
   live.agentTasks.delete(taskId);
+  stopClaudeSubagentLog(live, taskId);
   if (task) {
     upsertAgentTool(
       live,
