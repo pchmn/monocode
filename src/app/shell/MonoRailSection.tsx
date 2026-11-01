@@ -12,6 +12,8 @@ import { useAnimatedReorder } from "../../shared/hooks/useAnimatedReorder";
 import { MonoRailMascot } from "../../features/monos/ui/MonoRailMascot";
 import { MonoIntroCard } from "../../features/monos/ui/MonoIntro";
 import { RailAction } from "./RailAction";
+import { MonoSectionToggle } from "../../features/monos/ui/MonoSectionToggle";
+import { useMonoSectionCollapsed } from "../../features/monos/model/monoSectionCollapsed";
 import { saveMonosEnabled } from "../../features/settings/model/settings";
 import { ProjectBackgroundDialog } from "../../features/projects/ui/ProjectBackgroundDialog";
 import { monoBackgroundKey } from "../../features/monos/model/monoBackground";
@@ -91,6 +93,7 @@ export function MonoRailSection({
   const [menu, setMenu] = useState<{ id: string; anchor: PopoverAnchor }>();
   const [background, setBackground] = useState<string>();
   const backgroundMono = background ? findMono(background) : undefined;
+  const [collapsed, toggleCollapsed] = useMonoSectionCollapsed();
 
   // With no Mono yet, the card stands in for the rail's section. A project
   // with none of its own offers one under the label instead.
@@ -119,13 +122,15 @@ export function MonoRailSection({
             : "flex items-center gap-1 px-3 pb-1.5 pt-1"
         }
       >
-        <span
-          className={`min-w-0 flex-1 truncate${
+        <MonoSectionToggle
+          collapsed={collapsed}
+          count={monos.length}
+          unseen={monos.some((mono) => !!unseenCounts?.get(mono.id))}
+          onToggle={toggleCollapsed}
+          className={`min-w-0 flex-1${
             project ? "" : " px-1 text-xs leading-5 text-content/50"
           }`}
-        >
-          Monos
-        </span>
+        />
         {monos.length ? (
           <button
             type="button"
@@ -140,7 +145,7 @@ export function MonoRailSection({
           </button>
         ) : null}
       </div>
-      <div className={`flex flex-col gap-px${project ? "" : " px-2"}`}>
+      <div className={`flex flex-col gap-px${project ? "" : " px-2"}${collapsed ? " hidden" : ""}`}>
         {monos.length === 0 ? (
           <RailAction
             label="New mono"
