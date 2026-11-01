@@ -235,9 +235,18 @@ fn should_request_quit(code: Option<i32>) -> bool {
     code.is_some() || cfg!(any(target_os = "linux", target_os = "windows"))
 }
 
+#[cfg(debug_assertions)]
+pub(crate) const DEV_IDENTIFIER: &str = "com.monocode.desktop.dev";
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let context = tauri::generate_context!();
+    #[allow(unused_mut)]
+    let mut context = tauri::generate_context!();
+    // Dev builds get their own app data and webview storage, never the installed app's.
+    #[cfg(debug_assertions)]
+    {
+        context.config_mut().identifier = DEV_IDENTIFIER.into();
+    }
     #[cfg(all(debug_assertions, target_os = "macos"))]
     {
         let version = context.package_info().version.to_string();

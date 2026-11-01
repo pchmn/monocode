@@ -25,6 +25,8 @@ npm install
 npm run tauri dev
 ```
 
+Debug builds use the `com.monocode.desktop.dev` identifier, so their sessions, settings and projects stay apart from an installed MonoCode.
+
 ## Where things live
 
 - `src/app/` - application composition, startup behavior, window shell, and release/update UI
