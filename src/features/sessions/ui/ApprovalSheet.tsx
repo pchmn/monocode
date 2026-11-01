@@ -22,6 +22,7 @@ export function ApprovalSheet({ blocks, cwd, onApproval }: Props) {
   const requestId = current?.approval?.requestId;
   const [selected, setSelected] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
+  const listboxRef = useRef<HTMLDivElement>(null);
   const optionId = useId();
   const live = useRef({ selected, onApproval });
   live.current = { selected, onApproval };
@@ -82,7 +83,12 @@ export function ApprovalSheet({ blocks, cwd, onApproval }: Props) {
   return (
     <div
       ref={rootRef}
-      className="mx-1.5 mb-2 rounded-xl border border-dashed border-content/20 bg-content/5 px-3 py-2"
+      // WebKit doesn't focus buttons on click, so refocus the sheet to get its keys back.
+      onMouseDown={(e) => {
+        e.preventDefault();
+        listboxRef.current?.focus();
+      }}
+      className="mx-1.5 mb-2 rounded-xl border border-dashed border-content/20 bg-content/5 px-3 py-2 focus-within:border-content/40"
     >
       <div className="mb-1.5 flex items-center gap-2 text-[12px]">
         <span className="shrink-0 text-amber-400">Approval needed</span>
@@ -97,6 +103,7 @@ export function ApprovalSheet({ blocks, cwd, onApproval }: Props) {
         </span>
       </div>
       <div
+        ref={listboxRef}
         role="listbox"
         tabIndex={-1}
         aria-label={`Approval options for ${label}`}
