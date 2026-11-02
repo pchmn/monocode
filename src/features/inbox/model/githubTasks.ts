@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../../projects/model/workspaceInvoke";
 import { clearKnownInboxItems } from "./inboxSeen";
 import {
   linearConnected,
