@@ -38,6 +38,8 @@ import {
 import { useStackedPanels } from "../features/settings/model/stackedPanels";
 import { useIdleSessionDetach } from "./hooks/useIdleSessionDetach";
 import { useAgentWorktreeAdoption } from "../features/source-control/hooks/useAgentWorktreeAdoption";
+import { useDefaultBranchOnOpen } from "../features/source-control/hooks/useDefaultBranchOnOpen";
+import { freshWorktreeBase } from "../features/source-control/model/defaultBranchStart";
 import { HarnessEventQueue } from "./model/harnessFlush";
 import { noteStreamApplied } from "../features/sessions/model/streamingPerformance";
 import { updateSessionState } from "./model/sessionState";
@@ -2826,6 +2828,7 @@ function Workspace({
     setSessions,
   });
   useAgentWorktreeAdoption(sessions, setSessions);
+  useDefaultBranchOnOpen(sessions);
 
   const activateTab = useCallback(
     (
@@ -8052,7 +8055,7 @@ function Workspace({
           const tree = await createWorktree(
             current.cwd,
             temporaryWorktreeBranchName(),
-            current.worktreeBase || "HEAD",
+            await freshWorktreeBase(current.cwd, current.worktreeBase),
             false,
           );
           workCwd = tree.path;

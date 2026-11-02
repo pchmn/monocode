@@ -12,6 +12,7 @@ mod codex_mono_store;
 mod control;
 pub mod control_cli;
 mod cursor_store;
+mod default_branch_start;
 mod devin_config;
 mod devin_usage;
 mod external_editor;
@@ -465,6 +466,9 @@ pub fn run() {
             worktrees::git_worktree_check_remove,
             worktrees::git_worktree_remove,
             worktree_cleanup::worktree_cleanup_status,
+            default_branch_start::default_branch_name,
+            default_branch_start::default_branch_fetch,
+            default_branch_start::default_branch_start,
             worktrees::git_orchestration_worktree_remove,
             worktrees::git_orchestration_branch_remove,
             fs::create_path,
