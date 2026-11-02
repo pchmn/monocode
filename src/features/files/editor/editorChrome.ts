@@ -17,7 +17,7 @@ function editorThemeStyles(dark: boolean) {
     "&": {
       height: "100%",
       backgroundColor: "transparent",
-      color: "var(--color-content)",
+      color: "var(--syntax-plain, var(--color-content))",
       fontSize: "var(--code-font-size)",
       userSelect: "text",
     },

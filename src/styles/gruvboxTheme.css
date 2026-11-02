@@ -1,0 +1,23 @@
+/* Mirrors pchmn/gruvbox-material-themes; base palette in gruvboxTheme.ts,
+   finer syntax slots read by syntaxRefinements.ts. */
+
+html.layout-inset[data-workspace-theme="gruvbox"] {
+  /* The wash would lift the shell above the editor; VS Code keeps it darker. */
+  --inset-wash: transparent;
+  --syntax-storage: #e78a4e;
+  --syntax-module: #d3869b;
+  --syntax-constant: #d3869b;
+  --syntax-operator: #e78a4e;
+  --syntax-punctuation: #928374;
+  --syntax-plain: #d4be98;
+  --syntax-comment-style: italic;
+}
+
+html.layout-inset.theme-light[data-workspace-theme="gruvbox"] {
+  --syntax-storage: #c35e0a;
+  --syntax-module: #4c7a5d;
+  --syntax-constant: #945e80;
+  --syntax-operator: #c35e0a;
+  --syntax-punctuation: #928374;
+  --syntax-plain: #654735;
+}

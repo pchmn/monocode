@@ -12,6 +12,7 @@ import {
   type Tag,
 } from "@lezer/highlight";
 import { basename } from "../../../platform/tauri/fs";
+import { SYNTAX_REFINEMENTS } from "./syntaxRefinements";
 
 const HIGHLIGHT_TAGS = {
   keyword: [
@@ -92,6 +93,7 @@ export const editorHighlightStyle = HighlightStyle.define([
     tag,
     color: HIGHLIGHT_PALETTE[group],
   })),
+  ...SYNTAX_REFINEMENTS,
   {
     tag: tags.invalid,
     color: HIGHLIGHT_PALETTE.invalid,
@@ -105,6 +107,7 @@ export const syntaxTagHighlighter: Highlighter = tagHighlighter([
     tag,
     class: HIGHLIGHT_PALETTE[group],
   })),
+  ...SYNTAX_REFINEMENTS.map(({ tag, color }) => ({ tag, class: color })),
   { tag: tags.invalid, class: HIGHLIGHT_PALETTE.invalid },
 ]);
 
