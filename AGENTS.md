@@ -12,3 +12,18 @@ This repository is a **fork** of [hardbeat920/monocode](https://github.com/hardb
 - Before opening a PR, check the footprint with `git diff --stat main` and move logic out of any upstream file that grew by more than a few lines.
 
 Reference example: VS Code workspace support lives in `src/features/projects/model/codeWorkspace.ts` and `src/features/projects/ui/WorkspaceFolder*.tsx`, with small hooks in upstream files.
+
+## Branching
+
+One branch per change, cut from up-to-date `main`: `<type>/<slug>`, where `<type>` is the conventional-commit type of the work (`feat/collapsible-monos`). Implementation commits land on that branch, never directly on `main`.
+
+Work in a worktree, never by switching branches in the main checkout: another session may be working there. A local `main` lags behind the PRs merged since, so run `git fetch origin` first and start from `origin/main`; only work that builds on another branch starts from that branch.
+
+- **Already in a linked worktree** (`git rev-parse --git-dir` differs from `git rev-parse --git-common-dir`; MonoCode creates one per session on request): work there. Rename a MonoCode branch (`mc/…`) with `git branch -m <type>/<slug>`, and while it has no commit of its own, `git rebase origin/main`: MonoCode cuts it from the main checkout's `HEAD`.
+- **In the main checkout**: create one named after the branch, `git worktree add .worktrees/<slug> -b <type>/<slug> origin/main`.
+
+Worktrees are removed when their session's tab closes, once clean and merged ([`docs/fork/worktree-cleanup.md`](docs/fork/worktree-cleanup.md)): leave them in place.
+
+## Fork manifest
+
+[`docs/fork/`](docs/fork/README.md) has one entry per fork feature: its upstream hooks and how to verify it. Read it when you change fork behaviour (update the feature's entry in the same PR) and when you sync with upstream (run its sync check).

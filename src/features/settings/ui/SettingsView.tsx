@@ -1008,7 +1008,7 @@ function GeneralPage({
         <Row
           id="stop-sessions-on-tab-close"
           label="Stop sessions when closing their tab"
-          description="Closing a session's tab stops its agent and the tasks it left running in the background, as closing a terminal would. An agent still working asks first. The session stays in your history."
+          description="Closing a session's tab stops its agent and the tasks it left running in the background, as closing a terminal would. An agent still working asks first. The session stays in your history; its worktree is removed once it has no changes and is merged."
         >
           <Toggle
             label="Stop sessions when closing their tab"

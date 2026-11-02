@@ -120,6 +120,7 @@ import {
   usePublishBackgroundTasks,
 } from "../features/sessions/model/backgroundTasks";
 import { sessionsToStopOnClose } from "../features/sessions/model/stopOnTabClose";
+import { useWorktreeCleanupOnClose } from "../features/source-control/hooks/useWorktreeCleanupOnClose";
 import { ResourcePressureNotice } from "../features/notifications/ui/ResourcePressureNotice";
 import { HarnessUpdateNotice } from "../features/providers/ui/HarnessUpdateNotice";
 import { NewLayoutNotice } from "./shell/NewLayoutNotice";
@@ -5689,6 +5690,7 @@ function Workspace({
       stopSessionForRemoval,
     ],
   );
+  useWorktreeCleanupOnClose(sessions, tabSessionIds, onRemoveWorktree);
 
   const onRemoveHistorySession = useCallback(
     async (

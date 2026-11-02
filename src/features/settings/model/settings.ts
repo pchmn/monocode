@@ -274,7 +274,7 @@ export const SETTINGS_INDEX: SettingsEntry[] = [
     id: "stop-sessions-on-tab-close",
     section: "general",
     label: "Stop sessions when closing their tab",
-    keywords: "kill background process task agent close tab terminal",
+    keywords: "kill background process task agent close tab terminal worktree cleanup",
   },
   ...(IS_WIN
     ? [
