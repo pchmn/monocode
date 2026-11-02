@@ -115,17 +115,37 @@ export function worktreeAddTargets(
   return found;
 }
 
-/** Every worktree a session's shell commands created, oldest first. */
+// Claude Code's result: `Created worktree at “/abs/path”. The session is now working in the worktree.`
+const ENTERED_WORKTREE = /worktree at [“"']?(\/[^”"'\n]+?)[”"']?(?:\.\s|\.?$|\s)/;
+
+function enteredWorktree(block: Block): AgentWorktreeCandidate | undefined {
+  const path = block.tool?.detail?.match(ENTERED_WORKTREE)?.[1];
+  return path ? { path, raw: path } : undefined;
+}
+
+/** Every worktree a session's shell commands or worktree tools created, oldest first. */
 export function agentWorktreeCandidates(
   blocks: readonly Block[],
   cwd: string,
 ): AgentWorktreeCandidate[] {
-  return blocks.flatMap((block) => {
-    if (block.role !== "tool" || block.tool?.status === "failed") return [];
+  let found: AgentWorktreeCandidate[] = [];
+  for (const block of blocks) {
+    if (block.role !== "tool" || block.tool?.status === "failed") continue;
+    const kind = block.tool?.kind;
+    if (kind === "ExitWorktree") {
+      if (block.tool?.status === "completed") found = [];
+      continue;
+    }
+    if (kind === "EnterWorktree") {
+      const entered = enteredWorktree(block);
+      if (entered) found.push(entered);
+      continue;
+    }
     const command = block.text || block.tool?.title || "";
-    if (!isExecuteTool(block.tool?.kind, command)) return [];
-    return worktreeAddTargets(command, cwd);
-  });
+    if (isExecuteTool(kind, command))
+      found.push(...worktreeAddTargets(command, cwd));
+  }
+  return found;
 }
 
 function matches(candidate: AgentWorktreeCandidate, tree: Worktree): boolean {

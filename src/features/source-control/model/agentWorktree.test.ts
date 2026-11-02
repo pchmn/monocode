@@ -93,6 +93,31 @@ describe("pickAgentWorktree", () => {
     ).toBe(`${ROOT}/.worktrees/new`);
   });
 
+  it("follows Claude Code's EnterWorktree tool until ExitWorktree", () => {
+    const enter: Block = {
+      id: "enter",
+      role: "tool",
+      text: "Read fix/60",
+      tool: {
+        kind: "EnterWorktree",
+        status: "completed",
+        detail: `Created worktree at “${ROOT}/.worktrees/fix-60”. The session is now working in the worktree. Use ExitWorktree to leave mid-session.`,
+      },
+    };
+    const exit: Block = {
+      id: "exit",
+      role: "tool",
+      text: "",
+      tool: { kind: "ExitWorktree", status: "completed" },
+    };
+    const candidates = agentWorktreeCandidates([enter], ROOT);
+    expect(candidates.map((c) => c.path)).toEqual([`${ROOT}/.worktrees/fix-60`]);
+    expect(pickAgentWorktree(candidates, [tree(`${ROOT}/.worktrees/fix-60`)])?.path).toBe(
+      `${ROOT}/.worktrees/fix-60`,
+    );
+    expect(agentWorktreeCandidates([enter, exit], ROOT)).toEqual([]);
+  });
+
   it("matches a symlinked root by its tail and skips missing trees", () => {
     const candidates = worktreeAddTargets("git worktree add ./wt/a/", "/tmp/repo");
     expect(pickAgentWorktree(candidates, [tree("/private/tmp/repo/wt/a")])?.path).toBe(
