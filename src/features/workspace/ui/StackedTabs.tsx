@@ -8,6 +8,7 @@ import {
 } from "../../sessions/model/session";
 import { TabLabel } from "../../../shared/ui/TabLabel";
 import { SurfaceTabs } from "./SurfaceTabs";
+import { FileTabModeToggle } from "./FileTabModeToggle";
 import { stackedSurface, type StackedPair } from "../model/stackedLayout";
 import type { EditorPane } from "../model/layout";
 
@@ -92,6 +93,7 @@ export function StackedTabs({
       onCloseOtherFiles={(fileId) => onCloseOtherFiles(pane.id, fileId)}
       onPinFile={onPinFile}
       onReorder={(ids) => onReorderFiles(pane.id, ids)}
+      trailing={<FileTabModeToggle />}
     />
   );
 }

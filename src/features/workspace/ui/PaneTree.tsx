@@ -326,13 +326,12 @@ function PaneTreeComponent({
   const leaves = layoutLeaves(tree);
   const stackedMode =
     useSyncExternalStore(subscribeFileTabMode, loadFileTabMode) === "stacked";
-  const stacked = stackedMode
-    ? stackedPair(
-        layout,
-        sessions.map((entry) => entry.id),
-        editorPanes,
-      )
-    : null;
+  const pair = stackedPair(
+    layout,
+    sessions.map((entry) => entry.id),
+    editorPanes,
+  );
+  const stacked = stackedMode ? pair : null;
   const stackedLeafId = stacked
     ? stackedSurface(stacked, focusedId) === "file"
       ? stacked.paneId
@@ -783,6 +782,7 @@ function PaneTreeComponent({
                   visible={visible && !stackHidden}
                   focused={!leaving && focusedId === editorPane.id}
                   showTabs={!stacked && (inSplit || editorPane.files.length > 1)}
+                  stackable={pair?.paneId === editorPane.id}
                   dirtyFileIds={dirtyFileIds}
                   fileErrorCounts={fileErrorCounts}
                   sessions={sessions}
