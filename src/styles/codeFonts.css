@@ -1,0 +1,12 @@
+/* Values come from Settings > Editor (codeFonts.ts). */
+.cm-editor,
+.diff-review-content,
+.diff-review-horizontal-scroll {
+  --font-mono: var(--code-font-family);
+}
+
+:root .diff-review-number,
+:root .diff-review-marker,
+:root .diff-review-code {
+  line-height: var(--code-line-height);
+}

@@ -1027,7 +1027,7 @@ export const FileTree = memo(function FileTree({
         onContextMenu={onBackgroundMenu}
       >
         <div
-          className={`flex shrink-0 items-center ${workspaceRoot ? "h-7.5" : compactHeader ? "h-8" : "h-9"}`}
+          className={`flex shrink-0 items-center ${workspaceRoot ? "h-(--explorer-row-height)" : compactHeader ? "h-8" : "h-9"}`}
         >
           <button
             type="button"
@@ -1066,7 +1066,7 @@ export const FileTree = memo(function FileTree({
               </span>
             ) : null}
             <span
-              className={`min-w-0 truncate ${workspaceRoot ? "text-[14px] leading-label text-content" : "text-[11px] font-semibold tracking-[0.08em] text-content/50 uppercase"}`}
+              className={`min-w-0 truncate ${workspaceRoot ? "text-(length:--explorer-font-size) leading-label text-content" : "text-[11px] font-semibold tracking-[0.08em] text-content/50 uppercase"}`}
             >
               {name}
             </span>
@@ -1269,7 +1269,7 @@ function TreeNode({ entry, depth }: { entry: FsEntry; depth: number }) {
           }}
           onContextMenu={(e) => onItemContextMenu(entry, e)}
           style={{ paddingLeft: 8 + depth * 12 }}
-          className={`flex h-7.5 w-full cursor-default items-center gap-1 pr-2 text-left text-[14px] outline-none focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-accent/40 leading-none data-[explorer-dragging]:opacity-50 ${
+          className={`flex h-(--explorer-row-height) w-full cursor-default items-center gap-1 pr-2 text-left text-(length:--explorer-font-size) outline-none focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-accent/40 leading-none data-[explorer-dragging]:opacity-50 ${
             selected
               ? "bg-selection text-content"
               : "text-content hover:bg-content/5"
@@ -1381,7 +1381,7 @@ export function NameRow({
     <div>
       <div
         style={{ paddingLeft: 8 + depth * 12 }}
-        className="flex h-7.5 w-full items-center gap-1 bg-content/10 pr-2"
+        className="flex h-(--explorer-row-height) w-full items-center gap-1 bg-content/10 pr-2"
       >
         <span className="grid size-4 shrink-0 place-items-center text-content/50">
           {isDir ? (
@@ -1417,7 +1417,7 @@ export function NameRow({
             }
           }}
           onBlur={() => finish(issue === null || issue.severity !== "error")}
-          className="h-5 min-w-0 flex-1 rounded-sm bg-content/10 px-1 text-[14px] leading-none text-content outline-none ring-1 ring-accent"
+          className="h-5 min-w-0 flex-1 rounded-sm bg-content/10 px-1 text-(length:--explorer-font-size) leading-none text-content outline-none ring-1 ring-accent"
         />
       </div>
       {showIssue ? (

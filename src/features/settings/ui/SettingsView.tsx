@@ -165,6 +165,7 @@ import {
   UI_SCALE_DEFAULT,
   UI_SCALE_PERCENTS,
 } from "../model/uiScale";
+import { CodeFontSettings } from "./CodeFontSettings";
 import {
   getHarnessAvailabilitySnapshot,
   harnessUnavailableHint,
@@ -1249,6 +1250,7 @@ function ChatPage() {
             onChange={onFormatOnSave}
           />
         </Row>
+        <CodeFontSettings Row={Row} />
       </Group>
 
       <Group

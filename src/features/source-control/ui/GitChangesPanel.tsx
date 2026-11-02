@@ -1354,7 +1354,7 @@ function ChangeDirRow({
     <li>
       <div
         style={{ paddingLeft: 8 + depth * 12 }}
-        className="group flex h-7 w-full items-center gap-1 pr-2 leading-none text-content hover:bg-content/5"
+        className="group flex h-(--explorer-row-height) w-full items-center gap-1 pr-2 leading-none text-content hover:bg-content/5"
       >
         <button
           type="button"
@@ -1371,7 +1371,7 @@ function ChangeDirRow({
             )}
           </span>
           <FileTypeIcon name={dir.name} isDir isOpen={open} size={16} />
-          <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
+          <span className="min-w-0 flex-1 truncate text-(length:--explorer-font-size) font-medium">
             {dir.name}
           </span>
         </button>
@@ -1500,7 +1500,7 @@ function ChangeRow({
     <li>
       <div
         style={tree ? { paddingLeft: 8 + depth * 12 } : undefined}
-        className={`group flex h-7 w-full items-center gap-1 pr-2 leading-none ${
+        className={`group flex h-(--explorer-row-height) w-full items-center gap-1 pr-2 leading-none ${
           tree ? "" : "pl-2"
         } ${
           active
@@ -1522,7 +1522,7 @@ function ChangeRow({
           {tree ? <span className="size-4 shrink-0" /> : null}
           <FileTypeIcon name={name} isDir={false} size={16} />
           <span className="min-w-0 flex-1 truncate">
-            <span className="text-[13px] font-medium">{name}</span>
+            <span className="text-(length:--explorer-font-size) font-medium">{name}</span>
             {dir ? (
               <span className="ml-1.5 text-[11px] text-content/40">{dir}</span>
             ) : null}

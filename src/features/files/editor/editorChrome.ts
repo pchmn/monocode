@@ -4,7 +4,6 @@ import { EditorView } from "@codemirror/view";
 import { cspStyleNonce } from "../../../shared/lib/csp";
 import type { ColorScheme } from "../../settings/model/appearance";
 import { editorHighlightStyle } from "./editorLanguage";
-import { EDITOR_LINE_HEIGHT_PX } from "./editorMetrics";
 
 export {
   editorHighlightStyle,
@@ -28,7 +27,7 @@ function editorThemeStyles(dark: boolean) {
       overflow: "auto",
       overscrollBehavior: "none",
       fontFamily: "var(--font-mono)",
-      lineHeight: `${EDITOR_LINE_HEIGHT_PX}px`,
+      lineHeight: "var(--code-line-height)",
     },
     ".cm-content": {
       minHeight: "100%",
