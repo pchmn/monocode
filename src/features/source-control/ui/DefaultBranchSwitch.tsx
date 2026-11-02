@@ -8,7 +8,7 @@ import {
   isCheckoutBlockedByChanges,
   notifyGitChanged,
 } from "../../../platform/tauri/fs";
-import { Loader } from "../../../shared/ui/icons";
+import { ArrowLeftRight, Loader } from "../../../shared/ui/icons";
 import { branchBehindUpstream } from "../model/defaultBranchStart";
 import { useBranchWorktree } from "../hooks/useBranchWorktree";
 import { SwitchBranchDialog } from "./SwitchBranchDialog";
@@ -101,9 +101,13 @@ export function DefaultBranchSwitch({
         disabled={!enabled || busy}
         onClick={switchToDefault}
         title={error ?? `Check out ${defaultBranch} and pull it from upstream`}
-        className={`-ml-1.5 flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[12px] hover:bg-content/8 hover:text-content disabled:opacity-40 disabled:hover:bg-transparent active:scale-[0.97] ${error ? "text-red-400/90" : "text-content/55"}`}
+        className={`-ml-1.5 flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[12px] bg-accent/10 hover:bg-accent/20 disabled:opacity-40 disabled:hover:bg-accent/10 active:scale-[0.97] ${error ? "text-red-400/90" : "text-accent"}`}
       >
-        {busy ? <Loader className="size-3.5 animate-spin" /> : null}
+        {busy ? (
+          <Loader className="size-3.5 animate-spin" />
+        ) : (
+          <ArrowLeftRight className="size-3.5" />
+        )}
         Switch to {defaultBranch}
       </button>
       {blocked ? (
