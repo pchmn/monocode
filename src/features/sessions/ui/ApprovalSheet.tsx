@@ -91,8 +91,8 @@ export function ApprovalSheet({ blocks, cwd, onApproval }: Props) {
         e.preventDefault();
         listboxRef.current?.focus();
       }}
-      // Composer's own p-1.5 plus the queue card's px-2.
-      className="mx-3.5 rounded-t-[10px] border border-b-0 border-dashed border-content/20 bg-content/3 px-2.5 py-1.5 focus-within:border-content/40"
+      // Composer's p-1.5 plus the queue card's inset, which index.css widens in layout-inset.
+      className="mx-3.5 rounded-t-[10px] in-[.layout-inset]:mx-[calc(0.375rem_+_var(--radius-xl,0.75rem))] in-[.layout-inset]:rounded-t-xl border border-b-0 border-dashed border-content/20 bg-content/3 px-2.5 py-1.5 focus-within:border-content/40"
     >
       <div className="mb-1.5 flex items-center gap-2 text-[12px]">
         <span className="shrink-0 text-amber-400">Approval needed</span>
