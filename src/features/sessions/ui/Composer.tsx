@@ -112,6 +112,7 @@ import {
 } from "./inlineImagePaste";
 import { BranchPicker } from "../../source-control/ui/BranchPicker";
 import { BranchSyncButton } from "../../source-control/ui/BranchSyncButton";
+import { DefaultBranchSwitch } from "../../source-control/ui/DefaultBranchSwitch";
 import { WorktreePicker } from "../../source-control/ui/WorktreePicker";
 import {
   isWorkspaceModeShortcut,
@@ -1863,7 +1864,10 @@ export function Composer({
             />
           ) : null}
           {(workspaceMode ?? "current") === "current" ? (
-            <BranchSyncButton cwd={remoteSession ? "" : executionCwd} branch={branch} enabled={enabled && !busy} />
+            <>
+              <DefaultBranchSwitch cwd={remoteSession ? "" : executionCwd} branch={branch} defaultBranch={defaultBranch} enabled={enabled && !busy} onChange={onBranchChange} />
+              <BranchSyncButton cwd={remoteSession ? "" : executionCwd} branch={branch} enabled={enabled && !busy} />
+            </>
           ) : null}
         </>
       ) : worktreeRemoved && onWorktreeChange ? (
