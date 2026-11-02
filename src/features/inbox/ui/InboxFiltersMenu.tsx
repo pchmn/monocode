@@ -14,6 +14,7 @@ import type { JiraProject } from "../model/jira";
 import type { LinearTeam } from "../model/linear";
 import { Popover } from "../../../shared/ui/Popover";
 import { ProjectLogoIcon } from "../../projects/ui/ProjectLogoIcon";
+import { useWorkspaceRepoFilter } from "../model/workspaceRepos";
 
 export const INBOX_FILTER_MENU_WIDTH = 228;
 
@@ -91,6 +92,7 @@ export function InboxFiltersMenu({
   const jiraProjectsActive =
     source === "jira" && hiddenJiraProjectIds.length > 0;
   const tracker = isTrackerSource(source);
+  const workspaceRepos = useWorkspaceRepoFilter(projects.map((p) => p.path));
 
   const toggleAssigned = () => {
     onChange({ ...filters, assignedToMe: !filters.assignedToMe });
@@ -214,6 +216,20 @@ export function InboxFiltersMenu({
               checked={!hiddenKinds.has(option.id)}
               icon={option.icon}
               onClick={() => toggleKind(option.id)}
+            />
+          ))}
+        </>
+      ) : null}
+
+      {source === "github" && workspaceRepos.repos.length > 0 ? (
+        <>
+          <SectionLabel>Repositories</SectionLabel>
+          {workspaceRepos.repos.map((repo) => (
+            <FilterItem
+              key={repo}
+              label={repo}
+              checked={!workspaceRepos.hidden.has(repo)}
+              onClick={() => workspaceRepos.toggle(repo)}
             />
           ))}
         </>

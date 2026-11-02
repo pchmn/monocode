@@ -39,6 +39,10 @@ import { InboxFiltersMenu, INBOX_FILTER_MENU_WIDTH } from "./InboxFiltersMenu";
 import { InboxConnectMenu } from "./InboxConnectMenu";
 import { InboxProviderMark } from "./InboxProviderMark";
 import { ProjectLogoIcon } from "../../projects/ui/ProjectLogoIcon";
+import {
+  filterInboxByRepo,
+  useHiddenInboxRepos,
+} from "../model/workspaceRepos";
 import { ProjectMascot } from "../../projects/ui/ProjectMascot";
 import { Popover } from "../../../shared/ui/Popover";
 import { IconButton, OverlayNav } from "../../../app/shell/TitleBar";
@@ -782,10 +786,11 @@ export function InboxView({
     };
   }, [cwd, items, target, targetSelectionKey]);
 
+  const hiddenRepos = useHiddenInboxRepos();
   const visibleItems = useMemo(() => {
     if (!sourceAvailable) return [];
     const visible = applyInboxFilters(
-      scopedItems,
+      filterInboxByRepo(scopedItems, hiddenRepos),
       activeFilters,
       searchInput,
       Date.now(),
@@ -801,6 +806,7 @@ export function InboxView({
     return [targeted, ...visible];
   }, [
     activeFilters,
+    hiddenRepos,
     items,
     scopedItems,
     searchInput,
