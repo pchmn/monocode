@@ -11,6 +11,7 @@ import {
   githubProjectAccount,
   setGithubProjectAccount,
 } from "../model/githubAccounts";
+import { clearInboxCache } from "../model/githubTasks";
 
 const ACTION = "github-account:";
 
@@ -73,7 +74,11 @@ export function useGithubAccountMenu(path: string | undefined) {
           repos.map((repo) => setGithubProjectAccount(repo, login)),
         ),
       )
-      .then(() => setState((prev) => prev && { ...prev, current: login }))
+      .then(() => {
+        // Repos found, or missed, with the previous account are cached.
+        clearInboxCache();
+        setState((prev) => prev && { ...prev, current: login });
+      })
       .catch((error: unknown) => console.error(error));
   };
 
