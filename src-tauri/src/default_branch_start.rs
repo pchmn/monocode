@@ -1,4 +1,6 @@
 use std::path::Path;
+use std::process::Stdio;
+use std::time::{Duration, Instant};
 
 use serde::Serialize;
 
@@ -10,7 +12,6 @@ pub struct DefaultBranchStart {
     branch: String,
     /// Freshest ref to start a worktree from: `origin/<branch>` when it exists.
     base: String,
-    on_default: bool,
 }
 
 fn git(dir: &Path, args: &[&str]) -> Option<String> {
@@ -52,38 +53,7 @@ fn default_branch(dir: &Path) -> Option<String> {
     })
 }
 
-fn operation_in_progress(dir: &Path) -> bool {
-    [
-        "MERGE_HEAD",
-        "CHERRY_PICK_HEAD",
-        "REVERT_HEAD",
-        "rebase-merge",
-        "rebase-apply",
-        "BISECT_LOG",
-    ]
-    .iter()
-    .any(|name| {
-        git(dir, &["rev-parse", "--git-path", name]).is_some_and(|path| dir.join(path).exists())
-    })
-}
-
-/// Switches a clean checkout to `branch` and fast-forwards it; anything else is left alone.
-fn move_checkout(dir: &Path, branch: &str, base: &str) {
-    let clean = git(dir, &["status", "--porcelain", "--untracked-files=no"])
-        .is_some_and(|out| out.is_empty());
-    if !clean || operation_in_progress(dir) {
-        return;
-    }
-    let current = git(dir, &["symbolic-ref", "--quiet", "--short", "HEAD"]);
-    if current.as_deref() != Some(branch) && git(dir, &["switch", "--quiet", branch]).is_none() {
-        return;
-    }
-    if base != branch {
-        let _ = git(dir, &["merge", "--ff-only", "--quiet", base]);
-    }
-}
-
-fn start(dir: &Path, checkout: bool) -> Option<DefaultBranchStart> {
+fn start(dir: &Path) -> Option<DefaultBranchStart> {
     let branch = default_branch(dir)?;
     let remote = format!("origin/{branch}");
     let base = if git(dir, &["rev-parse", "--verify", "--quiet", &remote]).is_some() {
@@ -91,16 +61,47 @@ fn start(dir: &Path, checkout: bool) -> Option<DefaultBranchStart> {
     } else {
         branch.clone()
     };
-    if checkout {
-        move_checkout(dir, &branch, &base);
-    }
-    let on_default =
-        git(dir, &["symbolic-ref", "--quiet", "--short", "HEAD"]).as_deref() == Some(&branch);
-    Some(DefaultBranchStart {
-        branch,
-        base,
-        on_default,
+    Some(DefaultBranchStart { branch, base })
+}
+
+/// Commits the current branch lacks from its upstream, 0 unless a fast-forward can apply them.
+fn behind_upstream(dir: &Path) -> u32 {
+    git(
+        dir,
+        &["rev-list", "--left-right", "--count", "HEAD...@{upstream}"],
+    )
+    .and_then(|counts| {
+        let (ahead, behind) = counts.split_once('\t')?;
+        (ahead == "0").then(|| behind.parse().ok()).flatten()
     })
+    .unwrap_or(0)
+}
+
+const FETCH_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// A stalled network or credential prompt must not hold the session start.
+fn fetch_origin(dir: &Path) {
+    let Ok(mut child) = crate::fs::git_cmd()
+        .arg("-C")
+        .arg(dir)
+        .args(["fetch", "--quiet", "--no-tags", "origin"])
+        .env("GIT_TERMINAL_PROMPT", "0")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+    else {
+        return;
+    };
+    let deadline = Instant::now() + FETCH_TIMEOUT;
+    while Instant::now() < deadline {
+        if !matches!(child.try_wait(), Ok(None)) {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    let _ = child.kill();
+    let _ = child.wait();
 }
 
 #[tauri::command(async)]
@@ -111,15 +112,17 @@ pub fn default_branch_name(cwd: String) -> Option<String> {
 /// Offline, the session still starts from the last fetched default branch.
 #[tauri::command(async)]
 pub fn default_branch_fetch(cwd: String) {
-    let _ = git(
-        &expand_home(&cwd),
-        &["fetch", "--quiet", "--no-tags", "origin"],
-    );
+    fetch_origin(&expand_home(&cwd));
 }
 
 #[tauri::command(async)]
-pub fn default_branch_start(cwd: String, checkout: bool) -> Option<DefaultBranchStart> {
-    start(&expand_home(&cwd), checkout)
+pub fn default_branch_start(cwd: String) -> Option<DefaultBranchStart> {
+    start(&expand_home(&cwd))
+}
+
+#[tauri::command(async)]
+pub fn branch_behind_upstream(cwd: String) -> u32 {
+    behind_upstream(&expand_home(&cwd))
 }
 
 #[cfg(test)]
@@ -183,44 +186,27 @@ mod tests {
     }
 
     #[test]
-    fn clean_checkout_moves_to_the_latest_default_branch() {
-        let (_dir, origin, clone) = setup();
-        let started = start(&clone, true).unwrap();
+    fn start_prefers_the_fetched_default_branch() {
+        let (_dir, _origin, clone) = setup();
+        let before = head(&clone);
+        let started = start(&clone).unwrap();
         assert_eq!(started.branch, "main");
         assert_eq!(started.base, "origin/main");
-        assert!(started.on_default);
-        assert_eq!(head(&clone), head(&origin));
-    }
-
-    #[test]
-    fn dirty_checkout_stays_on_its_branch() {
-        let (_dir, _origin, clone) = setup();
-        std::fs::write(clone.join("b.txt"), "edited").unwrap();
-        let before = head(&clone);
-        let started = start(&clone, true).unwrap();
-        assert!(!started.on_default);
         assert_eq!(head(&clone), before);
     }
 
     #[test]
-    fn worktree_start_leaves_the_checkout_alone() {
+    fn behind_counts_only_fast_forwardable_commits() {
         let (_dir, _origin, clone) = setup();
-        let before = head(&clone);
-        let started = start(&clone, false).unwrap();
-        assert_eq!(started.base, "origin/main");
-        assert!(!started.on_default);
-        assert_eq!(head(&clone), before);
-    }
-
-    #[test]
-    fn diverged_default_branch_is_not_rewritten() {
-        let (_dir, origin, clone) = setup();
         run(&clone, &["switch", "main"]);
+        assert_eq!(behind_upstream(&clone), 1);
         commit(&clone, "d.txt", "d");
-        let local = head(&clone);
-        let started = start(&clone, true).unwrap();
-        assert!(started.on_default);
-        assert_eq!(head(&clone), local);
-        assert_ne!(head(&clone), head(&origin));
+        assert_eq!(behind_upstream(&clone), 0);
+    }
+
+    #[test]
+    fn branch_without_upstream_is_never_behind() {
+        let (_dir, _origin, clone) = setup();
+        assert_eq!(behind_upstream(&clone), 0);
     }
 }

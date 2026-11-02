@@ -3,16 +3,12 @@ import { notifyGitChanged } from "../../../platform/tauri/fs";
 import { projectWorkDir } from "../../projects/model/codeWorkspace";
 import type { Session } from "../../sessions/model/session";
 import {
-  checkoutInUse,
   fetchDefaultBranch,
-  startFromDefaultBranch,
   startsFromDefaultBranch,
 } from "../model/defaultBranchStart";
 
-/** Fetches when a session opens in a project, and moves an idle checkout to the default branch. */
+/** Fetches when a session opens in a project; the checkout itself only moves on request. */
 export function useDefaultBranchOnOpen(sessions: readonly Session[]) {
-  const latest = useRef(sessions);
-  latest.current = sessions;
   // Sessions restored at launch already chose their branch.
   const seen = useRef<Set<string> | null>(null);
 
@@ -28,17 +24,7 @@ export function useDefaultBranchOnOpen(sessions: readonly Session[]) {
       if (!startsFromDefaultBranch(session)) continue;
       const cwd = projectWorkDir(session.cwd);
       void fetchDefaultBranch(cwd)
-        .then(() => {
-          const current = latest.current.find((s) => s.id === session.id);
-          const checkout =
-            !!current &&
-            current.cwd === session.cwd &&
-            current.workspaceMode !== "worktree" &&
-            startsFromDefaultBranch(current) &&
-            !checkoutInUse(latest.current, current);
-          return startFromDefaultBranch(cwd, checkout);
-        })
-        .then(() => notifyGitChanged())
+        .then(() => notifyGitChanged({ cwd }))
         .catch(() => undefined);
     }
   }, [sessions]);

@@ -469,6 +469,7 @@ pub fn run() {
             default_branch_start::default_branch_name,
             default_branch_start::default_branch_fetch,
             default_branch_start::default_branch_start,
+            default_branch_start::branch_behind_upstream,
             worktrees::git_orchestration_worktree_remove,
             worktrees::git_orchestration_branch_remove,
             fs::create_path,
