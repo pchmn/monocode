@@ -4,7 +4,7 @@ import { buildUnifiedFile } from "../../source-control/model/unifiedDiff";
 import { languageForPath } from "./editorLanguage";
 import { highlightDiffFile, highlightSource } from "./syntaxTokens";
 
-const KEYWORD = "var(--syntax-keyword)";
+const KEYWORD = "var(--syntax-storage, var(--syntax-keyword))";
 const STRING = "var(--syntax-string)";
 const COMMENT = "var(--syntax-comment)";
 const PROPERTY = "var(--syntax-property)";

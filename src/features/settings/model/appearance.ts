@@ -405,6 +405,7 @@ export function applyWorkspaceTheme(value: WorkspaceThemeId) {
     "has-workspace-theme",
     next !== WORKSPACE_THEME_DEFAULT,
   );
+  root.dataset.workspaceTheme = next;
   for (const listener of workspaceThemeListeners) listener();
   refreshNativeTint();
   return next;
