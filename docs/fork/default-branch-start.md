@@ -8,7 +8,7 @@ A new session opened in a project fetches `origin` in the background (10 s timeo
 - `src/features/source-control/hooks/useDefaultBranchOnOpen.ts`: fetches for sessions created or moved into a project after launch
 - `src/features/source-control/hooks/useDefaultBranch.ts`
 - `src/features/source-control/ui/BranchSyncButton.tsx`
-- `src/features/source-control/ui/DefaultBranchSwitch.tsx`
+- `src/features/source-control/ui/DefaultBranchSwitch.tsx`: hidden when the default branch is checked out in another worktree (`useBranchWorktree`)
 
 ## Upstream hooks
 - `src/app/App.tsx`: `useDefaultBranchOnOpen(sessions)` after `useAgentWorktreeAdoption`; `freshWorktreeBase` as the base of the draft worktree `createWorktree`

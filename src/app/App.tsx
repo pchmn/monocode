@@ -41,6 +41,7 @@ import { useAgentWorktreeAdoption } from "../features/source-control/hooks/useAg
 import { useDockFollowsSession } from "../features/terminal/hooks/useDockFollowsSession";
 import { useDefaultBranchOnOpen } from "../features/source-control/hooks/useDefaultBranchOnOpen";
 import { freshWorktreeBase } from "../features/source-control/model/defaultBranchStart";
+import { fileSessionRoot } from "../features/source-control/model/branchWorktree";
 import { HarnessEventQueue } from "./model/harnessFlush";
 import { noteStreamApplied } from "../features/sessions/model/streamingPerformance";
 import { updateSessionState } from "./model/sessionState";
@@ -4059,15 +4060,16 @@ function Workspace({
     [onClearTabSession, onCloseTab, tabCloseScope],
   );
 
-  const seedSession = useCallback((cwd: string) => {
+  const seedSession = useCallback((root: { cwd: string; worktreeCwd?: string }) => {
     const seed = sessionsRef.current[0];
-    return newSession(
+    const session = newSession(
       seed?.harness ?? "claude",
-      cwd,
+      root.cwd,
       seed?.model,
       seed?.runtimeMode,
       seed?.modelSettings,
     );
+    return { ...session, worktreeCwd: root.worktreeCwd };
   }, []);
 
   // The workspace always keeps one tab, so close every other tab and reset
@@ -4126,7 +4128,7 @@ function Workspace({
           return;
         }
         // The tab held no session: seed one so the workspace stays usable.
-        const session = seedSession(keptFiles[0]?.cwd || projectCwd);
+        const session = seedSession(fileSessionRoot(keptFiles[0], projectCwd));
         setSessions((prev) => [...prev, session]);
         setDirtyFiles((prev) => {
           const updated = new Set(prev);
@@ -4183,7 +4185,7 @@ function Workspace({
           );
         } else {
           // The tab held only editor panes and must stay: seed a session.
-          const session = seedSession(editorFiles[0].cwd || projectCwd);
+          const session = seedSession(fileSessionRoot(editorFiles[0], projectCwd));
           setSessions((prev) => [...prev, session]);
           nextTab = resetTabToSession(tab, session.id);
           focusesSession = true;

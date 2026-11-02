@@ -18,6 +18,10 @@ import {
 } from "../../../platform/tauri/fs";
 import { useLockOverscroll } from "../../../shared/hooks/useLockOverscroll";
 import { useProjectBranchesState } from "../hooks/useProjectBranches";
+import { useBranchWorktree } from "../hooks/useBranchWorktree";
+import { branchHeldMessage } from "../model/branchWorktree";
+import { BranchWorktreeChip } from "./BranchWorktreeChip";
+import type { Worktree } from "../model/worktrees";
 import { CreateBranchDialog } from "./CreateBranchDialog";
 import { GitPickerTrigger } from "./GitPickerTrigger";
 import { Popover } from "../../../shared/ui/Popover";
@@ -33,6 +37,7 @@ type Props = {
   onChange?: () => void;
   onClose?: () => void;
   onOpenChange?: (open: boolean) => void;
+  onSelectWorktree?: (tree: Worktree) => Promise<void>;
   popoverSide?: "top" | "bottom";
 };
 
@@ -59,6 +64,7 @@ export function BranchPicker({
   onChange,
   onClose,
   onOpenChange,
+  onSelectWorktree,
   popoverSide = "top",
 }: Props) {
   const [open, setOpen] = useState(initialOpen);
@@ -88,6 +94,7 @@ export function BranchPicker({
   const inProject = Boolean(cwd) && cwd !== "~";
   const { branches: projectBranches, settled: branchesSettled } =
     useProjectBranchesState(cwd, inProject);
+  const branchWorktree = useBranchWorktree(cwd, inProject && open);
 
   const current = branch || projectBranches?.current || null;
   const detached = !branch && !!projectBranches?.detached;
@@ -241,6 +248,20 @@ export function BranchPicker({
     }
     if (row.branch.current) {
       dismiss(true);
+      return;
+    }
+    const holder = branchWorktree(row.branch.name);
+    if (holder) {
+      if (!onSelectWorktree)
+        return setError(branchHeldMessage(row.branch.name, holder));
+      setBusy(true);
+      onSelectWorktree(holder).then(
+        () => dismiss(true),
+        (err) => {
+          setError(failMessage(err));
+          setBusy(false);
+        },
+      );
       return;
     }
     void run({
@@ -401,6 +422,7 @@ export function BranchPicker({
             emptyLabel={query.trim() ? "No matching branches" : "No branches"}
             onActive={setActive}
             onPick={pick}
+            heldBy={branchWorktree}
           />
           {error ? (
             <p className="max-h-16 shrink-0 overflow-y-auto whitespace-pre-wrap border-t border-stroke px-2.5 py-2 text-[11px] leading-4 text-red-400/90">
@@ -438,6 +460,7 @@ function BranchList({
   emptyLabel,
   onActive,
   onPick,
+  heldBy,
 }: {
   rows: BranchRow[];
   active: number;
@@ -445,6 +468,7 @@ function BranchList({
   emptyLabel: string;
   onActive: (index: number) => void;
   onPick: (row: BranchRow) => void;
+  heldBy?: (branch: string) => Worktree | undefined;
 }) {
   const lockOverscroll = useLockOverscroll<HTMLDivElement>();
   const activeRef = useRef<HTMLButtonElement>(null);
@@ -501,6 +525,7 @@ function BranchList({
             >
               {row.branch.name}
             </span>
+            {selected ? null : <BranchWorktreeChip tree={heldBy?.(row.branch.name)} />}
             {row.branch.remote ? (
               <span className="shrink-0 rounded bg-content/6 px-1.5 py-0.5 text-[10px] text-content/40">
                 {row.branch.remote}
