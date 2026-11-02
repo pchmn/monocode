@@ -2435,8 +2435,7 @@ function SidebarComponent({
       </div>
       {/* Inset, a new session is the + at the end of the title bar's tabs. */}
       <WorkspaceTitleActions
-        // Stacked, the explorer sits right below; Go to File keeps its shortcut.
-        onSearch={stacked ? undefined : onGoToFile}
+        onSearch={onGoToFile}
         onNew={inset ? undefined : onNew}
       />
       {headerProjectMenu.element}
