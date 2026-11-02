@@ -1289,6 +1289,7 @@ function TitleBarComponent({
             <div
               ref={setTabStripRef}
               data-title-tab-strip
+              data-tab-strip
               className="scrollbar-none flex h-full min-w-0 cursor-default items-center gap-1 overflow-x-auto overflow-y-hidden overscroll-none pl-1.5 pr-2.5"
             >
               {displayed.map((entry) => {
@@ -1362,14 +1363,15 @@ function TitleBarComponent({
                 );
               })}
               {onNewSession ? (
-                // Sized and plated like an inactive tab beside it.
+                // Sized like an inactive tab beside it.
                 <button
                   type="button"
                   title={`New session (${MOD}T)`}
                   aria-label={`New session (${MOD}T)`}
                   data-tauri-drag-region="false"
                   onClick={onNewSession}
-                  className="grid size-7.5 shrink-0 cursor-default place-items-center rounded-md bg-content/4 text-content/50 opacity-65 hover:bg-content/7 hover:text-content hover:opacity-100 focus-visible:opacity-100"
+                  data-tab-strip-add
+                  className="grid size-7.5 shrink-0 cursor-default place-items-center rounded-md text-content/50 opacity-65 hover:bg-content/7 hover:text-content hover:opacity-100 focus-visible:opacity-100"
                 >
                   <Plus className="size-3.5" strokeWidth={1.75} />
                 </button>

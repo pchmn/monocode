@@ -46,7 +46,10 @@ export function StackedTabs({
   return (
     <SurfaceTabs
       leading={
-        <div className="relative flex h-full w-56 min-w-28 shrink items-center">
+        <div
+          data-tab-slot-id={sessionId}
+          className="relative flex h-full w-56 min-w-28 shrink items-center"
+        >
           <button
             type="button"
             role="tab"

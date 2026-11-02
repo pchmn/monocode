@@ -1,0 +1,38 @@
+/* Strip items are a slot, its wrapper or the + button; :has() cannot nest,
+   so the next item's state is matched through "+ * …". */
+
+[data-tab-strip] [data-tab-slot-id]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -2.5px; /* centred in the strip's 4px gap */
+  width: 1px;
+  height: 1rem;
+  transform: translateY(-50%);
+  background: color-mix(in srgb, var(--color-content) 14%, transparent);
+  pointer-events: none;
+  transition: opacity var(--motion-feedback-duration) var(--motion-ease-out);
+}
+
+/* No divider beside a plated (hovered or selected) tab or after the last one. */
+[data-tab-strip] [data-tab-slot-id]:is(:hover, :has([aria-selected="true"], [data-title-tab-active]))::after,
+[data-tab-strip]
+  > :has(+ * [data-tab-slot-id]:hover, + * [aria-selected="true"], + * [data-title-tab-active], + [data-tab-strip-add]:hover)
+  [data-tab-slot-id]::after,
+[data-tab-strip]
+  > [data-tab-slot-id]:has(+ * [data-tab-slot-id]:hover, + * [aria-selected="true"], + * [data-title-tab-active])::after,
+[data-tab-strip] > :not(:has(+ * [data-tab-slot-id], + [data-tab-strip-add])) [data-tab-slot-id]::after,
+[data-tab-strip] > [data-tab-slot-id]:not(:has(+ * [data-tab-slot-id]))::after {
+  opacity: 0;
+}
+
+/* The strip gap is 4px: a collapsing tab must swallow all of it. */
+[data-tab-strip] :is(.tab-closing, .tab-opening)[data-collapsed] {
+  margin-right: -0.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-tab-strip] [data-tab-slot-id]::after {
+    transition: none;
+  }
+}
