@@ -1,4 +1,5 @@
 import { GripVertical, X } from "../../../shared/ui/icons";
+import { isCodeWorkspace } from "../../projects/model/codeWorkspace";
 import { useSessionSnapshot } from "../model/sessionStateStore";
 import {
   memo,
@@ -723,7 +724,7 @@ const LocalSessionPane = memo(function LocalSessionPane({
         !managed &&
         (remote
           ? !remoteSessionStarted
-          : (isEmpty || !!session.workspaceMode) && !session.worktreeCwd)
+          : (isEmpty || !!session.workspaceMode) && (!session.worktreeCwd || isCodeWorkspace(session.cwd)))
       }
       workspaceMode={session.workspaceMode}
       worktreeBase={session.worktreeBase}
