@@ -980,6 +980,7 @@ const LocalSessionPane = memo(function LocalSessionPane({
                         : undefined
                     }
                     busy={!!session.busy && !monoTranscript.viewingOlderPage}
+                    preparingLabel={session.worktreePreparing ? "Preparing worktree…" : undefined}
                     visible={visible}
                     cwd={workCwd}
                     agentName={agent?.name}

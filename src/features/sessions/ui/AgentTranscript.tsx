@@ -228,6 +228,7 @@ type Props = {
   onLoadEarlier?: (beforePrepend: () => void) => Promise<void>;
   onReturnToLatest?: () => void;
   busy?: boolean;
+  preparingLabel?: string;
   cwd?: string;
   /** Who the turns are by, in place of the model: a Mono's name. */
   agentName?: string;
@@ -305,6 +306,7 @@ function AgentTranscriptComponent({
   onLoadEarlier,
   onReturnToLatest,
   busy,
+  preparingLabel,
   cwd,
   agentName,
   agentMascot,
@@ -1316,6 +1318,8 @@ function AgentTranscriptComponent({
           const foldTitle: ReactNode =
             habit || standaloneReply ? (
               (agentName ?? habit?.name)
+            ) : live && preparingLabel ? (
+              <Shimmer className="min-w-0 truncate font-sans text-sm" duration={1}>{preparingLabel}</Shimmer>
             ) : live ? (
               <LiveFoldTitle
                 startedAt={startedAt}

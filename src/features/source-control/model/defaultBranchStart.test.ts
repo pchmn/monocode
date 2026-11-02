@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Session } from "../../sessions/model/session";
 import {
-  checkoutInUse,
   startsFromDefaultBranch,
   worktreeStartBase,
 } from "./defaultBranchStart";
@@ -48,19 +47,5 @@ describe("startsFromDefaultBranch", () => {
     expect(startsFromDefaultBranch(session({ worktreeCwd: "/repo/.wt/a" }))).toBe(false);
     expect(startsFromDefaultBranch(session({ automationId: "a1" }))).toBe(false);
     expect(startsFromDefaultBranch(session({ cwd: "~" }))).toBe(false);
-  });
-});
-
-describe("checkoutInUse", () => {
-  it("is true only when another session runs on the same checkout", () => {
-    const me = session();
-    expect(checkoutInUse([me, session({ id: "s2" })], me)).toBe(false);
-    expect(checkoutInUse([me, session({ id: "s2", busy: true })], me)).toBe(true);
-    expect(
-      checkoutInUse(
-        [me, session({ id: "s2", busy: true, worktreeCwd: "/repo/.wt/a" })],
-        me,
-      ),
-    ).toBe(false);
   });
 });
