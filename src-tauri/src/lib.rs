@@ -16,6 +16,7 @@ mod devin_config;
 mod devin_usage;
 mod external_editor;
 mod fs;
+mod github_accounts;
 mod gitlab;
 mod harness;
 mod harness_updates;
@@ -402,6 +403,9 @@ pub fn run() {
             fs::git_pr_status,
             fs::git_pr_create,
             fs::git_github_status,
+            github_accounts::github_accounts,
+            github_accounts::github_project_account,
+            github_accounts::set_github_project_account,
             fs::github_monocode_star_status,
             fs::github_star_monocode,
             fs::git_github_repo,
