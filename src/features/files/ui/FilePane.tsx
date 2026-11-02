@@ -6,6 +6,7 @@ import {
   useMarkdownMode,
 } from "../../sessions/ui/MarkdownModeToggle";
 import { SurfaceTabs } from "../../workspace/ui/SurfaceTabs";
+import { FileTabModeToggle } from "../../workspace/ui/FileTabModeToggle";
 import {
   isAgentTab,
   isChangesTab,
@@ -60,6 +61,8 @@ type Props = {
   visible?: boolean;
   /** The title bar already names a standalone file, so avoid repeating it. */
   showTabs?: boolean;
+  /** Beside a session, so the file-tab mode toggle applies. */
+  stackable?: boolean;
   /** Shows the tabs but holds off mounting the files, as a pane slides in. */
   deferBody?: boolean;
   dirtyFileIds: Set<string>;
@@ -90,6 +93,7 @@ function FilePaneComponent({
   focused,
   visible = true,
   showTabs = true,
+  stackable = false,
   deferBody = false,
   dirtyFileIds,
   fileErrorCounts,
@@ -131,6 +135,7 @@ function FilePaneComponent({
           onPinFile={onPinFile}
           onReorder={(ids) => onReorderFiles(pane.id, ids)}
           onPaneDragStart={onPaneDragStart}
+          trailing={stackable ? <FileTabModeToggle /> : undefined}
         />
       ) : null}
       <div data-pane-body="" className="relative min-h-0 flex-1">
@@ -241,6 +246,7 @@ export const FilePane = memo(FilePaneComponent, (previous, next) => {
     previous.focused !== next.focused ||
     previous.visible !== next.visible ||
     previous.showTabs !== next.showTabs ||
+    previous.stackable !== next.stackable ||
     previous.deferBody !== next.deferBody ||
     previous.dirtyFileIds !== next.dirtyFileIds ||
     previous.fileErrorCounts !== next.fileErrorCounts ||
