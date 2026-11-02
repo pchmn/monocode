@@ -89,6 +89,13 @@ describe("LiveAgentsPreview", () => {
     );
   });
 
+  it("shows only when an agent runs outside the active session", () => {
+    render({ agents: [agent("a", "/repo/a")], activeSessionId: "a" });
+    expect(container.querySelector("section")).toBeNull();
+    render({ agents: [agent("b", "/repo/b")], activeSessionId: "a" });
+    expect(container.querySelector("section")).not.toBeNull();
+  });
+
   it("selects an agent from the activity list", () => {
     const onSelect = vi.fn();
     render({
