@@ -1649,7 +1649,7 @@ function InboxCard({
           <span className="min-w-0 truncate">{source}</span>
         </span>
         {item.labels.length > 0 ? (
-          <span className="flex min-w-0 shrink-0 items-center gap-1">
+          <span className="flex min-w-0 max-w-[55%] items-center gap-1 overflow-hidden">
             {item.labels.slice(0, 2).map((label) => (
               <InboxLabel key={label.name} label={label} compact />
             ))}
