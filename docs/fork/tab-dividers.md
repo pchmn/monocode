@@ -3,7 +3,7 @@
 Top tabs and file/sub-tabs are separated Helium-style: a thin vertical divider between unplated tabs, hidden beside the selected or hovered tab and after the last one; the `+` has no plate of its own. Tabs sit 4px apart and the file-tab row is inset 3px from the left, matching its top inset. (PRs #52, #53)
 
 ## Fork files
-- `src/styles/tabDividers.css` — dividers, and the 4px gap swallowed by closing/opening tabs
+- `src/styles/tabDividers.css` — dividers, no plate on inactive inset top tabs (overrides upstream's "Dim inactive tabs" rule in `index.css`), and the 4px gap swallowed by closing/opening tabs
 
 ## Upstream hooks
 - `src/main.tsx` — imports `tabDividers.css`

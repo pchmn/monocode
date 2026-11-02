@@ -26,6 +26,11 @@
   opacity: 0;
 }
 
+/* Overrides the inset title bar's plate on inactive tabs; dividers replace it. */
+[data-inset-title-bar] [data-tab-strip] [data-title-tab]:not([data-title-tab-active], :hover, :focus-visible) {
+  background: transparent;
+}
+
 /* The strip gap is 4px: a collapsing tab must swallow all of it. */
 [data-tab-strip] :is(.tab-closing, .tab-opening)[data-collapsed] {
   margin-right: -0.25rem;
