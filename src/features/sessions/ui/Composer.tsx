@@ -1684,6 +1684,7 @@ export function Composer({
     if (disabled) return;
     if (
       !draftWorkspace ||
+      codeWorkspace ||
       !onWorkspaceModeChange ||
       !enabled ||
       busy ||
