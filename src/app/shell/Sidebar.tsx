@@ -2434,11 +2434,11 @@ function SidebarComponent({
           </span>
         )}
       </div>
-      {inset ? <div ref={setNavIconsHost} className="contents" /> : null}
+      {stacked ? <div ref={setNavIconsHost} className="contents" /> : null}
       {/* Inset, a new session is the + at the end of the title bar's tabs. */}
       <WorkspaceTitleActions
-        // Inset, Search sits with the view icons; Go to File keeps its shortcut.
-        onSearch={inset ? undefined : onGoToFile}
+        // Stacked, Search sits with the view icons; Go to File keeps its shortcut.
+        onSearch={stacked ? undefined : onGoToFile}
         onNew={inset ? undefined : onNew}
       />
       {headerProjectMenu.element}
@@ -2468,6 +2468,7 @@ function SidebarComponent({
 
   const navList = inset ? (
     <SidebarNavRow
+      stacked={stacked}
       iconsHost={navIconsHost}
       search={
         onSearch ? { active: searchActive, onClick: onSearch } : undefined
