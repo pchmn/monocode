@@ -66,7 +66,7 @@ export function StackedTabs({
                 />
               </BackgroundBadge>
             ) : session?.busy ? (
-              <TerminalSpinner className="inline-block w-3.5 select-none text-center text-[11px] leading-none text-accent" />
+              <TerminalSpinner className="inline-block w-2 shrink-0 select-none text-center text-[11px] leading-none text-accent" />
             ) : session ? (
               <HarnessIcon
                 harness={session.harness}
