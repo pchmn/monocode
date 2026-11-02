@@ -16,7 +16,6 @@ import { HarnessIcon } from "./HarnessIcon";
 import { ProjectMascot } from "../../projects/ui/ProjectMascot";
 import { TerminalSpinner } from "./TerminalSpinner";
 
-const LIVE_AGENT_MIN = 2;
 const LIVE_AGENT_CAP = 4;
 
 type Props = {
@@ -51,8 +50,10 @@ export function LiveAgentsPreview({
   const [expanded, setExpanded] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const lockList = useLockOverscroll<HTMLDivElement>();
+  // The active session's own progress is already on screen.
+  const shown = agents.some((agent) => agent.id !== activeSessionId);
   const ticking =
-    agents.length >= LIVE_AGENT_MIN &&
+    shown &&
     agents.some((agent) => !agent.done && agent.startedAt != null);
 
   useEffect(() => {
@@ -61,7 +62,7 @@ export function LiveAgentsPreview({
     return () => window.clearInterval(id);
   }, [ticking]);
 
-  if (agents.length < LIVE_AGENT_MIN) return null;
+  if (!shown) return null;
 
   const extra = agents.length - LIVE_AGENT_CAP;
   const visible =
