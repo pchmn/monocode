@@ -37,6 +37,7 @@ import {
 } from "../features/settings/model/panelSide";
 import { useStackedPanels } from "../features/settings/model/stackedPanels";
 import { useIdleSessionDetach } from "./hooks/useIdleSessionDetach";
+import { useAgentWorktreeAdoption } from "../features/source-control/hooks/useAgentWorktreeAdoption";
 import { HarnessEventQueue } from "./model/harnessFlush";
 import { noteStreamApplied } from "../features/sessions/model/streamingPerformance";
 import { updateSessionState } from "./model/sessionState";
@@ -2824,6 +2825,7 @@ function Workspace({
     persistSession,
     setSessions,
   });
+  useAgentWorktreeAdoption(sessions, setSessions);
 
   const activateTab = useCallback(
     (
