@@ -2435,7 +2435,8 @@ function SidebarComponent({
       </div>
       {/* Inset, a new session is the + at the end of the title bar's tabs. */}
       <WorkspaceTitleActions
-        onSearch={onGoToFile}
+        // Stacked, the explorer sits right below; Go to File keeps its shortcut.
+        onSearch={stacked ? undefined : onGoToFile}
         onNew={inset ? undefined : onNew}
       />
       {headerProjectMenu.element}
@@ -3161,6 +3162,9 @@ function SidebarComponent({
             </div>
           </>
         ) : null}
+        {stacked && paneHost ? (
+          <StackedToolsPane onHost={setStackedHost} shown={!!paneTab} />
+        ) : null}
         {inset && onSelectProject ? (
           <ProjectSpacesBar
             projects={spaceProjects}
@@ -3238,9 +3242,6 @@ function SidebarComponent({
           }}
           onClose={() => setLinkingSession(null)}
         />
-      ) : null}
-      {stacked && paneHost ? (
-        <StackedToolsPane onHost={setStackedHost} shown={!!paneTab} />
       ) : null}
       <div
         role="separator"
