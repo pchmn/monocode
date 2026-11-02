@@ -86,12 +86,15 @@ export function ApprovalSheet({ blocks, cwd, onApproval }: Props) {
   return (
     <div
       ref={rootRef}
+      data-approval-sheet
       // WebKit doesn't focus buttons on click, so refocus the sheet to get its keys back.
       onMouseDown={(e) => {
         e.preventDefault();
         listboxRef.current?.focus();
       }}
-      className="mx-2 rounded-t-[10px] border border-b-0 border-dashed border-content/20 bg-content/3 px-2.5 py-1.5 focus-within:border-content/40"
+      // Composer's p-1.5 plus the queue card's inset (widened by index.css in layout-inset),
+      // plus one more step when a queue card sits below, so the two stack like a pile.
+      className="mx-[calc(0.375rem_+_var(--queue-inset)_+_var(--stack-inset,0px))] rounded-t-[10px] [--queue-inset:0.5rem] in-[.layout-inset]:rounded-t-xl in-[.layout-inset]:[--queue-inset:var(--radius-xl,0.75rem)] in-[[data-session-composer]:has([data-message-queue])]:[--stack-inset:0.5rem] border border-b-0 border-dashed border-content/20 bg-content/3 px-2.5 py-1.5 focus-within:border-content/40"
     >
       <div className="mb-1.5 flex items-center gap-2 text-[12px]">
         <span className="shrink-0 text-amber-400">Approval needed</span>
