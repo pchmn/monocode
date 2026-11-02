@@ -86,6 +86,7 @@ export function ApprovalSheet({ blocks, cwd, onApproval }: Props) {
   return (
     <div
       ref={rootRef}
+      data-approval-sheet
       // WebKit doesn't focus buttons on click, so refocus the sheet to get its keys back.
       onMouseDown={(e) => {
         e.preventDefault();

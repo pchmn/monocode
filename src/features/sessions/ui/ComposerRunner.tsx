@@ -50,6 +50,7 @@ import {
   resolveTabGroupMascot,
 } from "../../workspace/model/tabGroups";
 import { ProjectMascot } from "../../projects/ui/ProjectMascot";
+import { approvalSheetLedge } from "../model/approvalSheetLedge";
 
 type Props = {
   boxRef: RefObject<HTMLElement | null>;
@@ -254,7 +255,7 @@ export function ComposerRunner({
         const shell = box.closest("[data-composer]");
         const review = shell?.querySelector("[data-session-review]");
         const queue = shell?.querySelector("[data-message-queue-card]");
-        const ledge = review ?? queue;
+        const ledge = approvalSheetLedge(box) ?? review ?? queue;
         cachedTrack = runnerTrack(
           box.getBoundingClientRect(),
           ledge?.getBoundingClientRect() ?? null,
