@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { GitPullRequest } from "../../../shared/ui/icons";
 import type { TabGroupMenuExtraItem } from "../../workspace/ui/TabGroupMenu";
+import { projectWorkDir } from "../../projects/model/codeWorkspace";
 import {
   githubAccounts,
   githubProjectAccount,
@@ -10,7 +11,9 @@ import {
 const ACTION = "github-account:";
 
 /** "GitHub account" submenu of a project's menu; absent with fewer than two `gh` accounts or outside a git repo. */
-export function useGithubAccountMenu(path: string | undefined) {
+export function useGithubAccountMenu(project: string | undefined) {
+  // A VS Code workspace is a file; its first folder's repo holds the choice.
+  const path = project && projectWorkDir(project);
   const [state, setState] = useState<{
     accounts: string[];
     current: string | null;
