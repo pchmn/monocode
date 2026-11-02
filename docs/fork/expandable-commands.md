@@ -1,6 +1,6 @@
 # Expandable command rows
 
-In an agent's activity trail, each shell command row opens on click onto the full command and its output. Failed commands keep upstream's error disclosure.
+In an agent's activity trail, each shell command row opens on click onto the full command and its output. Failed commands keep upstream's error disclosure. (PR #47)
 
 ## Fork files
 - `src/features/sessions/ui/ExpandableCommandRow.tsx` — `isExpandableCommand`, `ExpandableCommandRow`
