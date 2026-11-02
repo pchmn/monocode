@@ -2,12 +2,14 @@ import { useState } from "react";
 import {
   gitCheckout,
   gitCommit,
+  gitPull,
   gitStageAll,
   gitStash,
   isCheckoutBlockedByChanges,
   notifyGitChanged,
 } from "../../../platform/tauri/fs";
 import { Loader } from "../../../shared/ui/icons";
+import { branchBehindUpstream } from "../model/defaultBranchStart";
 import { SwitchBranchDialog } from "./SwitchBranchDialog";
 
 type Props = {
@@ -21,7 +23,14 @@ type Props = {
 const message = (err: unknown) =>
   err instanceof Error ? err.message : String(err);
 
-/** Offers the default branch to a session that has not started yet. */
+async function checkoutLatest(cwd: string, branch: string) {
+  await gitCheckout(cwd, branch);
+  // A failed pull leaves the checkout switched; BranchSyncButton then offers the retry.
+  if ((await branchBehindUpstream(cwd).catch(() => 0)) > 0)
+    await gitPull(cwd).catch(() => undefined);
+}
+
+/** Offers the up-to-date default branch to a session that has not started yet. */
 export function DefaultBranchSwitch({
   cwd,
   branch,
@@ -51,7 +60,7 @@ export function DefaultBranchSwitch({
     setBusy(true);
     setError(undefined);
     try {
-      await gitCheckout(cwd, defaultBranch);
+      await checkoutLatest(cwd, defaultBranch);
       done();
     } catch (err) {
       if (isCheckoutBlockedByChanges(message(err))) {
@@ -72,7 +81,7 @@ export function DefaultBranchSwitch({
     setBlockedError(null);
     try {
       await work();
-      await gitCheckout(cwd, defaultBranch);
+      await checkoutLatest(cwd, defaultBranch);
       done();
     } catch (err) {
       setBlockedError(message(err));
@@ -86,7 +95,7 @@ export function DefaultBranchSwitch({
         type="button"
         disabled={!enabled || busy}
         onClick={switchToDefault}
-        title={error}
+        title={error ?? `Check out ${defaultBranch} and pull it from upstream`}
         className={`flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[12px] hover:bg-content/8 hover:text-content disabled:opacity-40 disabled:hover:bg-transparent active:scale-[0.97] ${error ? "text-red-400/90" : "text-content/55"}`}
       >
         {busy ? <Loader className="size-3.5 animate-spin" /> : null}
