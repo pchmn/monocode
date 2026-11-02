@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { newFileTab, newTab, openEditorTab } from "./layout";
-import { stackedPair, stackedSurface } from "./stackedLayout";
+import {
+  sessionTitleMode,
+  stackedPair,
+  stackedSurface,
+} from "./stackedLayout";
 
 const file = (path: string) => newFileTab(path, "/p", false);
 const ids = ["s1"];
@@ -36,5 +40,12 @@ describe("stackedLayout", () => {
     const stacked = stackedPair(tab.layout, ids, tab.editorPanes)!;
     expect(stackedSurface(stacked, tab.focusedId)).toBe("file");
     expect(stackedSurface(stacked, "s1")).toBe("session");
+  });
+
+  it("titles a session + file pair by the session in beside-chat mode", () => {
+    let tab = newTab("s1");
+    expect(sessionTitleMode(tab.layout, ids, tab.editorPanes)).toBeNull();
+    tab = openEditorTab(tab, file("/p/a.ts"));
+    expect(sessionTitleMode(tab.layout, ids, tab.editorPanes)).toBe("pane");
   });
 });
