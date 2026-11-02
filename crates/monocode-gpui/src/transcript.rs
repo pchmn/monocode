@@ -360,6 +360,74 @@ impl Follow {
     }
 }
 
+/// monoSpawnedSessions: sessions the run at `turn..end` started with
+/// `sessions.start`, and those `known` to be launched that it followed up with
+/// `sessions.send`.
+pub(crate) fn run_launches(
+    source: &[Row],
+    turn: usize,
+    end: usize,
+    known: impl Fn(i64) -> bool,
+) -> Vec<i64> {
+    let mut found = Vec::new();
+    let mut at = turn;
+    while at < end {
+        let next = (at + 1..end).find(|&i| source[i].first).unwrap_or(end);
+        if source[at].role == "mono-launch" {
+            if let Ok(value) = serde_json::from_str::<serde_json::Value>(&source[at].text)
+                && let Some(id) = value["sessionId"].as_i64()
+                && !found.contains(&id)
+            {
+                found.push(id);
+            }
+        } else if source[at].role == "tool" {
+            let text: String = source[at..next].iter().map(|r| r.text.as_str()).collect();
+            if let Ok(tool) = serde_json::from_str::<ToolCall>(&text)
+                && tool.state == ToolState::Completed
+                && let Ok(input) = serde_json::from_str::<serde_json::Value>(&tool.input)
+                && let Some(action) = input["command"]
+                    .as_str()
+                    .or_else(|| input["cmd"].as_str())
+                    .and_then(monocode_core::mono::work::command_action)
+                && matches!(action.as_str(), "sessions.start" | "sessions.send")
+            {
+                let receipts = serde_json::from_str::<serde_json::Value>(&tool.output)
+                    .map(|v| vec![v])
+                    .unwrap_or_else(|_| {
+                        tool.output
+                            .lines()
+                            .filter_map(|line| serde_json::from_str(line.trim()).ok())
+                            .collect()
+                    });
+                for value in receipts {
+                    if value["ok"] == true
+                        && let Some(id) = value["result"]["sessionId"]
+                            .as_i64()
+                            .or_else(|| {
+                                monocode_core::mono::work::session_handle(&value["result"]["id"])
+                            })
+                            .or_else(|| {
+                                (value["result"]["submitted"] == true)
+                                    .then(|| {
+                                        monocode_core::mono::work::session_handle(
+                                            &value["result"]["sessionId"],
+                                        )
+                                    })
+                                    .flatten()
+                            })
+                        && (action == "sessions.start" || known(id))
+                        && !found.contains(&id)
+                    {
+                        found.push(id);
+                    }
+                }
+            }
+        }
+        at = next;
+    }
+    found
+}
+
 /// Whether the Mono has said something the user can read in `from..to`: the
 /// opening sentence of any run there. A message the user sends after it reads
 /// as the next line of the chat, not as part of the prompt above.
@@ -432,26 +500,41 @@ pub(crate) fn mono_work_label(source: &[Row], group: usize) -> String {
         .unwrap_or(source.len());
     let mut thought = 0usize;
     let mut latest = None;
+    let mut reasoning = None;
     for (ix, row) in source[turn..end].iter().enumerate() {
         if !row.first {
             continue;
         }
         match row.role.as_str() {
-            "assistant" | "reasoning" => {
+            "assistant" => {
                 thought += 1;
                 latest = None;
+                reasoning = None;
             }
-            "tool" => latest = Some(turn + ix),
+            "reasoning" => {
+                thought += 1;
+                latest = None;
+                reasoning = Some(turn + ix);
+            }
+            "tool" => {
+                latest = Some(turn + ix);
+                reasoning = None;
+            }
             _ => {}
         }
     }
-    let Some(tool) = latest.and_then(|at| {
+    let message = |at: usize| -> String {
         let end = (at + 1..source.len())
             .find(|&i| source[i].first)
             .unwrap_or(source.len());
-        let text: String = source[at..end].iter().map(|r| r.text.as_str()).collect();
-        serde_json::from_str::<ToolCall>(&text).ok()
-    }) else {
+        source[at..end].iter().map(|r| r.text.as_str()).collect()
+    };
+    // A reasoning summary's own heading says what it is working on.
+    if let Some(heading) = reasoning.and_then(|at| reasoning_heading(&message(at))) {
+        return format!("{heading}…");
+    }
+    let Some(tool) = latest.and_then(|at| serde_json::from_str::<ToolCall>(&message(at)).ok())
+    else {
         return THINKING[thought.saturating_sub(1) % THINKING.len()].into();
     };
     if tool.is_milestone() {
@@ -463,15 +546,80 @@ pub(crate) fn mono_work_label(source: &[Row], group: usize) -> String {
             "Compacting context…".into()
         };
     }
-    match tool.summary().0.as_str() {
-        "Run" => "Running command…",
-        "Edit" | "Write" => "Editing file…",
-        "Read" => "Reading file…",
-        "Find" | "List" | "Search" | "Glob" | "Grep" => "Exploring project…",
-        "Agent" | "Task" => "Running agent…",
-        _ => "Using tool…",
+    tool_status(&tool)
+}
+/// A reasoning summary's heading, as Codex writes them (`**Finding the repo**`),
+/// when it is short enough for a status line.
+fn reasoning_heading(text: &str) -> Option<String> {
+    let line = text.lines().map(str::trim).find(|l| !l.is_empty())?;
+    let heading = line
+        .strip_prefix("**")
+        .and_then(|l| l.strip_suffix("**"))
+        .or_else(|| line.strip_prefix('#').map(|l| l.trim_start_matches('#')))?
+        .trim()
+        .trim_end_matches(['.', ':', '…']);
+    let words = heading.split_whitespace().count();
+    ((1..=8).contains(&words) && heading.chars().count() <= 60).then(|| heading.to_owned())
+}
+/// What a running tool is doing, in the user's words where we can tell.
+fn tool_status(tool: &ToolCall) -> String {
+    let shown = tool.presentation();
+    let app = monocode_core::tool::app_tool(&tool.name)
+        || shown
+            .command
+            .as_deref()
+            .and_then(monocode_core::tool::app_cli_action)
+            .is_some();
+    if app {
+        return format!("{} {}…", shown.action, shown.target);
     }
-    .into()
+    let (action, _) = tool.summary();
+    match action.as_str() {
+        "Run" => {
+            // The model's own one-line description of the command, when given.
+            if let Some(description) = shown
+                .description
+                .as_deref()
+                .map(|d| d.trim().trim_end_matches(['.', '…']))
+                .filter(|d| !d.is_empty() && d.chars().count() <= 60)
+            {
+                return format!("{description}…");
+            }
+            command_status(shown.command.as_deref().unwrap_or("")).into()
+        }
+        "Edit" | "Write" => "Editing file…".into(),
+        "Read" => "Reading file…".into(),
+        "Search" => "Searching the web…".into(),
+        "Find" | "List" | "Glob" | "Grep" => "Exploring project…".into(),
+        "Agent" | "Task" => "Running agent…".into(),
+        _ => mcp_status(&tool.name).unwrap_or_else(|| "Using tool…".into()),
+    }
+}
+/// A status for a shell command the model did not describe.
+fn command_status(command: &str) -> &'static str {
+    let mut words = command.split_whitespace();
+    match (words.next().unwrap_or(""), words.next().unwrap_or("")) {
+        ("gh", "pr") => "Looking at pull requests…",
+        ("gh", "issue") => "Looking at issues…",
+        ("gh", "run" | "workflow") => "Checking CI…",
+        ("gh", "search" | "repo") => "Searching GitHub…",
+        ("gh", _) => "Checking GitHub…",
+        ("git", _) => "Checking git…",
+        ("curl" | "wget", _) => "Fetching from the web…",
+        ("npm" | "bun" | "pnpm" | "yarn" | "cargo" | "make", _) => "Running a build…",
+        _ => "Running command…",
+    }
+}
+/// `mcp__github__search_repositories` → "Search repositories…".
+fn mcp_status(name: &str) -> Option<String> {
+    let tool = name
+        .strip_prefix("mcp__")
+        .and_then(|rest| rest.split_once("__"))
+        .map(|(_, tool)| tool)?;
+    let words = tool.replace(['_', '-'], " ");
+    let mut chars = words.trim().chars();
+    let first = chars.next()?;
+    Some(format!("{}{}…", first.to_uppercase(), chars.as_str()))
 }
 /// isEmojiOnlyMessage: up to three emoji, which read as a reaction.
 pub(crate) fn is_emoji_only(text: &str) -> bool {
@@ -530,6 +678,9 @@ pub(crate) struct TranscriptView {
     base: usize,
     /// The store cursor for the turns above the loaded rows, if any.
     history_before: Option<i64>,
+    /// The store cursor for the turns just above the window, which older
+    /// pages loaded here don't move: a paired phone pages from the window.
+    window_before: Option<i64>,
     history_pager: Option<history::HistoryPager>,
     /// The last page read failed; only a scroll retries it.
     history_failed: bool,
@@ -1719,68 +1870,9 @@ impl TranscriptView {
     }
     /// monoSpawnedSessions: sessions a run's `sessions.start` calls accepted.
     fn run_launches(&self, turn: usize, end: usize) -> Vec<i64> {
-        let mut found = Vec::new();
-        let mut at = turn;
-        while at < end {
-            let next = (at + 1..end).find(|&i| self.source[i].first).unwrap_or(end);
-            if self.source[at].role == "mono-launch" {
-                if let Ok(value) = serde_json::from_str::<serde_json::Value>(&self.source[at].text)
-                    && let Some(id) = value["sessionId"].as_i64()
-                    && !found.contains(&id)
-                {
-                    found.push(id);
-                }
-            } else if self.source[at].role == "tool" {
-                let text: String = self.source[at..next]
-                    .iter()
-                    .map(|r| r.text.as_str())
-                    .collect();
-                if let Ok(tool) = serde_json::from_str::<ToolCall>(&text)
-                    && tool.state == ToolState::Completed
-                    && let Ok(input) = serde_json::from_str::<serde_json::Value>(&tool.input)
-                    && let Some(action) = input["command"]
-                        .as_str()
-                        .or_else(|| input["cmd"].as_str())
-                        .and_then(monocode_core::mono::work::command_action)
-                    && matches!(action.as_str(), "sessions.start" | "sessions.send")
-                {
-                    let receipts = serde_json::from_str::<serde_json::Value>(&tool.output)
-                        .map(|v| vec![v])
-                        .unwrap_or_else(|_| {
-                            tool.output
-                                .lines()
-                                .filter_map(|line| serde_json::from_str(line.trim()).ok())
-                                .collect()
-                        });
-                    for value in receipts {
-                        if value["ok"] == true
-                            && let Some(id) = value["result"]["sessionId"]
-                                .as_i64()
-                                .or_else(|| {
-                                    monocode_core::mono::work::session_handle(
-                                        &value["result"]["id"],
-                                    )
-                                })
-                                .or_else(|| {
-                                    (value["result"]["submitted"] == true)
-                                        .then(|| {
-                                            monocode_core::mono::work::session_handle(
-                                                &value["result"]["sessionId"],
-                                            )
-                                        })
-                                        .flatten()
-                                })
-                            && (action == "sessions.start" || self.launches.contains_key(&id))
-                            && !found.contains(&id)
-                        {
-                            found.push(id);
-                        }
-                    }
-                }
-            }
-            at = next;
-        }
-        found
+        run_launches(&self.source, turn, end, |id| {
+            self.launches.contains_key(&id)
+        })
     }
     /// The live state of the sessions this Mono launched, for their cards.
     pub(crate) fn set_launches(
@@ -2436,6 +2528,7 @@ impl TranscriptView {
             history_requested: false,
             base: 0,
             history_before: None,
+            window_before: None,
             history_pager: None,
             history_failed: false,
             history_search: None,
@@ -3041,6 +3134,11 @@ impl TranscriptView {
         let following = self.list.is_following_tail();
         let offset = self.list.logical_scroll_top();
         let anchor = self.rows.get(offset.item_ix).map(|r| r.key);
+        let anchor_turn = self
+            .rows
+            .get(offset.item_ix)
+            .and_then(|r| self.messages.get(r.message))
+            .map(|m| m.turn);
         let current_turn = self.source[..(start + 1).min(self.source.len())]
             .iter()
             .rposition(|r| r.is_prompt())
@@ -3941,13 +4039,32 @@ impl TranscriptView {
         }
         if following {
             self.list.scroll_to_end();
-        } else if let Some(key) = anchor
-            && let Some(item_ix) = self.rows.iter().position(|r| r.key == key)
-        {
-            self.list.scroll_to(ListOffset {
-                item_ix,
-                offset_in_item: offset.offset_in_item,
-            });
+        } else if let Some(key) = anchor {
+            if let Some(item_ix) = self.rows.iter().position(|r| r.key == key) {
+                self.list.scroll_to(ListOffset {
+                    item_ix,
+                    offset_in_item: offset.offset_in_item,
+                });
+            } else if let Some(turn) = anchor_turn {
+                // The row being read folded away, such as tool calls joining
+                // their turn's work line when the answer arrives. Stay in that
+                // turn, on the nearest surviving row at or above it, else the
+                // first below, rather than on whatever now holds the old
+                // index or the index GPUI's splice moved the scroll to.
+                let in_turn =
+                    |r: &UiRow| self.messages.get(r.message).is_some_and(|m| m.turn == turn);
+                let item_ix = self
+                    .rows
+                    .iter()
+                    .rposition(|r| in_turn(r) && r.key <= key)
+                    .or_else(|| self.rows.iter().position(|r| in_turn(r) && r.key > key));
+                if let Some(item_ix) = item_ix {
+                    self.list.scroll_to(ListOffset {
+                        item_ix,
+                        offset_in_item: px(0.),
+                    });
+                }
+            }
         }
         self.prune_reveals(now);
     }
@@ -5721,6 +5838,7 @@ impl Render for TranscriptView {
                 // The list holds its state borrow while delivering the event.
                 // Read the final scroll geometry in our trailing layout probe.
                 .set_scroll_handler(cx.listener(|this, _, _, cx| {
+                    this.reflow.scrolled();
                     this.selection.clear();
                     this.history_requested =
                         this.history_start > 0 || this.history_before.is_some();
@@ -5926,6 +6044,88 @@ fn paint_edge_fade(bounds: Bounds<Pixels>, begin: bool, window: &mut Window) {
     // a seam above the composer. Only the Metal backend supports a real mask.
     #[cfg(not(target_os = "macos"))]
     let _ = (bounds, begin, window);
+}
+
+#[cfg(test)]
+mod mono_status_tests {
+    use super::*;
+
+    fn row(role: &str, text: &str) -> Row {
+        Row {
+            role: role.into(),
+            text: text.into(),
+            first: true,
+            sent_at: None,
+        }
+    }
+    fn tool(name: &str, input: serde_json::Value) -> Row {
+        let mut call = ToolCall::new("t", name);
+        call.input = input.to_string();
+        row("tool", &serde_json::to_string(&call).unwrap())
+    }
+    fn label(rows: Vec<Row>) -> String {
+        mono_work_label(&rows, 0)
+    }
+
+    #[test]
+    fn status_says_what_the_mono_is_doing() {
+        let prompt = row("user", "Review the open PRs");
+        assert_eq!(
+            label(vec![
+                prompt.clone(),
+                row("reasoning", "**Finding the Monocode repo**\n\nLooking…")
+            ]),
+            "Finding the Monocode repo…"
+        );
+        // Raw thinking prose has no heading, so it stays generic.
+        assert_eq!(
+            label(vec![
+                prompt.clone(),
+                row("reasoning", "The user wants me to look at PRs.")
+            ]),
+            "Thinking…"
+        );
+        assert_eq!(
+            label(vec![
+                prompt.clone(),
+                tool(
+                    "Bash",
+                    serde_json::json!({"command":"gh pr list","description":"List open PRs"})
+                )
+            ]),
+            "List open PRs…"
+        );
+        assert_eq!(
+            label(vec![
+                prompt.clone(),
+                tool(
+                    "Bash",
+                    serde_json::json!({"command":"gh pr list --state open"})
+                )
+            ]),
+            "Looking at pull requests…"
+        );
+        assert_eq!(
+            label(vec![
+                prompt.clone(),
+                tool(
+                    "mcp__monocode_app__app",
+                    serde_json::json!({"action":"memory.add","input":{"fact":"x"}})
+                )
+            ]),
+            "Remembering that…"
+        );
+        assert_eq!(
+            label(vec![
+                prompt,
+                tool(
+                    "mcp__github__search_repositories",
+                    serde_json::json!({"query":"monocode"})
+                )
+            ]),
+            "Search repositories…"
+        );
+    }
 }
 
 #[cfg(test)]

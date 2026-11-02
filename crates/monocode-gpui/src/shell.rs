@@ -8,6 +8,7 @@ mod classic_sidebar;
 mod classic_surface_tests;
 mod classic_surfaces;
 mod file_panes;
+mod github_star;
 mod idle_agents;
 #[cfg(test)]
 mod image_lightbox_tests;
@@ -16,6 +17,9 @@ mod live_agents;
 mod mobile_host;
 mod mono_panes;
 pub(crate) mod monos;
+mod new_chat_choice;
+#[cfg(test)]
+mod new_chat_choice_tests;
 mod notifications;
 mod orchestration;
 mod picker_preferences;
@@ -654,6 +658,7 @@ pub(crate) struct Shell {
     live_next_change: u64,
     busy_sessions: HashSet<i64>,
     notification_state: notifications::State,
+    github_star: github_star::State,
     quick: crate::quick_composer::Controller,
     unseen_finished: HashSet<i64>,
     archiving: HashSet<i64>,
@@ -1017,6 +1022,7 @@ impl Shell {
             live_next_change: 1000,
             busy_sessions: HashSet::new(),
             notification_state,
+            github_star: Default::default(),
             quick: Default::default(),
             unseen_finished: HashSet::new(),
             archiving: HashSet::new(),
@@ -1270,7 +1276,7 @@ impl Shell {
         if let Some(inbox) = &self.inbox {
             let active = self.active_app_view == Some(app_views::AppView::Inbox)
                 && self.settings.is_none()
-                && self.app_search.is_none();
+                && !self.search_page();
             inbox.update(cx, |inbox, cx| inbox.set_active(active, cx));
         }
         // Every pane of the active tab is on screen, not just the focused one.
@@ -1278,7 +1284,7 @@ impl Shell {
             Some(tab)
                 if !self.app_view_open()
                     && self.settings.is_none()
-                    && self.app_search.is_none()
+                    && !self.search_page()
                     && !self.mono_active(cx) =>
             {
                 self.workspace.layout(tab).leaf_ids().into_iter().collect()
@@ -1291,7 +1297,7 @@ impl Shell {
             && self.workspace.right_panel_open
             && !self.app_view_open()
             && self.settings.is_none()
-            && self.app_search.is_none()
+            && !self.search_page()
         {
             shown.extend(
                 self.monos
@@ -1632,7 +1638,7 @@ impl Shell {
             && (!self.workspace.classic_layout || self.mono_active(cx))
             && !self.app_view_open()
             && self.settings.is_none()
-            && self.app_search.is_none()
+            && !self.search_page()
             && (self.mono_active(cx) || self.git.read(cx).available())
     }
     fn sync_right_panel(&mut self, cx: &mut Context<Self>) {
@@ -1642,7 +1648,7 @@ impl Shell {
             && self.workspace.right_panel_open
             && !self.app_view_open()
             && self.settings.is_none()
-            && self.app_search.is_none()
+            && !self.search_page()
             && !opening;
         if let Some(panel) = &self.right_panel {
             let sidebar_tab = (self.workspace.classic_layout
@@ -4342,7 +4348,7 @@ impl Shell {
         }) {
             self.activate_session(id, window, cx);
         } else {
-            self.create_session(self.default_kind(), true, cx);
+            self.create_session(self.default_choice(), true, cx);
         }
     }
     fn open_project(&mut self, cx: &mut Context<Self>) {
@@ -4372,18 +4378,26 @@ impl Shell {
         })
         .detach();
     }
-    fn create(&mut self, kind: Kind, cx: &mut Context<Self>) {
-        self.create_session(kind, false, cx);
+    fn new_chat(&mut self, cx: &mut Context<Self>) {
+        self.create_session(self.default_choice(), false, cx);
     }
-    fn create_session(&mut self, kind: Kind, only_if_empty: bool, cx: &mut Context<Self>) {
-        self.create_session_target(kind, only_if_empty, None, cx);
+    fn create(&mut self, kind: Kind, cx: &mut Context<Self>) {
+        self.create_session(self.explicit_choice(kind), false, cx);
+    }
+    fn create_session(
+        &mut self,
+        choice: new_chat_choice::NewChatChoice,
+        only_if_empty: bool,
+        cx: &mut Context<Self>,
+    ) {
+        self.create_session_target(choice, only_if_empty, None, cx);
     }
     fn create_in_folder(&mut self, folder: String, cx: &mut Context<Self>) {
-        self.create_session_target(self.default_kind(), false, Some(folder), cx);
+        self.create_session_target(self.default_choice(), false, Some(folder), cx);
     }
     fn create_session_target(
         &mut self,
-        kind: Kind,
+        choice: new_chat_choice::NewChatChoice,
         only_if_empty: bool,
         folder: Option<String>,
         cx: &mut Context<Self>,
@@ -4399,14 +4413,7 @@ impl Shell {
         if only_if_empty && !self.pending_project_blanks.insert(blank_key.clone()) {
             return;
         }
-        let model = self
-            .workspace
-            .preferences
-            .project_providers
-            .get(&cwd)
-            .and_then(|p| p.models.get(kind.id()))
-            .or(self.workspace.preferences.default_models.get(kind.id()))
-            .cloned();
+        let new_chat_choice::NewChatChoice { kind, model } = choice;
         let navigation_revision = self.navigation_revision;
         let account = crate::accounts::get(cx)
             .map(|center| center.read(cx).selected(kind, &cwd))
@@ -6730,7 +6737,14 @@ impl Shell {
                         )
                         .child(self.virtual_sidebar(cx))
                         .children(live_agents)
-                        .child(self.app_update_footer(cx)),
+                        .child(self.app_update_footer(cx))
+                        // The Focused layout has no project rail footer to hold it.
+                        .when(!self.workspace.classic_layout, |d| {
+                            d.children(
+                                self.github_star_prompt(cx)
+                                    .map(|prompt| div().mx_2().my_2().child(prompt)),
+                            )
+                        }),
                 ),
             )
             .when(!self.workspace.classic_layout, |d| {
@@ -7709,7 +7723,7 @@ impl Shell {
                 let active = self.workspace.active_tab() == Some(id)
                     && !self.app_view_open()
                     && !self.mono_active(cx)
-                    && self.app_search.is_none();
+                    && !self.search_page();
                 // The press itself redraws the strip to arm tab dragging.
                 // Keep its ink stable until that press is released, even if
                 // hover hitboxes are being replaced during that redraw.
@@ -8049,9 +8063,7 @@ impl Shell {
                                 icon("plus", 14.)
                                     .group_hover("new-tab", |s| s.text_color(content(1.))),
                             )
-                            .on_click(
-                                cx.listener(|this, _, _, cx| this.create(this.default_kind(), cx)),
-                            ),
+                            .on_click(cx.listener(|this, _, _, cx| this.new_chat(cx))),
                     )
                     .child(titlebar_drag_area().flex_1().min_w_0()),
             )
@@ -8274,6 +8286,7 @@ impl Render for Shell {
                     cx.notify();
                 }));
             self.start_native_notifications(cx);
+            self.check_github_star(false, cx);
             let shell = cx.entity().downgrade();
             window.on_window_should_close(cx, move |window, cx| {
                 shell
@@ -8306,6 +8319,7 @@ impl Render for Shell {
                         this.close_preview(cx);
                     } else {
                         this.resume_git(cx);
+                        this.check_github_star(true, cx);
                     }
                 }));
             self.observations
@@ -8492,7 +8506,7 @@ impl Render for Shell {
                 if this.dock_focused(window, cx).is_some() {
                     this.new_terminal(window, cx);
                 } else {
-                    this.create(this.default_kind(), cx);
+                    this.new_chat(cx);
                 }
             }))
             .on_action(
@@ -8514,8 +8528,12 @@ impl Render for Shell {
                     }
                     return;
                 }
-                if this.app_search.is_some() {
+                if this.search_page() {
                     this.close_search_tab(window, cx);
+                    return;
+                }
+                if this.app_search.is_some() {
+                    this.close_app_search(window, cx);
                     return;
                 }
                 if let Some(TitleTab::Mono { id, .. }) = this.active_title_tab(cx) {
@@ -8824,6 +8842,7 @@ impl Render for Shell {
             .children(self.action_modal(window, cx))
             .children(self.resource_modal(window, cx))
             .children(self.quick_open_modal(window, cx))
+            .children(self.search_modal(window, cx))
             .children(self.remote_project_modal(window, cx))
             .children(self.notice_modals(window, cx))
             .children(self.folder_picker_popover(window, cx))

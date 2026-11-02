@@ -88,6 +88,8 @@ mod traffic_lights;
 mod transcript;
 mod usage_footer;
 mod visuals;
+#[cfg(test)]
+mod wheel_glide_tests;
 mod window_state;
 mod workspace;
 mod worktree_switcher;
@@ -184,6 +186,13 @@ fn main() {
     }
     if cli_args.first().is_some_and(|a| a == "visual-mcp") {
         if let Err(error) = monocode_core::visual_bridge::mcp_stdio() {
+            eprintln!("{error}");
+            std::process::exit(1);
+        }
+        return;
+    }
+    if cli_args.first().is_some_and(|a| a == "app-mcp") {
+        if let Err(error) = monocode_core::mono::bridge::mcp_stdio() {
             eprintln!("{error}");
             std::process::exit(1);
         }
