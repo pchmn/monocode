@@ -438,6 +438,11 @@ import {
   saveSwapSidePanels,
   subscribeSwapSidePanels,
 } from "../model/panelSide";
+import {
+  loadStackedPanels,
+  saveStackedPanels,
+  subscribeStackedPanels,
+} from "../model/stackedPanels";
 import { useStopSessionsOnTabClose } from "../../sessions/model/stopOnTabClose";
 
 /**
@@ -2270,6 +2275,11 @@ function AppearancePage({ appearance }: { appearance: AppearanceSettings }) {
     loadSwapSidePanels,
     () => false,
   );
+  const stackedPanels = useSyncExternalStore(
+    subscribeStackedPanels,
+    loadStackedPanels,
+    () => false,
+  );
 
   return (
     <>
@@ -2513,6 +2523,19 @@ function AppearancePage({ appearance }: { appearance: AppearanceSettings }) {
               label="Swap side panels"
               on={swapPanels}
               onChange={saveSwapSidePanels}
+            />
+          </Row>
+        ) : null}
+        {inset ? (
+          <Row
+            id="stacked-side-panels"
+            label="Stack side panels"
+            description="Explorer, Changes and History under the sessions, in a single panel."
+          >
+            <Toggle
+              label="Stack side panels"
+              on={stackedPanels}
+              onChange={saveStackedPanels}
             />
           </Row>
         ) : null}
