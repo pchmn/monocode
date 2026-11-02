@@ -1,9 +1,9 @@
 # Session status line
 
-Under the composer: tokens, context %, lifetime Claude cost and the branch's PR. The cost is persisted and survives restarts. (PR #8)
+Under the composer: tokens, context %, lifetime Claude cost, and the branch's PR right after the branch picker. The cost is persisted and survives restarts. (PR #8)
 
 ## Fork files
-- `src/features/sessions/ui/SessionStatusLine.tsx` — `SessionStatusLine`, `SessionContextText`
+- `src/features/sessions/ui/SessionStatusLine.tsx` — `SessionStatusLine`, `SessionContextText`, `SessionPrLink`
 - `src/features/sessions/model/sessionStatusLine.ts`
 
 ## Upstream hooks
@@ -15,9 +15,9 @@ Under the composer: tokens, context %, lifetime Claude cost and the branch's PR.
 - `src/features/sessions/data/sessionStore.ts` — `costUsd` in `SessionRecord`, `SessionUpsertPayload`, `persistableMeta`, `recordToSession`
 - `src-tauri/src/session_store.rs` — `cost_usd` column: structs, `migrate`, `upsert_session`, `get_session_record` (column index)
 - `src/features/sessions/ui/SessionPane.tsx` — `statusInfo` passed to `Composer`
-- `src/features/sessions/ui/Composer.tsx` — `statusInfo` prop, `SessionContextText` and `SessionStatusLine` in the footer
+- `src/features/sessions/ui/Composer.tsx` — `statusInfo` prop, `SessionPrLink` after the branch pickers, `SessionContextText` and `SessionStatusLine` in the footer
 
 ## Verify
 - `src/features/sessions/model/sessionStatusLine.test.ts`
 - `cargo test` (session store)
-- Manual: run a Claude turn; the cost appears under the composer and is unchanged after an app restart.
+- Manual: run a Claude turn; the cost appears under the composer and is unchanged after an app restart. On a branch with a PR, `PR #n` sits right after the branch name and opens the PR.
