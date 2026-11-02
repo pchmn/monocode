@@ -83,7 +83,8 @@ export function WorkspaceFolderTrees({
         {folders.map((folder, i) => (
           <div
             key={folder.path}
-            className="shrink-0"
+            // Each tree's own scroller would latch trackpad gestures and block chaining to the list's.
+            className="shrink-0 [&_.overflow-y-auto]:overflow-visible [&_.overscroll-none]:overscroll-auto"
             onPointerDownCapture={() => (active.current = i)}
             onFocusCapture={() => (active.current = i)}
           >
