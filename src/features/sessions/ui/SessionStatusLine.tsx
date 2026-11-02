@@ -44,7 +44,7 @@ function useBranchPr(cwd: string, branch: string | undefined): Pr {
   return pr;
 }
 
-/** Sits before the context ring; cost and PR follow it in `SessionStatusLine`. */
+/** Sits before the context ring; the cost follows it in `SessionStatusLine`. */
 export function SessionContextText({ context }: { context?: ContextUsage }) {
   if (!context) return null;
   return (
@@ -54,7 +54,17 @@ export function SessionContextText({ context }: { context?: ContextUsage }) {
   );
 }
 
-export function SessionStatusLine({
+export function SessionStatusLine({ info }: { info?: SessionStatusInfo }) {
+  if (!info?.costUsd) return null;
+  return (
+    <span className="truncate text-[11px] text-content/45">
+      {formatCost(info.costUsd)}
+    </span>
+  );
+}
+
+/** Sits right after the branch picker. */
+export function SessionPrLink({
   info,
   cwd,
   branch,
@@ -63,27 +73,17 @@ export function SessionStatusLine({
   cwd: string;
   branch?: string;
 }) {
-  const costUsd = info?.costUsd;
   const lookedUp = useBranchPr(info?.pr ? "" : cwd, branch);
   const pr = info?.pr ?? lookedUp;
-  const parts = costUsd ? [formatCost(costUsd)] : [];
-  if (parts.length === 0 && !pr) return null;
+  if (!pr) return null;
   return (
-    <div className="flex min-w-0 items-center gap-1 truncate text-[11px] text-content/45">
-      <span className="truncate">{parts.join(" · ")}</span>
-      {pr ? (
-        <>
-          {parts.length ? <span>·</span> : null}
-          <button
-            type="button"
-            title={pr.title}
-            onClick={() => void openUrl(pr.url).catch(() => undefined)}
-            className="shrink-0 hover:text-content/80 hover:underline"
-          >
-            PR #{pr.number}
-          </button>
-        </>
-      ) : null}
-    </div>
+    <button
+      type="button"
+      title={pr.title}
+      onClick={() => void openUrl(pr.url).catch(() => undefined)}
+      className="shrink-0 cursor-pointer text-[11px] text-content/45 hover:text-content/80 hover:underline"
+    >
+      PR #{pr.number}
+    </button>
   );
 }

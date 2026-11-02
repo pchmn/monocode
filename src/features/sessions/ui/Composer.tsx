@@ -162,6 +162,7 @@ import { clearOnDoubleEscape } from "./doubleEscapeClear";
 import { Popover } from "../../../shared/ui/Popover";
 import {
   SessionContextText,
+  SessionPrLink,
   SessionStatusLine,
   type SessionStatusInfo,
 } from "./SessionStatusLine";
@@ -1884,6 +1885,11 @@ export function Composer({
           />
         </>
       )}
+      <SessionPrLink
+        info={statusInfo}
+        cwd={remoteSession ? "" : executionCwd}
+        branch={branch}
+      />
       <div className="ml-auto flex min-w-0 shrink items-center gap-2">
         <SessionContextText context={context} />
         <ContextMeter
@@ -1893,11 +1899,7 @@ export function Composer({
           }
           compactDisabled={busy}
         />
-        <SessionStatusLine
-          info={statusInfo}
-          cwd={remoteSession ? "" : executionCwd}
-          branch={branch}
-        />
+        <SessionStatusLine info={statusInfo} />
       </div>
     </div>
   );
