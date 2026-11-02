@@ -1,6 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { HugeiconsIcon } from "@hugeicons/react";
-import Layout03Icon from "@hugeicons/core-free-icons/Layout03Icon";
+import { Layout } from "../../../shared/ui/icons";
 import {
   loadFileTabMode,
   saveFileTabMode,
@@ -30,11 +29,7 @@ export function FileTabModeToggle() {
       className="mx-1 grid size-6 shrink-0 cursor-default place-items-center self-center rounded-md text-content/45 hover:bg-content/5 hover:text-content"
     >
       {stacked ? (
-        <HugeiconsIcon
-          icon={Layout03Icon}
-          className="size-3.5"
-          strokeWidth={1.75}
-        />
+        <Layout className="size-3.5" />
       ) : (
         <TabsIcon />
       )}

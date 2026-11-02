@@ -33,7 +33,8 @@ export function useGithubAccountMenu(path: string | undefined) {
       ),
     ])
       .then(([accounts, current]) => {
-        if (active) setState({ accounts, current });
+        // Upstream tests mock every invoke as null.
+        if (active) setState({ accounts: accounts ?? [], current });
       })
       .catch(() => {});
     return () => {
