@@ -64,6 +64,7 @@ mod window;
 mod window_transfer;
 #[cfg(windows)]
 mod windows;
+mod worktree_cleanup;
 mod worktree_lifecycle;
 mod worktrees;
 
@@ -463,6 +464,7 @@ pub fn run() {
             worktrees::git_worktree_rename_branch,
             worktrees::git_worktree_check_remove,
             worktrees::git_worktree_remove,
+            worktree_cleanup::worktree_cleanup_status,
             worktrees::git_orchestration_worktree_remove,
             worktrees::git_orchestration_branch_remove,
             fs::create_path,
