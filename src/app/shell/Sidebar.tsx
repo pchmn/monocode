@@ -714,6 +714,7 @@ function SidebarComponent({
     [resize.width, minWidth, setSidebarWidth],
   );
   const [tabOrder, setTabOrder] = useState<SidebarTab[]>(loadSidebarTabOrder);
+  const [navIconsHost, setNavIconsHost] = useState<HTMLElement | null>(null);
   const [rightTabOrder, setRightTabOrder] =
     useState<RightPanelTab[]>(loadRightPanelTabOrder);
   const [now, setNow] = useState(() => Date.now());
@@ -2433,6 +2434,7 @@ function SidebarComponent({
           </span>
         )}
       </div>
+      {inset ? <div ref={setNavIconsHost} className="contents" /> : null}
       {/* Inset, a new session is the + at the end of the title bar's tabs. */}
       <WorkspaceTitleActions
         onSearch={onGoToFile}
@@ -2465,6 +2467,7 @@ function SidebarComponent({
 
   const navList = inset ? (
     <SidebarNavRow
+      iconsHost={navIconsHost}
       search={
         onSearch ? { active: searchActive, onClick: onSearch } : undefined
       }
