@@ -2437,7 +2437,8 @@ function SidebarComponent({
       {inset ? <div ref={setNavIconsHost} className="contents" /> : null}
       {/* Inset, a new session is the + at the end of the title bar's tabs. */}
       <WorkspaceTitleActions
-        onSearch={onGoToFile}
+        // Inset, Search sits with the view icons; Go to File keeps its shortcut.
+        onSearch={inset ? undefined : onGoToFile}
         onNew={inset ? undefined : onNew}
       />
       {headerProjectMenu.element}
