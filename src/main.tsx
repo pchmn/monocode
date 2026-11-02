@@ -28,6 +28,7 @@ import "./styles/index.css";
 import "./styles/swapPanels.css";
 import "./styles/gruvboxTheme.css";
 import "./styles/codeFonts.css";
+import "./styles/tabDividers.css";
 
 performance.mark("monocode:bootstrap");
 // Let local boot IPC overlap loading/evaluating the workspace UI.

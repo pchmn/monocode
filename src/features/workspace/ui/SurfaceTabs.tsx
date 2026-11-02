@@ -275,6 +275,7 @@ export function SurfaceTabs({
         ref={lockOverscroll}
         role="tablist"
         aria-label={label}
+        data-tab-strip
         className="scrollbar-none flex min-w-0 flex-1 items-center gap-1 overflow-x-auto overscroll-none pl-[3px] pr-2.5"
       >
         {onPaneDragStart ? (
