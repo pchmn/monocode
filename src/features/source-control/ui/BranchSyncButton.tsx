@@ -4,7 +4,7 @@ import {
   notifyGitChanged,
   subscribeGitChanged,
 } from "../../../platform/tauri/fs";
-import { ArrowDownCircle, Loader } from "../../../shared/ui/icons";
+import { ArrowDown, Loader } from "../../../shared/ui/icons";
 import { isRemoteProjectPath } from "../../projects/model/recents";
 import { branchBehindUpstream } from "../model/defaultBranchStart";
 
@@ -56,12 +56,12 @@ export function BranchSyncButton({ cwd, branch, enabled = true }: Props) {
       onClick={pull}
       title={error ?? `Pull ${commits} from upstream`}
       aria-label={`Pull ${commits} from upstream`}
-      className={`flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[12px] hover:bg-content/8 hover:text-content disabled:opacity-40 disabled:hover:bg-transparent active:scale-[0.97] ${error ? "text-red-400/90" : "text-content/55"}`}
+      className={`-ml-1.5 flex h-6 shrink-0 items-center gap-1 rounded-md bg-accent/10 px-1.5 text-[12px] tabular-nums hover:bg-accent/20 disabled:opacity-40 disabled:hover:bg-accent/10 active:scale-[0.97] ${error ? "text-red-400/90" : "text-accent"}`}
     >
       {pulling ? (
         <Loader className="size-3.5 animate-spin" />
       ) : (
-        <ArrowDownCircle className="size-3.5" />
+        <ArrowDown className="size-3.5" />
       )}
       {behind}
     </button>

@@ -96,7 +96,7 @@ export function DefaultBranchSwitch({
         disabled={!enabled || busy}
         onClick={switchToDefault}
         title={error ?? `Check out ${defaultBranch} and pull it from upstream`}
-        className={`flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[12px] hover:bg-content/8 hover:text-content disabled:opacity-40 disabled:hover:bg-transparent active:scale-[0.97] ${error ? "text-red-400/90" : "text-content/55"}`}
+        className={`-ml-1.5 flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[12px] hover:bg-content/8 hover:text-content disabled:opacity-40 disabled:hover:bg-transparent active:scale-[0.97] ${error ? "text-red-400/90" : "text-content/55"}`}
       >
         {busy ? <Loader className="size-3.5 animate-spin" /> : null}
         Switch to {defaultBranch}
