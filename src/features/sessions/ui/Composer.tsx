@@ -1866,8 +1866,8 @@ export function Composer({
           ) : null}
           {(workspaceMode ?? "current") === "current" ? (
             <>
-              <DefaultBranchSwitch cwd={remoteSession ? "" : executionCwd} branch={branch} defaultBranch={defaultBranch} enabled={enabled && !busy} onChange={onBranchChange} />
-              <BranchSyncButton cwd={remoteSession ? "" : executionCwd} branch={branch} enabled={enabled && !busy} />
+              <DefaultBranchSwitch cwd={remoteSession ? "" : executionCwd} branch={branch || draftBranches?.current || undefined} defaultBranch={defaultBranch} enabled={enabled && !busy} onChange={onBranchChange} />
+              <BranchSyncButton cwd={remoteSession ? "" : executionCwd} branch={branch || draftBranches?.current || undefined} enabled={enabled && !busy} />
             </>
           ) : null}
         </>
