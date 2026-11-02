@@ -26,7 +26,13 @@ public class MonocodeLinkModule: Module {
       }
       OnViewDidUpdateProps { (view: NativeTranscriptView) in view.updateProps() }
       AsyncFunction("scrollToEnd") { (view: NativeTranscriptView) in view.jumpToEnd() }
+      AsyncFunction("selectText") { (view: NativeTranscriptView, text: String) in
+        view.selectText(text)
+      }
     }
+    AsyncFunction("hideScrollEdgeEffects") { (testID: String) -> Bool in
+      MainActor.assumeIsolated { ScrollEdgeEffects.hide(testID: testID) }
+    }.runOnQueue(.main)
     AsyncFunction("execute") { (input: String) -> String in
       return input.withCString { pointer in
         guard let output = monocode_link_call(pointer) else {

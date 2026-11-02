@@ -39,9 +39,12 @@ const HEADER_ITEMS = 210;
 export function SessionTitle({
   title,
   subtitle,
+  onClose,
 }: {
   title: string;
   subtitle: string;
+  /** Presented as a sheet: a close button before the title, in place of back. */
+  onClose?: () => void;
 }) {
   const styles = useStyles();
   const { width } = useWindowDimensions();
@@ -58,6 +61,13 @@ export function SessionTitle({
     );
   return (
     <Stack.Toolbar placement="left">
+      {onClose ? (
+        <Stack.Toolbar.Button
+          icon="xmark"
+          accessibilityLabel="Close"
+          onPress={onClose}
+        />
+      ) : null}
       <Stack.Toolbar.View hidesSharedBackground>
         <View
           style={[styles.title, { width: Math.max(width - HEADER_ITEMS, 80) }]}
@@ -176,29 +186,38 @@ export function SessionToolbar({
           </Pressable>
           <ChoiceMenu
             label="Session actions"
-            actions={[
-              {
-                label: "Rename",
-                disabled: !session,
-                onPress: () => {
-                  if (session) {
-                    setName(session.title);
-                    setRenaming(true);
-                  }
+            title="Session"
+            sections={[
+              [
+                {
+                  label: "Rename",
+                  icon: "edit",
+                  disabled: !session,
+                  onPress: () => {
+                    if (session) {
+                      setName(session.title);
+                      setRenaming(true);
+                    }
+                  },
                 },
-              },
-              { label: "Copy Session ID", onPress: () => void copyId() },
-              { label: "Settings", onPress: onSettings },
-              {
-                label: "Archive",
-                disabled: !session,
-                onPress: () => session && archive(session),
-              },
-              {
-                label: "Delete",
-                disabled: !session,
-                onPress: () => session && remove(session),
-              },
+                { label: "Copy Session ID", icon: "copy", onPress: () => void copyId() },
+                { label: "Settings", icon: "settings", onPress: onSettings },
+              ],
+              [
+                {
+                  label: "Archive",
+                  icon: "archive",
+                  disabled: !session,
+                  onPress: () => session && archive(session),
+                },
+                {
+                  label: "Delete",
+                  icon: "trash",
+                  destructive: true,
+                  disabled: !session,
+                  onPress: () => session && remove(session),
+                },
+              ],
             ]}
           >
             <View style={styles.androidButton}>

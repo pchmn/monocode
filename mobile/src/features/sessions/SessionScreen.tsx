@@ -1,4 +1,4 @@
-import { router, useGlobalSearchParams, useIsFocused, usePathname } from "expo-router";
+import { useIsFocused, usePathname } from "expo-router";
 import { BlurTargetView } from "expo-blur";
 import {
   createContext,
@@ -13,8 +13,10 @@ import {
   type RefObject,
 } from "react";
 import {
+  findNodeHandle,
   Platform,
   Text,
+  TextInput,
   View,
   type LayoutChangeEvent,
   type StyleProp,
@@ -48,9 +50,16 @@ import {
   useSceneKey,
 } from "@/ui/SceneFade";
 import { GlassBlurTarget, GlassPresence, LiquidView } from "@/ui/LiquidView";
+import { DitherLoading } from "@/ui/DitherLoading";
+import { useDrawerActions, useSceneSwapping, useSceneSwitching } from "@/ui/ScenePager";
+import { UnreadDot, useAnyUnreadMono } from "@/features/workspace/UnreadDot";
 import { themedStyles, useColors } from "@/ui/theme";
 
-const HEADER_HEIGHT = 44;
+export const HEADER_HEIGHT = 44;
+/** The frame's own header (a mono's) below the status bar: flush with it, so
+ *  its buttons sit level with the native header's on a project. The drawer's
+ *  header sits there too. */
+export const HEADER_GAP = 0;
 /** The scroll-to-end button above the composer. */
 const JUMP = 36;
 /** Gap between the composer and the keyboard while it is open. */
@@ -200,7 +209,7 @@ export type Chrome = {
   subtitle?: string;
   /** Glass pill in the header, e.g. a mono's mascot and name, or a session's
    * title over its project and branch. Wins over `title`. */
-  pill?: { icon?: ReactNode; label: string; subtitle?: string };
+  pill?: { icon?: ReactNode; label: string; subtitle?: string; onPress?: () => void };
   /** Any element for the header's centre, e.g. a view switch. Wins over `pill` and `title`. */
   center?: ReactNode;
   /** Screens with the same key share the header's centre and the line under
@@ -301,11 +310,15 @@ export function SessionScreen({
 export function SessionFrame({
   children,
   nativeHeaderHeight,
+  standAside = false,
 }: {
   children: ReactNode;
   /** For a screen under the stack's native header: that header's height.
    *  It takes the place of this frame's own. */
   nativeHeaderHeight?: number;
+  /** Draws no header or composer of its own, as for a native header, for
+   *  screens that bring their own frame or none (the Monos-only layout). */
+  standAside?: boolean;
 }) {
   const colors = useColors();
   const styles = useStyles();
@@ -315,9 +328,26 @@ export function SessionFrame({
   // The screen under a modal still has it, so the frame's own header doesn't
   // show through the modal's while it is up.
   const pathname = usePathname();
+  const swapping = useSceneSwapping();
+  const switching = useSceneSwitching();
   const [scene, setScene] = useState(pathname);
-  if (scene !== pathname && !isModalRoute(pathname)) setScene(pathname);
-  const covered = !native && hasNativeHeader(scene);
+  // Leaving a screen under this frame's header for a native one, the header
+  // and cover stay on it until the next screen has arrived, rather than
+  // going the moment the route changes while it is still on screen.
+  const holding = swapping && !native && !hasNativeHeader(scene);
+  if (scene !== pathname && !isModalRoute(pathname) && !holding) setScene(pathname);
+  // Android's modals are screens in the same stack, under this frame's
+  // header and composer rather than over them, so those stand aside too.
+  const covered =
+    standAside ||
+    (!native &&
+      (hasNativeHeader(scene) || (Platform.OS === "android" && isModalRoute(pathname))));
+  // The loading cover stays up through its own way out, the ring then the
+  // ground, once the switch no longer needs it.
+  const covering = switching && !covered;
+  const [coverShown, setCoverShown] = useState(covering);
+  if (covering && !coverShown) setCoverShown(true);
+  const coverGone = useCallback(() => setCoverShown(false), []);
   // Each route's chrome, and the last route's while the header pushes it out.
   const [header, setHeader] = useState<{
     path: string;
@@ -338,11 +368,24 @@ export function SessionFrame({
   const push = useSharedValue(HEADER_PUSH_TOTAL);
   const [pushed, setPushed] = useState<string | null>(null);
   const headerPath = header?.path;
+  // A switch from the drawer has no push: the header is simply the next
+  // screen's, in place, as the drawer shuts over a still frame.
+  const switchingNow = useRef(switching);
+  // Before the push's own effect below, which reads it on the same commit.
   useLayoutEffect(() => {
-    if (headerPath) push.set(0);
+    switchingNow.current = switching;
+  });
+  const instant = useRef(false);
+  useLayoutEffect(() => {
+    if (!headerPath) return;
+    instant.current = switchingNow.current;
+    if (!instant.current) return push.set(0);
+    push.set(HEADER_PUSH_TOTAL);
+    setPushed(headerPath);
+    setHeader((prev) => prev && { ...prev, previous: null });
   }, [headerPath, push]);
   useEffect(() => {
-    if (!headerPath) return;
+    if (!headerPath || instant.current) return;
     let frame = requestAnimationFrame(() => {
       frame = requestAnimationFrame(() => {
         setPushed(headerPath);
@@ -405,8 +448,10 @@ export function SessionFrame({
           key: sharedTrailingKey(layer.path, layer.chrome),
           still: false,
         }));
-  // The menu button opens the project picker, the current project checked.
-  const { projectId } = useGlobalSearchParams<{ projectId?: string }>();
+  // The menu button opens the drawer of projects and monos.
+  const drawer = useDrawerActions();
+  // Dotted while a mono has a reply the user hasn't seen.
+  const unread = useAnyUnreadMono();
   const insets = useSafeAreaInsets();
   const extraContentPadding = useSharedValue(0);
   const restingHeight = useRef<number | null>(null);
@@ -438,7 +483,7 @@ export function SessionFrame({
     ],
   }));
 
-  const headerTop = insets.top + 6;
+  const headerTop = insets.top + HEADER_GAP;
   // The outer frame contains the native navigator and its header surfaces.
   // Recording that whole tree can include a blur sampling its own RenderNode.
   // Only the per-screen frame may record content for its sibling surfaces.
@@ -522,11 +567,12 @@ export function SessionFrame({
     <ChromeContext value={setChrome}>
       <JumpToEndContext value={jump}>
         <SessionLayoutContext value={layout}>
-          <KeyboardGestureArea
-            interpolator="ios"
-            textInputNativeID={COMPOSER_INPUT_ID}
-            style={styles.scene}
-          >
+          {/* No textInputNativeID: with it, iOS gives the focused composer an
+              invisible accessory view and defers its blur a frame. A Mono's
+              chat popped mid-edit then keeps the keyboard over the list, and
+              the next chat's field can't take focus. It only carries an
+              offset, which nothing here sets. */}
+          <KeyboardGestureArea interpolator="ios" style={styles.scene}>
             {/* First, unwrapped: the screens' scroll views lead each view's
                 first-child chain, where iOS looks for what to blur under a
                 native header, and nothing fades their native glass away. */}
@@ -537,6 +583,14 @@ export function SessionFrame({
                 </GlassBlurTarget>
               </ContentBlurReady>
             </ContentBlurTarget>
+
+            {/* While the drawer switches screens: over the content only, so the
+                header and composer stay, the frame's own or the native one.
+                A frame standing aside for a native header's leaves it to that
+                screen's own frame. */}
+            {coverShown ? (
+              <DitherLoading leaving={!covering} onGone={coverGone} />
+            ) : null}
 
             {/* Under the native header too, which is transparent over it. */}
             {covered ? null : (
@@ -583,16 +637,14 @@ export function SessionFrame({
                   ) : null,
               )}
               <View style={[styles.header, { top: headerTop }]}>
-                <CircleButton
-                  icon="menu"
-                  label="Switch project"
-                  onPress={() =>
-                    router.push({
-                      pathname: "/projects",
-                      params: projectId ? { current: projectId } : {},
-                    })
-                  }
-                />
+                <View>
+                  <CircleButton
+                    icon="sidebar"
+                    label={unread ? "Projects and monos, new replies" : "Projects and monos"}
+                    onPress={drawer.open}
+                  />
+                  {unread ? <UnreadDot /> : null}
+                </View>
                 <View style={styles.titleBlock}>
                   {centerLayers.map((layer) => (
                     <HeaderPiece
@@ -698,16 +750,35 @@ export function SessionFrame({
  * `onInteractive` follows a drag. `offset` is how much less than the keyboard
  * height to rise, as KeyboardStickyView's `offset.opened`.
  */
-export function useKeyboardLift(offset: number) {
+export function useKeyboardLift(offset: number, owner?: RefObject<TextInput | null>) {
   const height = useSharedValue(0);
   const progress = useSharedValue(0);
+  // With an owner, only the keyboard raised for it. A Mono's chat popped
+  // mid-edit takes its keyboard out sideways with it, so the keyboard's
+  // height holds until the pop ends; the list's search would wait over it,
+  // then drop.
+  const ownerTag = useSharedValue(-1);
+  const owned = useSharedValue(true);
+  useEffect(() => {
+    if (owner) ownerTag.set(findNodeHandle(owner.current) ?? -1);
+  }, [owner, ownerTag]);
   const follow = (e: { height: number; progress: number }) => {
     "worklet";
+    if (!owned.get()) return;
     height.set(e.height);
     progress.set(e.progress);
   };
   useKeyboardHandler(
-    { onMove: follow, onInteractive: follow, onEnd: follow },
+    {
+      // Decided as it shows, and kept as it hides.
+      onStart: (e) => {
+        "worklet";
+        if (ownerTag.get() !== -1 && e.progress === 1) owned.set(e.target === ownerTag.get());
+      },
+      onMove: follow,
+      onInteractive: follow,
+      onEnd: follow,
+    },
     [],
   );
 
@@ -785,6 +856,9 @@ function HeaderTitle({ chrome }: { chrome: Chrome }) {
       <LiquidView
         style={styles.pillFrame}
         innerStyle={[styles.pill, !chrome.pill.icon && styles.pillTextOnly]}
+        onPress={chrome.pill.onPress}
+        accessibilityLabel={chrome.pill.onPress ? chrome.pill.label : undefined}
+        pressedScale={chrome.pill.onPress ? 1.04 : undefined}
       >
         {chrome.pill.icon}
         <View style={styles.pillText}>
