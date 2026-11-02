@@ -110,7 +110,7 @@ export function MonoRailSection({
 
   return (
     <div
-      className={`shrink-0 ${project ? "px-2 pb-3" : "mb-2"}`}
+      className={`shrink-0 ${project ? `px-2 ${collapsed ? "pb-1" : "pb-3"}` : "mb-2"}`}
       data-mono-rail
       data-mono-project={project}
     >
