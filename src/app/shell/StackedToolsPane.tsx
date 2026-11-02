@@ -50,10 +50,10 @@ export function StackedToolsPane({
     <div
       className={
         shown
-          ? "relative flex min-h-0 shrink-0 flex-col border-t border-stroke"
+          ? "relative flex min-h-[120px] flex-col border-t border-content/15"
           : "hidden"
       }
-      style={{ height: `min(${height}px, calc(100% - 160px))` }}
+      style={{ height }}
     >
       <div
         role="separator"
