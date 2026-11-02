@@ -3138,6 +3138,9 @@ function SidebarComponent({
           )}
         </div>
         {paneHost ? null : changesPane}
+        {stacked && paneHost ? (
+          <StackedToolsPane onHost={setStackedHost} shown={!!paneTab} />
+        ) : null}
         {showSidebarFooter ? (
           <>
             <LiveAgentsPreview
@@ -3165,9 +3168,6 @@ function SidebarComponent({
               ) : null}
             </div>
           </>
-        ) : null}
-        {stacked && paneHost ? (
-          <StackedToolsPane onHost={setStackedHost} shown={!!paneTab} />
         ) : null}
         {inset && onSelectProject ? (
           <ProjectSpacesBar
