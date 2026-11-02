@@ -139,6 +139,7 @@ import { pathKey, projectKey } from "../../../shared/lib/paths";
 import { consumeQuoteRequest, type QuoteRequest } from "../model/quoteDraft";
 import { useTabGroupLogos } from "../../projects/hooks/useTabGroupLogos";
 import { useProjectBranchesState } from "../../source-control/hooks/useProjectBranches";
+import { useDefaultBranch } from "../../source-control/hooks/useDefaultBranch";
 import {
   COMPOSER_RUNNER_CHANGE_EVENT,
   loadComposerRunner,
@@ -475,20 +476,23 @@ export function Composer({
     executionCwd,
     draftWorkspace && enabled && !busy,
   );
+  const defaultBranch = useDefaultBranch(executionCwd, draftWorkspace && enabled && !busy);
   const resolvedWorktreeBase =
     worktreeBase && worktreeBase !== "HEAD"
       ? worktreeBase
-      : branch || draftBranches?.current || worktreeBase || undefined;
+      : defaultBranch || branch || draftBranches?.current || worktreeBase || undefined;
   useEffect(() => {
     if (
       draftWorkspace &&
       workspaceMode === "worktree" &&
       worktreeBase === "HEAD" &&
-      draftBranches?.current
+      draftBranches?.current &&
+      defaultBranch !== undefined
     ) {
-      onWorktreeBaseChange?.(draftBranches.current);
+      onWorktreeBaseChange?.(defaultBranch || draftBranches.current);
     }
   }, [
+    defaultBranch,
     draftBranches?.current,
     draftWorkspace,
     onWorktreeBaseChange,
