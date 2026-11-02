@@ -59,6 +59,10 @@ import { PlanPreview } from "./PlanPreview";
 import { OrchestrationPreview } from "../../orchestration/ui/OrchestrationPreview";
 import { TaskListPreview } from "./TaskListPreview";
 import { HandoffButton, SecondOpinionButton } from "./SecondOpinionButton";
+import {
+  ExpandableCommandRow,
+  isExpandableCommand,
+} from "./ExpandableCommandRow";
 import { SecondOpinionCard } from "./SecondOpinionCard";
 import { NoteMiniCard } from "../../notes/ui/NoteMiniCard";
 import { ArtifactCard } from "../../artifacts/ui/ArtifactCard";
@@ -4572,6 +4576,10 @@ function ActivityToolRow({
   const label = toolCallLabel(block, cwd);
   const state = toolCallState(block);
   const pending = needsApproval(block);
+  if (!pending && state !== "rejected" && isExpandableCommand(block)) {
+    const icon = bare ? null : <ActivityToolIcon state={state} live={live} />;
+    return <ExpandableCommandRow block={block} label={label} icon={icon} />;
+  }
   const errorDetail =
     !pending && state === "rejected"
       ? output.omitted
