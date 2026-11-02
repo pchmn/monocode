@@ -898,11 +898,13 @@ it("searches and creates a host branch from the composer picker", async () => {
 it("keeps a failed host branch action in the picker", async () => {
   branchActionFailure =
     "Commit or stash changes on the host before switching branches";
+  // `dev` is checked out in a worktree, which the picker opens instead.
+  createdBranch = "feature/free";
   await render();
   await act(async () => byLabel("Branch main")!.click());
   const dev = [
     ...document.body.querySelectorAll<HTMLButtonElement>('[role="option"]'),
-  ].find((button) => button.textContent?.includes("dev"));
+  ].find((button) => button.textContent?.includes("feature/free"));
   await act(async () => dev!.click());
   await settle();
   expect(

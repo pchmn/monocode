@@ -1860,6 +1860,7 @@ export function Composer({
               branch={branch}
               enabled={enabled && !busy}
               onChange={onBranchChange}
+              onSelectWorktree={onWorktreeChange}
               onClose={() => ref.current?.focus()}
             />
           ) : null}
@@ -1893,6 +1894,7 @@ export function Composer({
             branch={branch}
             enabled={enabled && !busy}
             onChange={onBranchChange}
+            onSelectWorktree={codeWorkspace ? undefined : onWorktreeChange}
             onClose={() => ref.current?.focus()}
           />
           <BranchSyncButton cwd={remoteSession ? "" : executionCwd} branch={branch} enabled={enabled && !busy} />

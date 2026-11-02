@@ -10,6 +10,7 @@ import {
 } from "../../../platform/tauri/fs";
 import { Loader } from "../../../shared/ui/icons";
 import { branchBehindUpstream } from "../model/defaultBranchStart";
+import { useBranchWorktree } from "../hooks/useBranchWorktree";
 import { SwitchBranchDialog } from "./SwitchBranchDialog";
 
 type Props = {
@@ -46,8 +47,12 @@ export function DefaultBranchSwitch({
   );
   const [blockedError, setBlockedError] = useState<string | null>(null);
 
+  const branchWorktree = useBranchWorktree(cwd, !!cwd);
+
   if (!cwd || !branch || !defaultBranch || branch === defaultBranch)
     return null;
+  // Git refuses it there; the branch picker offers that worktree instead.
+  if (branchWorktree(defaultBranch)) return null;
 
   const done = () => {
     setBlocked(false);
