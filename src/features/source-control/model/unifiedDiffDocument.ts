@@ -1,10 +1,10 @@
 import {
   layoutRows,
   UNIFIED_HUNK_PX,
-  UNIFIED_LINE_PX,
   type RowLayout,
 } from "./unifiedDiffWindow";
 import type { UnifiedBlock, UnifiedLine } from "./unifiedDiff";
+import { codeLineHeightPx } from "../../settings/model/codeFonts";
 
 export type UnifiedDiffFileModel = {
   id: string;
@@ -188,7 +188,7 @@ function buildBody(
             key: `line:${prefix}:${line.kind}:${line.oldNumber}:${line.newNumber}`,
             fileId: file.id,
             line,
-            height: UNIFIED_LINE_PX,
+            height: codeLineHeightPx(),
             stagePos:
               stageable && (line.kind === "add" || line.kind === "del")
                 ? pos

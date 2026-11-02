@@ -26,7 +26,7 @@ import {
   type ViewUpdate,
 } from "@codemirror/view";
 import type { UnifiedLine } from "../../source-control/model/unifiedDiff";
-import { EDITOR_LINE_HEIGHT_PX } from "./editorMetrics";
+import { codeLineHeightPx } from "../../settings/model/codeFonts";
 
 const DIFF_CONFIG = { scanLimit: 5_000, timeout: 100 };
 
@@ -205,7 +205,7 @@ class DeletedLineWidget extends WidgetType {
   }
 
   get estimatedHeight() {
-    return EDITOR_LINE_HEIGHT_PX;
+    return codeLineHeightPx();
   }
 
   ignoreEvent() {
@@ -1266,7 +1266,7 @@ const gitTheme = EditorView.theme({
     fontFamily: "var(--font-mono)",
     fontSize: "11px",
     fontWeight: "600",
-    lineHeight: `${EDITOR_LINE_HEIGHT_PX}px`,
+    lineHeight: "var(--code-line-height)",
     textAlign: "center",
   },
   ".cm-gitAdd": {

@@ -9,6 +9,7 @@ import {
   initAppearance,
 } from "./features/settings/model/appearance";
 import { initSounds } from "./features/settings/model/sounds";
+import { applyCodeFonts } from "./features/settings/model/codeFonts";
 import {
   abortQuit,
   askQuitConfirmation,
@@ -26,12 +27,14 @@ import "./features/connections/model/remoteCommands";
 import "./styles/index.css";
 import "./styles/swapPanels.css";
 import "./styles/gruvboxTheme.css";
+import "./styles/codeFonts.css";
 
 performance.mark("monocode:bootstrap");
 // Let local boot IPC overlap loading/evaluating the workspace UI.
 const appLoaded = import("./app/App");
 
 initAppearance();
+applyCodeFonts();
 initSounds();
 installNativeContextMenuGuard();
 // Prime the real home directory before the first render so every `~/` file

@@ -33,6 +33,7 @@ import {
 import { PaneHeader } from "../../../shared/ui/PaneHeader";
 import type { UnifiedLine } from "../model/unifiedDiff";
 import { windowRows } from "../model/unifiedDiffWindow";
+import { useCodeFonts } from "../../settings/model/codeFonts";
 import {
   DIFF_FILE_HEADER_PX,
   ReviewDocumentBuilder,
@@ -113,17 +114,18 @@ export function UnifiedDiffView({
     ids: new Set(stableFiles.map((file) => file.id)),
     mode: initialExpansion,
   });
-  const builder = useRef<ReviewDocumentBuilder | null>(null);
-  if (!builder.current) builder.current = new ReviewDocumentBuilder();
+  const codeLineHeight = useCodeFonts().codeLineHeight;
+  // A fresh builder drops row heights cached at the previous line height.
+  const builder = useMemo(() => new ReviewDocumentBuilder(), [codeLineHeight]);
   const document = useMemo(
     () =>
-      builder.current!.build(
+      builder.build(
         stableFiles,
         open,
         Boolean(onStageHunk),
         fileLayout === "cards",
       ),
-    [stableFiles, open, onStageHunk, fileLayout],
+    [builder, stableFiles, open, onStageHunk, fileLayout],
   );
   const indices = useMemo(
     () => new Map(document.rows.map((row, index) => [row.key, index])),
