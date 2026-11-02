@@ -38,6 +38,7 @@ import {
 import { useStackedPanels } from "../features/settings/model/stackedPanels";
 import { useIdleSessionDetach } from "./hooks/useIdleSessionDetach";
 import { useAgentWorktreeAdoption } from "../features/source-control/hooks/useAgentWorktreeAdoption";
+import { useDockFollowsSession } from "../features/terminal/hooks/useDockFollowsSession";
 import { useDefaultBranchOnOpen } from "../features/source-control/hooks/useDefaultBranchOnOpen";
 import { freshWorktreeBase } from "../features/source-control/model/defaultBranchStart";
 import { HarnessEventQueue } from "./model/harnessFlush";
@@ -2829,6 +2830,12 @@ function Workspace({
   });
   useAgentWorktreeAdoption(sessions, setSessions);
   useDefaultBranchOnOpen(sessions);
+  useDockFollowsSession(
+    projectCwd,
+    active,
+    projectTerminals,
+    setProjectTerminals,
+  );
 
   const activateTab = useCallback(
     (
