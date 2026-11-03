@@ -74,6 +74,7 @@ import {
   type ClaudeControlRequest,
 } from "./claudeProtocol";
 import { isAgentToolName } from "../../core/preview";
+import { noteClaudeCommands, withClaudeDiskSkills } from "./claudeCommands";
 import {
   followClaudeSubagentLog,
   stopClaudeSubagentLog,
@@ -242,7 +243,10 @@ export async function sendClaudeTurn(input: SendTurnInput): Promise<void> {
       live.cancelled = false;
       live.muteUpdates = false;
       try {
-        await runTurn(live, input);
+        await runTurn(live, {
+          ...input,
+          text: await withClaudeDiskSkills(input.sessionId, input.text, live.cwd),
+        });
       } catch (error) {
         if (live.cancelled) return;
         throw error;
@@ -707,6 +711,7 @@ function handleLine(sessionId: string, live: Live, line: string): void {
 
   if (type === "control_response") {
     markInitialized(live);
+    noteClaudeCommands(sessionId, rec);
     return;
   }
 
