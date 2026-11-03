@@ -9414,7 +9414,7 @@ function Workspace({
       if (
         !(
           canDispatchQueuedHead(session) ||
-          (monoForSession(session.id) &&
+          ((monoForSession(session.id) || isBackgroundOnly(session)) &&
             canSteerQueuedHead(session) &&
             canSteerHarness(session.harness) &&
             !consumeOperatorCommand(queued[0].text).matched)
@@ -9441,7 +9441,7 @@ function Workspace({
             head.id !== next.id ||
             !(
               canDispatchQueuedHead(latest) ||
-              (monoForSession(latest.id) &&
+              ((monoForSession(latest.id) || isBackgroundOnly(latest)) &&
                 canSteerQueuedHead(latest) &&
                 canSteerHarness(latest.harness) &&
                 !consumeOperatorCommand(head.text).matched)

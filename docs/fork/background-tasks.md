@@ -1,6 +1,6 @@
 # Background tasks and subagents
 
-An agent whose turn has yielded but still has background tasks shows as "resting" (sidebar card, Working panel card, title-bar tab, transcript fold) instead of working. Backgrounded Claude subagents get their step trail mirrored from their on-disk transcript. (PRs #21, #25)
+An agent whose turn has yielded but still has background tasks shows as "resting" (sidebar card, Working panel card, title-bar tab, transcript fold) instead of working. Messages queued before the turn yielded are steered to the agent then, like new ones, instead of waiting behind the background work. Backgrounded Claude subagents get their step trail mirrored from their on-disk transcript. (PRs #21, #25)
 
 ## Fork files
 - `src/features/sessions/model/backgroundTasks.ts` — `isBackgroundOnly`, `usePublishBackgroundTasks`, `useSessionBackgroundTasks`
@@ -9,7 +9,7 @@ An agent whose turn has yielded but still has background tasks shows as "resting
 - `src-tauri/src/claude_subagent_log.rs` — reads the subagent transcript lines
 
 ## Upstream hooks
-- `src/app/App.tsx` — `usePublishBackgroundTasks(sessions)`; `backgroundHarnesses` in `toTitleTab` (`isBackgroundOnly`) and in `titleTabsEqual`
+- `src/app/App.tsx` — `usePublishBackgroundTasks(sessions)`; `backgroundHarnesses` in `toTitleTab` (`isBackgroundOnly`) and in `titleTabsEqual`; `isBackgroundOnly` next to `monoForSession` in the queue dispatcher's steer condition
 - `src/app/shell/TitleBar.tsx` — `backgroundHarnesses` on `Tab` and in `TabHarnesses` (`"background"` status, `BackgroundBadge`)
 - `src/app/shell/Sidebar.tsx` — `useSessionBackgroundTasks` and `BackgroundStatus` in `SessionCard`
 - `src/features/sessions/ui/AgentTranscript.tsx` — `BackgroundTasksFold`; `LiveFoldTitle` pauses the timer while `background` is set
@@ -21,4 +21,4 @@ An agent whose turn has yielded but still has background tasks shows as "resting
 ## Verify
 - `src/features/sessions/ui/LiveAgentsPreview.test.ts` — "shows an agent resting on background tasks with its task"
 - `src/integrations/harness/providers/claude/claudeLive.test.ts` — "mirrors a backgrounded subagent's trail from its transcript file"
-- Manual: have Claude start a background subagent; its steps appear in the transcript and the tab shows the resting badge once the turn ends.
+- Manual: have Claude start a background subagent; its steps appear in the transcript and the tab shows the resting badge once the turn ends. A message queued during the turn is sent as soon as it yields.
