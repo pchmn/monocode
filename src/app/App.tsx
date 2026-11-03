@@ -10640,7 +10640,9 @@ function Workspace({
       );
       if (current && remoteProjectFor(current.cwd))
         return remoteSessionActions(sessionId)?.compact() ?? false;
-      if (!current || current.busy || current.worktreeRemoved) return false;
+      const resting = isBackgroundOnly(current);
+      if (!current || (current.busy && !resting) || current.worktreeRemoved)
+        return false;
       if (!canCompactHarnessContext(current.harness)) {
         const unsupported = sessionsRef.current.map((session) =>
           session.id === sessionId
@@ -10656,7 +10658,8 @@ function Workspace({
         return true;
       }
 
-      const gen = (turnGen.current.get(sessionId) ?? 0) + 1;
+      // A resting turn keeps streaming under its own generation.
+      const gen = (turnGen.current.get(sessionId) ?? 0) + (resting ? 0 : 1);
       turnGen.current.set(sessionId, gen);
       const workCwd = sessionWorkCwd(current);
       const started = sessionsRef.current.map((session) =>
@@ -10713,7 +10716,9 @@ function Workspace({
           if (turnGen.current.get(sessionId) !== gen) return;
           flushHarnessEvents();
           const finished = sessionsRef.current.map((session) =>
-            session.id === sessionId ? { ...session, busy: false } : session,
+            session.id === sessionId
+              ? { ...session, busy: resting && session.busy }
+              : session,
           );
           sessionsRef.current = finished;
           syncDockBadge(finished);

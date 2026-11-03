@@ -75,7 +75,11 @@ import {
 } from "./claudeProtocol";
 import { isAgentToolName } from "../../core/preview";
 import { noteClaudeCommands, withClaudeDiskSkills } from "./claudeCommands";
-import { compactBoundaryFromSystem } from "./claudeCompact";
+import {
+  compactBoundaryFromSystem,
+  compactWhileResting,
+  isRestingOnBackground,
+} from "./claudeCompact";
 import {
   followClaudeSubagentLog,
   stopClaudeSubagentLog,
@@ -186,6 +190,7 @@ type Live = {
   pendingAssistantBoundary: boolean;
   manualCompaction: boolean;
   compactionConfirmed: boolean;
+  compactionSettled: ((error?: Error) => void) | null;
 };
 
 type Resume = {
@@ -261,6 +266,8 @@ export async function compactClaudeContext(
 ): Promise<void> {
   const settingsKey = settingsKeyFor(input);
   let live = liveByThread.get(input.sessionId);
+  if (live && isRestingOnBackground(live))
+    return compactWhileResting(live, input.sessionId);
   if (!live || live.cwd !== input.cwd || live.settingsKey !== settingsKey) {
     live = await ensureLive(input);
   }
@@ -379,6 +386,7 @@ export async function stopClaudeSession(sessionId: string): Promise<void> {
       pending.resolve({ kind: "skipped" });
     live.questions.clear();
     live.activeTurn = false;
+    live.compactionSettled?.();
     live.turnDone?.();
     live.turnDone = null;
     live.turnFailed = null;
@@ -528,6 +536,7 @@ async function ensureLive(input: HarnessSessionInput): Promise<Live> {
     pendingAssistantBoundary: false,
     manualCompaction: false,
     compactionConfirmed: false,
+    compactionSettled: null,
   };
   liveRef.current = live;
 
@@ -545,6 +554,7 @@ async function ensureLive(input: HarnessSessionInput): Promise<Live> {
         (current?.onEvent ?? input.onEvent)({ type: "session.ended", code });
       }
       current?.turnFailed?.(new Error("Claude Code exited"));
+      current?.compactionSettled?.(new Error("Claude Code exited"));
       current?.initDone?.();
       if (current) {
         current.turnDone = null;
@@ -1021,6 +1031,7 @@ function handleResult(live: Live, rec: Record<string, unknown>): void {
     live.onEvent({ type: "usage.limited", ...usageLimit });
   }
   live.turnResultSeen = true;
+  live.compactionSettled?.();
   maybeFinishTurn(live);
   showBackgroundRows(live);
   syncBackgroundWait(live);
@@ -1747,6 +1758,7 @@ function finishActiveTurn(live: Live, extraEvents: HarnessEvent[] = []): void {
   clearAwaitingResume(live);
   live.turnEndPending = false;
   live.activeTurn = false;
+  live.compactionSettled?.();
   for (const event of extraEvents) live.onEvent(event);
   const done = live.turnDone;
   const failed = live.turnFailed;

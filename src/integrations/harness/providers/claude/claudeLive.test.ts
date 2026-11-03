@@ -2108,4 +2108,45 @@ describe("claude manual compaction", () => {
     });
     expect(events.some((event) => event.type === "message.delta")).toBe(false);
   });
+
+  it("compacts inside a turn resting on a background command", async () => {
+    const { events, turn } = await startTurn("s1");
+    let settled = false;
+    void turn.then(() => {
+      settled = true;
+    });
+    emitBackgroundBash();
+    sent.length = 0;
+
+    const compact = compactClaudeContext({
+      sessionId: "s1",
+      cwd: "/repo",
+      model: "claude:claude-sonnet-5",
+      runtimeMode: "supervised",
+      onEvent: () => undefined,
+    });
+    await waitFor(
+      () => parse().some((message) => message.type === "user"),
+      "compact command",
+    );
+    expect(parse().find((message) => message.type === "user")).toMatchObject({
+      message: { content: [{ type: "text", text: "/compact" }] },
+    });
+    emit({
+      type: "system",
+      subtype: "compact_boundary",
+      session_id: "sess_1",
+      compact_metadata: { pre_tokens: 400_000, post_tokens: 30_000 },
+    });
+    emit({ type: "result", subtype: "success", session_id: "sess_1" });
+    await compact;
+
+    expect(events).toContainEqual({ type: "context", used: 30_000 });
+    await new Promise((r) => setTimeout(r, 30));
+    expect(settled).toBe(false);
+
+    emitBashFinished();
+    emitFollowUpTurn("It finished and printed done.");
+    await turn;
+  });
 });
