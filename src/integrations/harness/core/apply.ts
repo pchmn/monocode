@@ -17,6 +17,7 @@ import {
   stubFilePreview,
 } from "./preview";
 import { joinStreamText } from "./streamText";
+import { repeatsCompaction } from "../../../features/sessions/model/compactStatus";
 import { hasReadableText } from "../../../features/sessions/model/transcriptActivity";
 import { taskListText } from "../../../features/sessions/model/taskList";
 import { isReviewablePlan } from "../../../features/sessions/model/plan";
@@ -739,7 +740,11 @@ function appendStatus(session: Session, text: string): Session {
   const last = [...session.blocks]
     .reverse()
     .find((block) => block.role !== "reasoning");
-  if (last?.role === "system" && last.text === trimmed) return session;
+  if (
+    last?.role === "system" &&
+    (last.text === trimmed || repeatsCompaction(last.text, trimmed))
+  )
+    return session;
   return appendBlock(session, {
     id: crypto.randomUUID(),
     role: "system",
