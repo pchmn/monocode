@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { compactBoundaryFromSystem } from "./claudeCompact";
-import { compactionSummaryLine } from "../../../../features/sessions/model/compactStatus";
+import {
+  compactionSummaryLine,
+  repeatsCompaction,
+} from "../../../../features/sessions/model/compactStatus";
 import { workSummaryLine } from "../../../../features/sessions/model/transcriptActivity";
 
 describe("compactBoundaryFromSystem", () => {
@@ -41,5 +44,14 @@ describe("folded compaction", () => {
 
   it("keeps the generic label for other statuses", () => {
     expect(workSummaryLine([status("a", "Working on it")])).toBe("Status update");
+  });
+});
+
+describe("repeatsCompaction", () => {
+  it("drops the plain status that follows the detailed one", () => {
+    expect(
+      repeatsCompaction("Compacted context · 21k → 5k tokens", "Compacted context"),
+    ).toBe(true);
+    expect(repeatsCompaction("Working", "Compacted context")).toBe(false);
   });
 });
