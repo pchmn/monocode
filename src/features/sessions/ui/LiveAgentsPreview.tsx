@@ -15,6 +15,8 @@ import { Check, ChevronDown, ChevronUp, CircleAlert } from "../../../shared/ui/i
 import { HarnessIcon } from "./HarnessIcon";
 import { ProjectMascot } from "../../projects/ui/ProjectMascot";
 import { TerminalSpinner } from "./TerminalSpinner";
+import { useSessionBackgroundTasks } from "../model/backgroundTasks";
+import { BackgroundDot, backgroundActivity } from "./BackgroundTasks";
 
 const LIVE_AGENT_CAP = 4;
 
@@ -160,7 +162,11 @@ function LiveAgentCard({
     : agent.startedAt != null
       ? formatLiveElapsed(agent.startedAt, now)
       : "";
-  const activity = agent.needsApproval
+  const backgroundTasks = useSessionBackgroundTasks(agent.id);
+  const resting = !agent.needsApproval && !agent.done && backgroundTasks.length > 0;
+  const activity = resting
+    ? backgroundActivity(backgroundTasks)
+    : agent.needsApproval
     ? "Need approval"
     : agent.done
       ? "Done"
@@ -215,6 +221,8 @@ function LiveAgentCard({
           <CircleAlert className="size-3 shrink-0" strokeWidth={1.75} />
         ) : agent.done ? (
           <Check className="size-3 shrink-0" strokeWidth={2.25} />
+        ) : resting ? (
+          <span className="grid w-3 shrink-0 place-items-center"><BackgroundDot /></span>
         ) : (
           <TerminalSpinner className="inline-block w-3 select-none text-center text-[11px] leading-none" />
         )}

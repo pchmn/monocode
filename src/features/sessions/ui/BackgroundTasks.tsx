@@ -38,9 +38,22 @@ export function BackgroundBadge({
       >
         {children}
       </span>
-      <span className="absolute -top-0.5 -right-0.5 size-1.5 animate-pulse rounded-full bg-content/75 [animation-duration:1.6s]" />
+      <BackgroundDot className="absolute -top-0.5 -right-0.5" />
     </span>
   );
+}
+
+export function BackgroundDot({ className = "" }: { className?: string }) {
+  return (
+    <span
+      className={`size-1.5 animate-pulse rounded-full bg-content/75 [animation-duration:1.6s] ${className}`}
+    />
+  );
+}
+
+export function backgroundActivity(tasks: string[]): string {
+  const more = tasks.length > 1 ? ` +${tasks.length - 1}` : "";
+  return `[bg] ${tasks[0]}${more}`;
 }
 
 export function BackgroundTasksFold({ tasks }: { tasks: string[] }) {

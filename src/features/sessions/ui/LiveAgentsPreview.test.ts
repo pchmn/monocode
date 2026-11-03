@@ -3,6 +3,8 @@ import { act, createElement, type ComponentProps } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { LiveAgent } from "../model/liveAgents";
+import { usePublishBackgroundTasks } from "../model/backgroundTasks";
+import type { Session } from "../model/session";
 import { LiveAgentsPreview } from "./LiveAgentsPreview";
 
 let container: HTMLDivElement;
@@ -26,8 +28,15 @@ function agent(
   };
 }
 
-function render(props: ComponentProps<typeof LiveAgentsPreview>) {
-  act(() => root.render(createElement(LiveAgentsPreview, props)));
+function render(
+  props: ComponentProps<typeof LiveAgentsPreview>,
+  sessions: Session[] = [],
+) {
+  function Harness() {
+    usePublishBackgroundTasks(sessions);
+    return createElement(LiveAgentsPreview, props);
+  }
+  act(() => root.render(createElement(Harness)));
 }
 
 beforeEach(() => {
@@ -128,5 +137,23 @@ describe("LiveAgentsPreview", () => {
     expect(liveRegion.textContent).toBe("2 working agents");
     expect(liveRegion.textContent).not.toMatch(/\d+s/);
     expect(container.querySelector("[role=status]")).toBeNull();
+  });
+
+  it("shows an agent resting on background tasks with its task", () => {
+    const resting = {
+      id: "b",
+      busy: true,
+      backgroundTasks: ["npm run dev"],
+    } as Session;
+    render(
+      { agents: [agent("a", "/repo/a"), agent("b", "/repo/b")] },
+      [resting],
+    );
+
+    const card = (id: string) =>
+      container.querySelector<HTMLElement>(`[data-live-agent-card="${id}"]`)!;
+    expect(card("a").textContent).toContain("Working");
+    expect(card("b").textContent).toContain("[bg] npm run dev");
+    expect(card("b").querySelector(".animate-pulse")).not.toBeNull();
   });
 });
