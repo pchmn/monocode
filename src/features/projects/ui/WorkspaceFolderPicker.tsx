@@ -5,6 +5,7 @@ import {
   useWorkspaceFolderAsks,
   useWorkspaceFolderPending,
 } from "../model/codeWorkspace";
+import { useWorkspaceFolderOf } from "../model/workspaceFolderWorktrees";
 import { pathKey, prettyCwd } from "../../../shared/lib/paths";
 import { Popover } from "../../../shared/ui/Popover";
 import { Check, Folder } from "../../../shared/ui/icons";
@@ -35,9 +36,10 @@ export function WorkspaceFolderPicker({
   }, [asks]);
   const [error, setError] = useState<string>();
   const anchor = useRef<HTMLDivElement>(null);
+  const folder = useWorkspaceFolderOf(workspace, executionCwd);
   const current = pending
     ? undefined
-    : folders.find((folder) => pathKey(folder.path) === pathKey(executionCwd));
+    : folders.find((entry) => pathKey(entry.path) === pathKey(folder ?? executionCwd));
   const close = () => {
     onOpenChange(false);
     setError(undefined);

@@ -8,7 +8,8 @@ import {
 import { isFilesystemTab, type FilePaneTab } from "../../workspace/model/layout";
 import { isEqualOrInside, parentPath, pathKey } from "../../../shared/lib/paths";
 import { isBlankSession } from "../../projects/model/projectReturn";
-import { isCodeWorkspace, listCodeWorkspaceFolders, setWorkspaceFolderPending } from "../../projects/model/codeWorkspace";
+import { isCodeWorkspace, setWorkspaceFolderPending } from "../../projects/model/codeWorkspace";
+import { listCodeWorkspaceWorktrees, workspaceFolderBaseReset } from "../../projects/model/workspaceFolderWorktrees";
 import { newSession, sessionWorkCwd, type Session } from "../../sessions/model/session";
 
 export type Worktree = {
@@ -25,9 +26,9 @@ export type Worktree = {
 };
 export type Worktrees = { worktrees: Worktree[]; defaultRoot: string };
 
-export const listWorktrees = (cwd: string) =>
+export const listWorktrees = (cwd: string, path?: string) =>
   isCodeWorkspace(cwd)
-    ? listCodeWorkspaceFolders(cwd)
+    ? listCodeWorkspaceWorktrees(cwd, path)
     : invokeWorkspace<Worktrees>("git_worktrees", { cwd });
 
 export async function createWorktree(
@@ -232,6 +233,7 @@ export function sessionInWorktree(session: Session, tree: Worktree): Session {
   setWorkspaceFolderPending(target.id, false);
   return {
     ...target,
+    ...workspaceFolderBaseReset(target),
     worktreeRemoved: undefined,
     worktreeCwd:
       pathKey(tree.path) === pathKey(session.cwd) ? undefined : tree.path,

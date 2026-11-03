@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { pathKey } from "../../../shared/lib/paths";
+import { workspaceFolderOf } from "../../projects/model/workspaceFolderWorktrees";
 
 /** The working copy a project's sidebar is narrowed to. New sessions in that
  * project start there too. Kept for this run only: the app reopens on each
@@ -40,6 +41,7 @@ export function inWorktreeFocus(
 ): boolean {
   return (
     !focus ||
-    pathKey(session.worktreeCwd || session.cwd) === pathKey(focus.path)
+    pathKey(session.worktreeCwd || session.cwd) === pathKey(focus.path) ||
+    (!!session.worktreeCwd && pathKey(workspaceFolderOf(session.cwd, session.worktreeCwd) ?? "") === pathKey(focus.path))
   );
 }
