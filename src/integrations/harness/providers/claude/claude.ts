@@ -75,6 +75,7 @@ import {
 } from "./claudeProtocol";
 import { isAgentToolName } from "../../core/preview";
 import { noteClaudeCommands, withClaudeDiskSkills } from "./claudeCommands";
+import { compactBoundaryFromSystem } from "./claudeCompact";
 import {
   followClaudeSubagentLog,
   stopClaudeSubagentLog,
@@ -747,7 +748,9 @@ function handleLine(sessionId: string, live: Live, line: string): void {
     return;
   }
   if (type === "system") {
-    const text = statusTextFromSystem(rec);
+    const boundary = compactBoundaryFromSystem(rec);
+    if (boundary?.used) live.onEvent({ type: "context", used: boundary.used });
+    const text = boundary?.text ?? statusTextFromSystem(rec);
     if (text) {
       if ((stringField(rec, "subtype") ?? "").startsWith("compact")) {
         live.compactionConfirmed = true;

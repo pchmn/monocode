@@ -1,3 +1,4 @@
+import { compactionSummaryLine } from "./compactStatus";
 import {
   composeToolTitle,
   isAgentTool,
@@ -1078,7 +1079,8 @@ export function workSummaryLine(steps: Block[], live = false): string {
         : "";
   if (tally.order.length === 0) {
     if (notes) return notes;
-    if (steps.length > 0 && steps.every(isStatusStep)) return "Status update";
+    if (steps.length > 0 && steps.every(isStatusStep))
+      return compactionSummaryLine(steps) ?? "Status update";
     return live ? "Thinking" : "Thought";
   }
   const running = live ? currentWorkKind(steps) : undefined;
