@@ -63,7 +63,7 @@ export function WorkspaceFolderPicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => (open ? close() : onOpenChange(true))}
-        className={`-ml-1.5 flex h-6 min-w-0 max-w-64 items-center gap-1.5 rounded-md px-1.5 text-[12px] ${pending ? "text-accent" : "text-content/55"} hover:bg-content/8 hover:text-content aria-expanded:bg-content/8 aria-expanded:text-content disabled:opacity-40 disabled:hover:bg-transparent active:scale-[0.97]`}
+        className={`-ml-1.5 flex h-6 min-w-0 max-w-64 items-center gap-1.5 rounded-md px-1.5 text-[12px] ${pending ? "bg-accent/10 text-accent hover:bg-accent/20 disabled:hover:bg-accent/10" : "text-content/55 hover:bg-content/8 hover:text-content aria-expanded:bg-content/8 aria-expanded:text-content disabled:hover:bg-transparent"} disabled:opacity-40 active:scale-[0.97]`}
       >
         <Folder className="size-3.5 shrink-0" />
         <span className="min-w-0 flex-1 truncate">
