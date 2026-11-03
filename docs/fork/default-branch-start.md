@@ -13,6 +13,7 @@ A new session opened in a project fetches `origin` in the background (10 s timeo
 ## Upstream hooks
 - `src/app/App.tsx`: `useDefaultBranchOnOpen(sessions)` after `useAgentWorktreeAdoption`; `freshWorktreeBase` as the base of the draft worktree `createWorktree`
 - `src/features/sessions/ui/Composer.tsx`: `useDefaultBranch`, preferred over the current branch in `resolvedWorktreeBase` and the `worktreeBase === "HEAD"` effect; `BranchSyncButton` after both `BranchPicker`s, `DefaultBranchSwitch` after the draft one and after the code-workspace draft one (both fed `branch || draftBranches?.current`: `SessionPane` passes no `branch`)
+- `src/features/sessions/ui/SessionPane.tsx`: `draftWorkspace` also for an empty `.code-workspace` session, whose `worktreeCwd` holds its folder; `Composer.tsx` keeps the workspace-mode shortcut off there
 - `src/features/sessions/ui/AgentTranscript.tsx`: `preparingLabel` prop, shown in place of `LiveFoldTitle`
 - `src/features/sessions/ui/SessionPane.tsx`: `preparingLabel` from `session.worktreePreparing`
 - `src-tauri/src/lib.rs`: `mod default_branch_start` and its four commands in the invoke handler

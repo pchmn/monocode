@@ -41,6 +41,7 @@ import { useAgentWorktreeAdoption } from "../features/source-control/hooks/useAg
 import { useDockFollowsSession } from "../features/terminal/hooks/useDockFollowsSession";
 import { useDefaultBranchOnOpen } from "../features/source-control/hooks/useDefaultBranchOnOpen";
 import { freshWorktreeBase } from "../features/source-control/model/defaultBranchStart";
+import { draftWorktreeRepo, hasOwnWorktree } from "../features/projects/model/workspaceFolderWorktrees";
 import { fileSessionRoot } from "../features/source-control/model/branchWorktree";
 import { HarnessEventQueue } from "./model/harnessFlush";
 import { noteStreamApplied } from "../features/sessions/model/streamingPerformance";
@@ -6431,7 +6432,7 @@ function Workspace({
       switchingWorktrees.current.set(sessionId, tree.path);
       pendingPersist.current.delete(sessionId);
       try {
-        const listed = await listWorktrees(current.cwd);
+        const listed = await listWorktrees(current.cwd, tree.path);
         if (!isCurrent()) return;
         const target = listed.worktrees.find(
           (entry) =>
@@ -7373,7 +7374,7 @@ function Workspace({
       saveRecentModelChoice(current.harness, current.model);
       const initialWorkCwd = sessionWorkCwd(current);
       const createDraftWorktree =
-        !current.worktreeCwd && current.workspaceMode === "worktree";
+        !hasOwnWorktree(current) && current.workspaceMode === "worktree";
       const accountProvider = supportsProviderAccounts(current.harness)
         ? current.harness
         : undefined;
@@ -8062,9 +8063,9 @@ function Workspace({
         let workCwd = initialWorkCwd;
         if (createDraftWorktree) {
           const tree = await createWorktree(
-            current.cwd,
+            draftWorktreeRepo(current),
             temporaryWorktreeBranchName(),
-            await freshWorktreeBase(current.cwd, current.worktreeBase),
+            await freshWorktreeBase(draftWorktreeRepo(current), current.worktreeBase),
             false,
           );
           workCwd = tree.path;
@@ -8098,7 +8099,7 @@ function Workspace({
               const branch = fragment ? namedWorktreeBranch(fragment) : null;
               if (!branch) return;
               const renamed = await renameWorktreeBranch(
-                current.cwd,
+                draftWorktreeRepo(current),
                 tree.path,
                 branch,
               );

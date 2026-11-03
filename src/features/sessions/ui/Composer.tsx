@@ -127,6 +127,7 @@ import {
   isCodeWorkspace,
   workspaceFolderWorktree,
 } from "../../projects/model/codeWorkspace";
+import { useIsCheckoutRoot } from "../../projects/model/workspaceFolderWorktrees";
 import { FileMentionPicker } from "./FileMentionPicker";
 import { McpServerPicker } from "./McpServerPicker";
 import { FileTypeIcon } from "../../files/ui/FileTypeIcon";
@@ -536,6 +537,7 @@ export function Composer({
   // Local indexes (files, skills) must never read a remote session's path.
   const localCwd = remote ? "" : executionCwd;
   const codeWorkspace = !remote && isCodeWorkspace(cwd);
+  const folderModePicker = useIsCheckoutRoot(codeWorkspace && draftWorkspace ? executionCwd : undefined);
   // Inactive tabs stay mounted. Their composers let go of the project listing
   // and pick it up again when shown.
   const fileCwd = enabled ? localCwd : "";
@@ -1684,6 +1686,7 @@ export function Composer({
     if (disabled) return;
     if (
       !draftWorkspace ||
+      (codeWorkspace && !folderModePicker) ||
       !onWorkspaceModeChange ||
       !enabled ||
       busy ||
@@ -1839,7 +1842,7 @@ export function Composer({
         />
       ) : null}
       {hideBranchPicker ? null : draftWorkspace &&
-        !codeWorkspace &&
+        (!codeWorkspace || folderModePicker) &&
         onWorkspaceModeChange &&
         onWorktreeBaseChange ? (
         <>
