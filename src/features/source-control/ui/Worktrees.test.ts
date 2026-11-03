@@ -55,7 +55,7 @@ import {
   WorkspacePicker,
 } from "../../workspace/ui/WorkspacePicker";
 import { CreateWorktreeDialog } from "./CreateWorktreeDialog";
-import { FolderTree, GitBranch } from "../../../shared/ui/icons";
+import { GitBranch, Worktree as FolderTree } from "../../../shared/ui/icons";
 import { DeleteWorktreeDialog } from "./DeleteWorktreeDialog";
 import { DeleteSessionDialog } from "../../sessions/ui/DeleteSessionDialog";
 import { WorktreesPage } from "./WorktreesPage";

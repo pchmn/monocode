@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Folder, FolderTree } from "../../../shared/ui/icons";
+import { Folder, Worktree as FolderTree } from "../../../shared/ui/icons";
 import { notifyGitChanged } from "../../../platform/tauri/fs";
 import { GitPickerTrigger } from "../../source-control/ui/GitPickerTrigger";
 import { useProjectBranchesState } from "../../source-control/hooks/useProjectBranches";

@@ -3,7 +3,7 @@ import {
   ArrowLeft,
   Bot,
   Inbox,
-  FolderTree,
+  Worktree as FolderTree,
   Ghost,
   Globe,
   Internet,

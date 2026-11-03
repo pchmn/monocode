@@ -51,6 +51,8 @@ import Folder01Icon from "@hugeicons/core-free-icons/Folder01Icon";
 import FolderAddIcon from "@hugeicons/core-free-icons/FolderAddIcon";
 import FolderOpenIcon from "@hugeicons/core-free-icons/FolderOpenIcon";
 import FolderTreeIcon from "@hugeicons/core-free-icons/FolderTreeIcon";
+import FolderGitTwoIcon from "@hugeicons/core-free-icons/FolderGitTwoIcon";
+import HierarchyFilesIcon from "@hugeicons/core-free-icons/HierarchyFilesIcon";
 import GaugeIcon from "@hugeicons/core-free-icons/GaugeIcon";
 import GitBranchIcon from "@hugeicons/core-free-icons/GitBranchIcon";
 import GitCompareIcon from "@hugeicons/core-free-icons/GitCompareIcon";
@@ -211,6 +213,8 @@ export const FolderOpen = wrap(FolderOpenIcon, "FolderOpen");
 export const Eye = wrap(ViewIcon, "Eye");
 export const FolderPlus = wrap(FolderAddIcon, "FolderPlus");
 export const FolderTree = wrap(FolderTreeIcon, "FolderTree");
+export const FolderGit = wrap(FolderGitTwoIcon, "FolderGit");
+export const Worktree = wrap(HierarchyFilesIcon, "Worktree");
 export const Gauge = wrap(GaugeIcon, "Gauge");
 export const ChartBreakoutSquare = wrap(
   ChartBreakoutSquareIcon,

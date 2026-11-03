@@ -16,8 +16,8 @@ import type { WorkspaceMode } from "../../sessions/model/session";
 import {
   Check,
   ChevronRight,
-  Folder,
-  FolderTree,
+  FolderGit as Folder,
+  Worktree as FolderTree,
   GitBranch,
   Loader,
   Search,

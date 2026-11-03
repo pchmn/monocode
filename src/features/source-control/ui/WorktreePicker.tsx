@@ -9,7 +9,7 @@ import { GitPickerTrigger } from "./GitPickerTrigger";
 import { Popover } from "../../../shared/ui/Popover";
 import {
   Check,
-  FolderTree,
+  Worktree as FolderTree,
   GitBranch,
   Loader,
   Plus,

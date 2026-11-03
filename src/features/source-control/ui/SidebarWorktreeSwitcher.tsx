@@ -18,7 +18,7 @@ import {
   ChevronRight,
   ChevronsUpDown,
   Folder,
-  FolderTree,
+  Worktree as FolderTree,
   GitBranch,
   Loader,
   Plus,

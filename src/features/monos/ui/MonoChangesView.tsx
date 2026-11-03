@@ -10,7 +10,7 @@ import {
   Check,
   ChevronDown,
   FileDiff,
-  FolderTree,
+  Worktree as FolderTree,
   GitBranch,
 } from "../../../shared/ui/icons";
 import {

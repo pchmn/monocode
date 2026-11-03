@@ -4,7 +4,7 @@ import { DeleteWorktreeDialog } from "./DeleteWorktreeDialog";
 import { SearchableProjectPicker } from "../../projects/ui/SearchableProjectPicker";
 import {
   FolderOpen,
-  FolderTree,
+  Worktree as FolderTree,
   GitBranch,
   Loader,
   Plus,
