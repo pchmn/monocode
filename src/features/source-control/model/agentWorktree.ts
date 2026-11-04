@@ -1,4 +1,5 @@
 import { isExecuteTool } from "../../../integrations/harness/core/preview";
+import { hasOwnWorktree } from "../../projects/model/workspaceFolderWorktrees";
 import { joinPath, pathKey } from "../../../shared/lib/paths";
 import type { Block, HarnessId, Session } from "../../sessions/model/session";
 import type { Worktree } from "./worktrees";
@@ -171,13 +172,13 @@ export function pickAgentWorktree(
   return undefined;
 }
 
-/** Sessions still on the project checkout whose conversation can follow them. */
+/** Sessions still on the project checkout (or workspace folder) whose conversation can follow them. */
 export function canAdoptAgentWorktree(session: Session): boolean {
   return (
     RESUMES_ACROSS_CWD.has(session.harness) &&
     !!session.providerSessionId &&
     !session.busy &&
-    !session.worktreeCwd &&
+    !hasOwnWorktree(session) &&
     !session.worktreeRemoved &&
     !session.workspaceMode &&
     !session.pendingSwitch &&

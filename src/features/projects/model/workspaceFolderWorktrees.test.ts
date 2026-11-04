@@ -26,6 +26,8 @@ vi.mock("../../../platform/tauri/fs", () => ({
   }),
 }));
 
+import { newSession } from "../../sessions/model/session";
+import { canAdoptAgentWorktree } from "../../source-control/model/agentWorktree";
 import { loadCodeWorkspace } from "./codeWorkspace";
 import {
   draftWorktreeRepo,
@@ -67,6 +69,13 @@ describe("workspace folder worktrees", () => {
     expect(workspaceFolderOf(file, "/me/wt/api-feature")).toBe("/me/sabri/api");
     expect(workspaceFolderOf(file, "/me/sabri/web/app")).toBe("/me/sabri/web/app");
     expect(workspaceFolderOf("/me/app", "/me/wt/api-feature")).toBeUndefined();
+  });
+
+  it("let a session on a folder adopt its agent's worktree, not one already on a worktree", async () => {
+    await loadCodeWorkspace(file);
+    const session = { ...newSession("claude", file, "opus"), providerSessionId: "p1" };
+    expect(canAdoptAgentWorktree({ ...session, worktreeCwd: "/me/sabri/api" })).toBe(true);
+    expect(canAdoptAgentWorktree({ ...session, worktreeCwd: "/me/wt/api-feature" })).toBe(false);
   });
 
   it("reset the base only for a workspace draft in worktree mode", () => {

@@ -9,10 +9,6 @@ import {
   forgetHarnessSession,
 } from "../../../integrations/harness/core/registry";
 import { isMonoSession } from "../../monos/model/mono";
-import {
-  isCodeWorkspace,
-  projectWorkDir,
-} from "../../projects/model/codeWorkspace";
 import { isRemoteProjectPath } from "../../projects/model/recents";
 import { sessionWorkCwd, type Session } from "../../sessions/model/session";
 import {
@@ -43,19 +39,16 @@ export function useAgentWorktreeAdoption(
       scanned.current.set(session.id, session.blocks.length);
       if (
         !canAdoptAgentWorktree(session) ||
-        isCodeWorkspace(session.cwd) ||
         isRemoteProjectPath(session.cwd) ||
         isMonoSession(session.id)
       )
         continue;
-      const candidates = agentWorktreeCandidates(
-        session.blocks,
-        sessionWorkCwd(session),
-      );
+      const workDir = sessionWorkCwd(session);
+      const candidates = agentWorktreeCandidates(session.blocks, workDir);
       if (!candidates.length) continue;
 
       pending.current.add(session.id);
-      void listWorktrees(projectWorkDir(session.cwd))
+      void listWorktrees(workDir)
         .then(async ({ worktrees }) => {
           const tree = pickAgentWorktree(candidates, worktrees);
           const current = latest.current.find((s) => s.id === session.id);
