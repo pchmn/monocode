@@ -126,6 +126,7 @@ import {
   usePublishBackgroundTasks,
 } from "../features/sessions/model/backgroundTasks";
 import { sessionsToStopOnClose } from "../features/sessions/model/stopOnTabClose";
+import { clearedSession } from "../features/sessions/model/clear";
 import { useWorktreeCleanupOnClose } from "../features/source-control/hooks/useWorktreeCleanupOnClose";
 import { ResourcePressureNotice } from "../features/notifications/ui/ResourcePressureNotice";
 import { HarnessUpdateNotice } from "../features/providers/ui/HarnessUpdateNotice";
@@ -527,7 +528,6 @@ import {
   formatSessionTitle,
   sessionNeedsInput,
   newDefaultSession,
-  newSessionForProject,
   newSession,
   retargetSessionToProject,
   removeSessionDraft,
@@ -10612,11 +10612,7 @@ function Workspace({
       leafIds(t.layout).includes(sessionId),
     );
     if (!current || !tab || remoteProjectFor(current.cwd)) return;
-    const fresh = {
-      ...newSessionForProject(current, current.cwd),
-      worktreeCwd: current.worktreeCwd,
-      branch: current.branch,
-    };
+    const fresh = clearedSession(current);
     setSessions((prev) => [...prev, fresh]);
     setTabs((prev) =>
       prev.map((entry) =>
