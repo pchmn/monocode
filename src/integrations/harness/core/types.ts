@@ -31,6 +31,9 @@ export type HarnessEvent =
    */
   | { type: "background.updated"; tasks: string[] }
   | ({ type: "interjection"; text: string } & InterjectionMeta)
+  /** The provider holds a steered message (by user block id) until its current step ends. */
+  | { type: "steer.queued"; id: string }
+  | { type: "steer.delivered"; id: string }
   | { type: "message.delta"; text: string }
   | { type: "message.completed" }
   | {
@@ -199,6 +202,8 @@ export type SteerTurnInput = {
   modelSettings?: Record<string, string>;
   text: string;
   attachments?: Attachment[];
+  /** User block id, echoed back by `steer.*` events. */
+  id?: string;
 };
 
 export type RewindLastTurnInput = CompactContextInput & {
