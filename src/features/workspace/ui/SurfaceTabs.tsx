@@ -39,7 +39,7 @@ import {
 import { FileActionError } from "../../files/ui/FileActionError";
 import { FileTypeIcon } from "../../files/ui/FileTypeIcon";
 import { HarnessIcon } from "../../sessions/ui/HarnessIcon";
-import { TabLabel } from "../../../shared/ui/TabLabel";
+import { GitTintedTabLabel } from "../../files/ui/GitTintedTabLabel";
 
 type Props = {
   files: FilePaneTab[];
@@ -389,7 +389,10 @@ export function SurfaceTabs({
                 ) : (
                   <FileTypeIcon name={iconName} isDir={false} size={14} />
                 )}
-                <TabLabel
+                <GitTintedTabLabel
+                  file={file}
+                  active={active}
+                  tinted={!errors}
                   className={`flex-1 ${file.preview ? "italic" : ""} ${
                     errors
                       ? active
@@ -399,7 +402,7 @@ export function SurfaceTabs({
                   }`}
                 >
                   {label}
-                </TabLabel>
+                </GitTintedTabLabel>
                 {dirty ? (
                   <span
                     className="size-1.5 shrink-0 rounded-full bg-content/70"
