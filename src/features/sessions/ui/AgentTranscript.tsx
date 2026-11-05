@@ -17,6 +17,7 @@ import {
   Wrench,
   X,
 } from "../../../shared/ui/icons";
+import { SteerPendingNote } from "./SteerPendingNote";
 import {
   memo,
   startTransition,
@@ -2748,6 +2749,7 @@ function UserMessageBlock({
           ) : null}
         </div>
         {deliveryControl}
+        {block.steerPending ? <SteerPendingNote /> : null}
       </div>
     );
   }
@@ -2930,6 +2932,7 @@ function UserMessageBlock({
           )}
         </div>
         {deliveryControl}
+        {block.steerPending ? <SteerPendingNote /> : null}
         {!compactFollowUp &&
         (text || block.attachments?.length || messageAt != null || onEdit) ? (
           <div className="user-message-actions flex items-center gap-1 px-3 pt-1">

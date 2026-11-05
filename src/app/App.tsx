@@ -7625,6 +7625,7 @@ function Workspace({
         dismissNoticesForContinuedSession(sessionId);
         const visible = displayAttachments(attachments);
         const cards = userTurnCards(noteCard);
+        const steerId = crypto.randomUUID();
         const nextSessions = sessionsRef.current.map((s) => {
           if (s.id !== sessionId) return s;
           let next: Session = {
@@ -7638,6 +7639,7 @@ function Workspace({
           }
           return appendSteerUser(next, submittedText, visible, {
             ...cards,
+            id: steerId,
             ...(options?.appRequestId
               ? { appRequestId: options.appRequestId }
               : {}),
@@ -7664,6 +7666,7 @@ function Workspace({
                 prompt,
               ),
               attachments: prepared,
+              id: steerId,
             });
           } catch (error: unknown) {
             const message =

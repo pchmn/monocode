@@ -24,6 +24,10 @@ import { isReviewablePlan } from "../../../features/sessions/model/plan";
 import { resolveModel } from "../../../features/sessions/model/models";
 import type { HarnessEvent } from "./types";
 import { usageLimitFromError } from "../../../features/sessions/model/usageLimit";
+import {
+  applySteerDelivery,
+  returnUnreadSteers,
+} from "../../../features/sessions/model/steerDelivery";
 
 /** Apply one delivery batch without copying the transcript for every token. */
 export function applyHarnessEvents(
@@ -217,6 +221,9 @@ export function applyHarnessEvent(
         ...session,
         usageLimit: event.resetsAt != null ? { resetsAt: event.resetsAt } : {},
       };
+    case "steer.queued":
+    case "steer.delivered":
+      return applySteerDelivery(session, event);
     case "interjection":
       // A visible boundary the user must not miss, so unlike status it never
       // deduplicates and never reads as turn lifecycle.
@@ -447,6 +454,7 @@ function lastMatchingBlock(
 }
 
 type UserTurnExtra = {
+  id?: string;
   secondOpinion?: Block["secondOpinion"];
   noteCard?: Block["noteCard"];
   ciContext?: string;
@@ -459,6 +467,7 @@ type UserTurnExtra = {
 
 function userTurnFields(extra?: UserTurnExtra) {
   return {
+    ...(extra?.id ? { id: extra.id } : {}),
     ...(extra?.secondOpinion ? { secondOpinion: extra.secondOpinion } : {}),
     ...(extra?.noteCard ? { noteCard: extra.noteCard } : {}),
     ...(extra?.ciContext ? { ciContext: extra.ciContext } : {}),
@@ -532,7 +541,7 @@ export function appendSteerUser(
 export function stopStreaming(session: Session, endedAt = Date.now()): Session {
   const { backgroundTasks: _cleared, ...settled } =
     settlePendingApprovals(session);
-  return {
+  return returnUnreadSteers({
     ...settled,
     busy: false,
     turnReady: false,
@@ -543,7 +552,7 @@ export function stopStreaming(session: Session, endedAt = Date.now()): Session {
         .map(stopBlockProgress),
       endedAt,
     ),
-  };
+  });
 }
 
 /**

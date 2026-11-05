@@ -85,6 +85,11 @@ import {
   stopClaudeSubagentLog,
   stopClaudeSubagentLogs,
 } from "./claudeSubagentLog";
+import {
+  hasWaitingSteers,
+  steerLifecycleEvent,
+  tagSteerMessage,
+} from "./claudeSteerDelivery";
 import { joinStreamText, snapshotRemainder } from "../../core/streamText";
 import {
   questionPromptTitle,
@@ -314,7 +319,7 @@ export async function steerClaudeTurn(input: SteerTurnInput): Promise<void> {
   const content = (message.message as { content: unknown[] }).content;
   if (content.length === 0) return;
 
-  await writeJson(input.sessionId, message);
+  await writeJson(input.sessionId, tagSteerMessage(live, message, input.id));
 }
 
 export function respondClaudeApproval(
@@ -727,6 +732,12 @@ function handleLine(sessionId: string, live: Live, line: string): void {
   }
 
   if (live.manualCompaction && type !== "system" && type !== "result") {
+    return;
+  }
+  const steerEvent = steerLifecycleEvent(live, rec);
+  if (steerEvent) {
+    if (steerEvent.type === "steer.delivered") noteClaudeTurnStarted(live);
+    live.onEvent(steerEvent);
     return;
   }
 
@@ -1747,6 +1758,8 @@ function maybeFinishTurn(live: Live): void {
   if (!live.turnResultSeen) return;
   if (live.agentTasks.size > 0 || live.backgroundTasks.size > 0) return;
   if (live.awaitingResume) return;
+  // Claude starts a steer it has not read yet as soon as this result is out.
+  if (hasWaitingSteers(live)) return;
   if (!live.activeTurn && !live.turnDone) return;
   finishActiveTurn(live, [
     { type: "message.completed" },

@@ -332,6 +332,8 @@ export type Block = {
   durationMs?: number;
   /** Epoch ms when this message joined a turn that was already running. */
   sentAt?: number;
+  /** Steered message the provider holds but has not read yet. */
+  steerPending?: boolean;
   /** Stable model label for this turn. Present on newly created user blocks. */
   turnModel?: TurnModel;
   /** Provider turn boundary used to replace this user message, when known. */
