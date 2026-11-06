@@ -31,6 +31,7 @@ import { canAdoptAgentWorktree } from "../../source-control/model/agentWorktree"
 import { loadCodeWorkspace } from "./codeWorkspace";
 import {
   draftWorktreeRepo,
+  foldersInWorktree,
   hasOwnWorktree,
   listCodeWorkspaceWorktrees,
   workspaceFolderBaseReset,
@@ -69,6 +70,19 @@ describe("workspace folder worktrees", () => {
     expect(workspaceFolderOf(file, "/me/wt/api-feature")).toBe("/me/sabri/api");
     expect(workspaceFolderOf(file, "/me/sabri/web/app")).toBe("/me/sabri/web/app");
     expect(workspaceFolderOf("/me/app", "/me/wt/api-feature")).toBeUndefined();
+  });
+
+  it("show the active session's worktree in place of its folder in the explorer", () => {
+    const folders = [
+      { path: "/me/sabri/api", name: "api" },
+      { path: "/me/sabri/web/app", name: "app" },
+    ];
+    expect(foldersInWorktree(folders, "/me/sabri/api", "/me/wt/api-feature")).toEqual([
+      { path: "/me/wt/api-feature", name: "api" },
+      { path: "/me/sabri/web/app", name: "app" },
+    ]);
+    expect(foldersInWorktree(folders, "/me/sabri/api", "/me/sabri/api")).toBe(folders);
+    expect(foldersInWorktree(folders, undefined, file)).toBe(folders);
   });
 
   it("let a session on a folder adopt its agent's worktree, not one already on a worktree", async () => {

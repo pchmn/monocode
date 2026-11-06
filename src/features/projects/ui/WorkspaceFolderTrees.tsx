@@ -14,6 +14,7 @@ import { ChevronDown, ChevronRight } from "../../../shared/ui/icons";
 import { slash } from "../../../shared/lib/paths";
 import { useGitFileStatuses } from "../../source-control/hooks/useGitFileStatuses";
 import type { CodeWorkspaceFolder } from "../model/codeWorkspace";
+import { useFoldersInWorktree } from "../model/workspaceFolderWorktrees";
 
 type Actions = Pick<
   ComponentProps<typeof FileTree>,
@@ -23,14 +24,17 @@ type Actions = Pick<
 /** The explorer of a VS Code workspace: one tree per folder, as VS Code lists them. */
 export function WorkspaceFolderTrees({
   workspace,
-  folders,
+  folders: workspaceFolders,
+  activeCwd,
   enabled,
   ...actions
 }: {
   workspace: string;
   folders: CodeWorkspaceFolder[];
+  activeCwd?: string;
   enabled: boolean;
 } & Actions) {
+  const folders = useFoldersInWorktree(workspace, workspaceFolders, activeCwd);
   const [open, setOpen] = useState(true);
   const trees = useMemo(
     () => folders.map(() => createRef<ExplorerActions>()),
