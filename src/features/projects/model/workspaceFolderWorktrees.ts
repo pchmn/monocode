@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { invokeWorkspace, subscribeGitChanged } from "../../../platform/tauri/fs";
 import { pathKey } from "../../../shared/lib/paths";
 import type { Worktree, Worktrees } from "../../source-control/model/worktrees";
@@ -6,6 +6,7 @@ import {
   codeWorkspaceFolders,
   isCodeWorkspace,
   listCodeWorkspaceFolders,
+  type CodeWorkspaceFolder,
 } from "./codeWorkspace";
 
 type WorkspaceSession = { cwd: string; worktreeCwd?: string };
@@ -72,6 +73,30 @@ export function useWorkspaceFolderOf(workspace: string, path: string) {
       return () => listeners.delete(listener);
     },
     () => workspaceFolderOf(workspace, path),
+  );
+}
+
+/** The workspace folders as the active session sees them: its folder swapped for its worktree. */
+export function foldersInWorktree(
+  folders: CodeWorkspaceFolder[],
+  owner: string | undefined,
+  activeCwd: string | undefined,
+): CodeWorkspaceFolder[] {
+  if (!activeCwd || !owner || pathKey(owner) === pathKey(activeCwd)) return folders;
+  return folders.map((folder) =>
+    pathKey(folder.path) === pathKey(owner) ? { ...folder, path: activeCwd } : folder,
+  );
+}
+
+export function useFoldersInWorktree(
+  workspace: string,
+  folders: CodeWorkspaceFolder[],
+  activeCwd: string | undefined,
+): CodeWorkspaceFolder[] {
+  const owner = useWorkspaceFolderOf(workspace, activeCwd ?? "");
+  return useMemo(
+    () => foldersInWorktree(folders, owner, activeCwd),
+    [folders, owner, activeCwd],
   );
 }
 

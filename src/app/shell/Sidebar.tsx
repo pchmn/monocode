@@ -2524,6 +2524,7 @@ function SidebarComponent({
           {workspaceFolders ? (
             <WorkspaceFolderTrees
               folders={workspaceFolders}
+              activeCwd={gitRoot}
               enabled={panesOpen && paneTab === "files"}
               workspace={cwd}
               onOpenFile={onOpenFile}
