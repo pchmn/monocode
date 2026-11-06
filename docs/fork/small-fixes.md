@@ -19,3 +19,9 @@ Upstream bug fixes with no feature of their own. On each sync, check whether ups
 - Fork files: `src/integrations/harness/providers/claude/claudeCompact.ts`, `src/features/sessions/model/compactStatus.ts`
 - `src/integrations/harness/providers/claude/claudeCompact.test.ts`
 - Manual: `/compact` in a Claude session; the row reads "Compacted context · Xk → Yk tokens" and the token count under the composer drops.
+
+## Claude session stopped before its first message stays usable
+- `src/integrations/harness/providers/claude/claude.ts` — `noteMissingConversation` in `handleLine`, `takeMissingConversation` after `waitForInit` in `ensureLive`: a `--resume` that hits "No conversation found with session ID" relaunches with a fresh conversation instead of failing every turn with "Harness process is not running"
+- Fork files: `src/integrations/harness/providers/claude/claudeMissingConversation.ts`
+- `src/integrations/harness/providers/claude/claudeMissingConversation.test.ts`
+- Manual: send a message in a new Claude session and press Stop within a second; the next message gets a reply.

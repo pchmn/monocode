@@ -90,6 +90,10 @@ import {
   steerLifecycleEvent,
   tagSteerMessage,
 } from "./claudeSteerDelivery";
+import {
+  noteMissingConversation,
+  takeMissingConversation,
+} from "./claudeMissingConversation";
 import { joinStreamText, snapshotRemainder } from "../../core/streamText";
 import {
   questionPromptTitle,
@@ -591,6 +595,11 @@ async function ensureLive(input: HarnessSessionInput): Promise<Live> {
       buildControlRequest(nextControlId(live), { subtype: "initialize" }),
     );
     await waitForInit(live, INIT_TIMEOUT_MS);
+    if (takeMissingConversation(input.sessionId) && canResume) {
+      await stopClaudeSession(input.sessionId);
+      resumeByThread.delete(input.sessionId);
+      return ensureLive(input);
+    }
     live.onEvent({
       type: "session.providerBound",
       providerSessionId: live.claudeSessionId,
@@ -655,6 +664,7 @@ async function runTurn(live: Live, input: SendTurnInput): Promise<void> {
 function handleLine(sessionId: string, live: Live, line: string): void {
   const rec = parseJsonLine(line);
   if (!rec) return;
+  if (noteMissingConversation(sessionId, rec)) return;
 
   const type = stringField(rec, "type");
   if (type === "keep_alive") return;
