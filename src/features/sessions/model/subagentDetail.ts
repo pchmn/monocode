@@ -2,6 +2,8 @@ import type { AgentStep, Block } from "./session";
 import { isFailedStatus } from "./transcriptActivity";
 
 const OPEN_EVENT = "monocode:subagent-details";
+/** Marks buttons that open the sheet, so clicking one does not count as outside. */
+export const DETAILS_TRIGGER_ATTR = "data-subagent-details-trigger";
 const HEIGHT_KEY = "monocode.subagentDetailSheet.height";
 export const MIN_SHEET_HEIGHT = 160;
 /** Transcript left visible above a fully raised sheet. */

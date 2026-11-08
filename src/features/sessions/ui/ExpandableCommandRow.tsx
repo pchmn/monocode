@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { ChevronRight } from "../../../shared/ui/icons";
 import { isExecuteTool } from "../../../integrations/harness/core/preview";
 import type { Block } from "../model/session";
+import { CommandLogsButton } from "./CommandLogSheet";
 import { useToolDetail } from "./useToolDetail";
 
 export function isExpandableCommand(block: Block): boolean {
@@ -24,27 +25,30 @@ export function ExpandableCommandRow({
 
   return (
     <div className="flex min-w-0 flex-col">
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-label={`${open ? "Hide" : "Show"} command details for ${label}`}
-        onClick={() => setOpen((value) => !value)}
-        className="group flex w-full min-w-0 items-center gap-1.5 py-1 text-left"
-      >
-        {icon}
-        <span
-          className="min-w-0 flex-1 truncate font-mono text-[13px] text-content/65 group-hover:text-content/85"
-          title={label}
+      <div className="group/command flex min-w-0 items-center">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-label={`${open ? "Hide" : "Show"} command details for ${label}`}
+          onClick={() => setOpen((value) => !value)}
+          className="group flex min-w-0 flex-1 items-center gap-1.5 py-1 text-left"
         >
-          {label}
-        </span>
-        <ChevronRight
-          className={`size-3.5 shrink-0 text-content/35 transition-transform ${
-            open ? "rotate-90" : "opacity-0 group-hover:opacity-100"
-          }`}
-          strokeWidth={1.75}
-        />
-      </button>
+          {icon}
+          <span
+            className="min-w-0 flex-1 truncate font-mono text-[13px] text-content/65 group-hover:text-content/85"
+            title={label}
+          >
+            {label}
+          </span>
+          <ChevronRight
+            className={`size-3.5 shrink-0 text-content/35 transition-transform ${
+              open ? "rotate-90" : "opacity-0 group-hover:opacity-100"
+            }`}
+            strokeWidth={1.75}
+          />
+        </button>
+        <CommandLogsButton block={block} />
+      </div>
       {open ? (
         <div className="mb-1 min-w-0 overflow-hidden rounded-md bg-content/4 font-mono text-[12px] leading-5">
           <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all px-2.5 py-1.5 text-content/80">
