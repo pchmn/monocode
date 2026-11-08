@@ -35,12 +35,10 @@ export function WorkingAgentList({
     const bottom = el.scrollTop + el.clientHeight;
     setAbove(el.scrollTop > 1);
     setHidden(
-      Array.from(el.children).filter(
-        (card) =>
-          (card as HTMLElement).offsetTop +
-            (card as HTMLElement).offsetHeight >
-          bottom + 1,
-      ).length,
+      Array.from(
+        el.querySelectorAll<HTMLElement>("[data-live-agent-card]"),
+      ).filter((card) => card.offsetTop + card.offsetHeight > bottom + 1)
+        .length,
     );
   }, []);
 

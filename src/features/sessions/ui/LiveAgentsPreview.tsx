@@ -19,6 +19,7 @@ import { BackgroundDot, backgroundActivity } from "./BackgroundTasks";
 import { useWorkingPanelCollapsed } from "../model/workingPanelCollapsed";
 import { WorkingPanelHeader } from "./WorkingPanelHeader";
 import { WorkingAgentList } from "./WorkingAgentList";
+import { WorkingAgentGroups } from "./WorkingAgentGroups";
 
 type Props = {
   agents: LiveAgent[];
@@ -83,7 +84,10 @@ export function LiveAgentsPreview({
         />
         {collapsed ? null : (
         <WorkingAgentList count={agents.length}>
-          {agents.map((agent) => (
+          <WorkingAgentGroups
+            agents={agents}
+            {...{ groupLabels, groupColors, groupCustomColors, groupMascots }}
+            renderCard={(agent, inGroup) => (
             <LiveAgentCard
               key={agent.id}
               agent={agent}
@@ -94,8 +98,9 @@ export function LiveAgentsPreview({
               groupColors={groupColors}
               groupCustomColors={groupCustomColors}
               groupMascots={groupMascots}
+              hideProject={inGroup}
             />
-          ))}
+          )} />
         </WorkingAgentList>
         )}
       </div>
@@ -112,6 +117,7 @@ function LiveAgentCard({
   groupColors,
   groupCustomColors,
   groupMascots,
+  hideProject = false,
 }: {
   agent: LiveAgent;
   now: number;
@@ -121,6 +127,7 @@ function LiveAgentCard({
   groupColors: Record<string, number>;
   groupCustomColors: Record<string, string>;
   groupMascots: Record<string, string>;
+  hideProject?: boolean;
 }) {
   const seed = projectName(agent.cwd);
   const key = projectKey(agent.cwd);
@@ -201,7 +208,7 @@ function LiveAgentCard({
       </span>
       <span className="mt-1 flex w-full min-w-0 items-center gap-1.5 pl-4 text-[11px] leading-tight text-content/45">
         <HarnessIcon harness={agent.harness} className="size-3 shrink-0" />
-        <span className="min-w-0 flex-1 truncate">{project}</span>
+        <span className="min-w-0 flex-1 truncate">{hideProject ? null : project}</span>
         {elapsed ? (
           <span className="shrink-0 tabular-nums">{elapsed}</span>
         ) : null}
