@@ -13,6 +13,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { ApprovalSheet } from "./ApprovalSheet";
+import { SubagentDetailSheet } from "./SubagentDetailSheet";
 import { Composer } from "./Composer";
 import type { Worktree } from "../../source-control/model/worktrees";
 import {
@@ -1161,6 +1162,13 @@ const LocalSessionPane = memo(function LocalSessionPane({
               inert={btw.open}
               className="mx-auto w-full max-w-4xl shrink-0"
             >
+              <SubagentDetailSheet
+                blocks={session.blocks}
+                sessionId={remoteSession ? undefined : session.id}
+                cwd={workCwd}
+                onOpenFile={onOpenFile}
+                onOpenDiff={onOpenDiff}
+              />
               {session.worktreeRemoved ? null : (
                 <ApprovalSheet
                   blocks={session.blocks}

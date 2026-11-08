@@ -51,6 +51,7 @@ import {
   useToolDetail,
 } from "./useToolDetail";
 import { HistoryTurn } from "./HistoryTurn";
+import { SubagentDetailsButton } from "./SubagentDetailSheet";
 import { streamMeasurement } from "../model/streamingPerformance";
 import { useReplyReflowAnchor } from "./useReplyReflowAnchor";
 import { FilePreview } from "../../files/ui/FilePreview";
@@ -4090,7 +4091,7 @@ function SubagentPanel({
   }
 
   return (
-    <div className="flex min-w-0 flex-col">
+    <div className="group/subagent grid min-w-0 grid-cols-[minmax(0,1fr)_auto]">
       <button
         type="button"
         aria-expanded={open}
@@ -4112,7 +4113,8 @@ function SubagentPanel({
           strokeWidth={1.75}
         />
       </button>
-      <div className="zen-phase-body" data-open={open}>
+      <SubagentDetailsButton block={block} />
+      <div className="zen-phase-body col-span-2" data-open={open}>
         {open ? (
           /*
            * No scroll window of its own. Each phase inside already keeps the
