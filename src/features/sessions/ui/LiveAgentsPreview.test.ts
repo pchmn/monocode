@@ -60,7 +60,7 @@ afterEach(() => {
 });
 
 describe("LiveAgentsPreview", () => {
-  it("keeps the incoming activity order and the global four-agent cap", () => {
+  it("keeps the incoming activity order and lists every agent", () => {
     render({
       agents: [
         agent("a-1", "/repo/a"),
@@ -83,19 +83,11 @@ describe("LiveAgentsPreview", () => {
       "b-1",
       "a-2",
       "b-2",
+      "c-1",
     ]);
     expect(cards[0].textContent).toContain("Alpha");
     expect(cards[1].textContent).toContain("Beta");
     expect(cards[0].querySelector(".mascot-active")).not.toBeNull();
-    expect(container.textContent).toContain("1 more");
-
-    const more = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("1 more"),
-    )!;
-    act(() => more.click());
-    expect(container.querySelectorAll("[data-live-agent-card]")).toHaveLength(
-      5,
-    );
   });
 
   it("shows only when an agent runs outside the active session", () => {

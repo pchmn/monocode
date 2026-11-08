@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useLockOverscroll } from "../../../shared/hooks/useLockOverscroll";
 import { formatLiveElapsed, type LiveAgent } from "../model/liveAgents";
 import { projectKey, projectName } from "../../../shared/lib/paths";
 import {
@@ -11,14 +10,15 @@ import {
   resolveTabGroupLabel,
   resolveTabGroupMascot,
 } from "../../workspace/model/tabGroups";
-import { Check, ChevronDown, ChevronUp, CircleAlert } from "../../../shared/ui/icons";
+import { Check, CircleAlert } from "../../../shared/ui/icons";
 import { HarnessIcon } from "./HarnessIcon";
 import { ProjectMascot } from "../../projects/ui/ProjectMascot";
 import { TerminalSpinner } from "./TerminalSpinner";
 import { useSessionBackgroundTasks } from "../model/backgroundTasks";
 import { BackgroundDot, backgroundActivity } from "./BackgroundTasks";
-
-const LIVE_AGENT_CAP = 4;
+import { useWorkingPanelCollapsed } from "../model/workingPanelCollapsed";
+import { WorkingPanelHeader } from "./WorkingPanelHeader";
+import { WorkingAgentList } from "./WorkingAgentList";
 
 type Props = {
   agents: LiveAgent[];
@@ -49,9 +49,8 @@ export function LiveAgentsPreview({
   const groupColors = groupColorsProp ?? loadedGroupColors;
   const groupCustomColors = groupCustomColorsProp ?? loadedGroupCustomColors;
   const groupMascots = groupMascotsProp ?? loadedGroupMascots;
-  const [expanded, setExpanded] = useState(false);
+  const [collapsed, toggleCollapsed] = useWorkingPanelCollapsed();
   const [now, setNow] = useState(() => Date.now());
-  const lockList = useLockOverscroll<HTMLDivElement>();
   // The active session's own progress is already on screen.
   const shown = agents.some((agent) => agent.id !== activeSessionId);
   const ticking =
@@ -66,10 +65,6 @@ export function LiveAgentsPreview({
 
   if (!shown) return null;
 
-  const extra = agents.length - LIVE_AGENT_CAP;
-  const visible =
-    expanded || extra <= 0 ? agents : agents.slice(0, LIVE_AGENT_CAP);
-
   return (
     <section
       aria-label="Working agents"
@@ -80,25 +75,15 @@ export function LiveAgentsPreview({
         {agents.length} working agents
       </span>
       <div className="overflow-hidden rounded-lg bg-content/5">
-        <div className="flex items-center gap-2 px-3.5 py-1.5">
-          <span
-            aria-hidden
-            className="size-1.5 shrink-0 rounded-full bg-accent shadow-[0_0_8px_var(--color-accent)] motion-safe:animate-pulse"
-          />
-          <span className="min-w-0 flex-1 truncate text-xs text-content/50">
-            Working
-          </span>
-          <span className="text-[11px] tabular-nums text-content/40">
-            {agents.length}
-          </span>
-        </div>
-        <div
-          ref={expanded ? lockList : undefined}
-          className={`flex flex-col gap-px px-1 ${
-            extra > 0 ? "" : "pb-1"
-          } ${expanded ? "max-h-[45vh] overflow-y-auto overscroll-none" : ""}`}
-        >
-          {visible.map((agent) => (
+        <WorkingPanelHeader
+          collapsed={collapsed}
+          count={agents.length}
+          needsApproval={agents.some((agent) => agent.needsApproval)}
+          onToggle={toggleCollapsed}
+        />
+        {collapsed ? null : (
+        <WorkingAgentList count={agents.length}>
+          {agents.map((agent) => (
             <LiveAgentCard
               key={agent.id}
               agent={agent}
@@ -111,22 +96,8 @@ export function LiveAgentsPreview({
               groupMascots={groupMascots}
             />
           ))}
-        </div>
-        {extra > 0 ? (
-          <button
-            type="button"
-            aria-expanded={expanded}
-            onClick={() => setExpanded((open) => !open)}
-            className="flex w-full items-center justify-center gap-1 px-2 py-1.5 text-[11px] text-content/50 hover:bg-content/8 hover:text-content"
-          >
-            {expanded ? (
-              <ChevronUp className="size-3" strokeWidth={1.75} />
-            ) : (
-              <ChevronDown className="size-3" strokeWidth={1.75} />
-            )}
-            {expanded ? "Show less" : `${extra} more`}
-          </button>
-        ) : null}
+        </WorkingAgentList>
+        )}
       </div>
     </section>
   );
