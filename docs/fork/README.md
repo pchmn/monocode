@@ -30,7 +30,7 @@ A PR that adds, changes or removes fork behaviour updates its entry in the same 
 
 Sync with `git merge upstream/main`, and land a sync PR with a merge commit, never a squash: a squash drops `upstream/main` as a parent, so the merge-base stays put and the next sync replays every upstream change since. Feature PRs can still be squashed.
 
-Run after the merge, before pushing:
+Run after the merge, before pushing (the `/sync-upstream` skill runs the whole sync end to end):
 
 1. List the upstream files the sync changed: `git diff --name-only <previous merge-base> upstream/main`.
 2. Find the features at risk: entries whose **Upstream hooks** name one of those files (`grep -l <path> docs/fork/*.md`).
