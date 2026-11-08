@@ -195,6 +195,41 @@ describe("approval lifetime", () => {
     });
   });
 
+  it("keeps a reply whole when a subagent asks for approval mid-stream", () => {
+    let session = appendUser(newSession("claude", "/tmp"), "go");
+    session = applyHarnessEvent(session, {
+      type: "message.delta",
+      text: "une grille col",
+    });
+    session = applyHarnessEvent(session, {
+      type: "approval.requested",
+      requestId: 1,
+      callId: "toolu_subagent_bash",
+      title: "npm test",
+      kind: "execute",
+    });
+    session = applyHarnessEvent(session, {
+      type: "message.delta",
+      text: "orée selon l'état",
+    });
+    session = applyHarnessEvent(session, {
+      type: "tool.started",
+      callId: "toolu_main",
+      title: "npm run build",
+      kind: "execute",
+      status: "pending",
+    });
+
+    expect(
+      session.blocks.map((block) => [block.role, block.text, block.streaming]),
+    ).toEqual([
+      ["user", "go", undefined],
+      ["assistant", "une grille colorée selon l'état", false],
+      ["tool", "npm test", undefined],
+      ["tool", "npm run build", true],
+    ]);
+  });
+
   it("cancels a stale request before a later turn is appended", () => {
     const stale = { ...waitingForApproval(), busy: false };
     const session = appendUser(stale, "continue");

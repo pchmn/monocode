@@ -817,7 +817,7 @@ function appendBlock(session: Session, block: Block): Session {
   return {
     ...session,
     blocks: [
-      ...(block.role === "system" && !block.interjection
+      ...(leavesStreamOpen(block)
         ? session.blocks
         : sealLastStream(session.blocks)),
       block,
@@ -838,12 +838,7 @@ function patchStreaming(
   )
     return session;
   let index = session.blocks.length - 1;
-  while (
-    index >= 0 &&
-    session.blocks[index].role === "system" &&
-    !session.blocks[index].interjection
-  )
-    index--;
+  while (index >= 0 && leavesStreamOpen(session.blocks[index])) index--;
   const last = session.blocks[index];
   // A completion closes one provider message. The next delta is a new message
   // even when no tool or status row landed between them; joining the two can
@@ -1237,14 +1232,16 @@ function findToolIndex(
   });
 }
 
+// Our own tool rows seal prose on tool.started, so a row arriving with its
+// approval belongs to a subagent and must not cut the reply in two.
+function leavesStreamOpen(block: Block): boolean {
+  if (block.role === "tool") return !!block.approval;
+  return block.role === "system" && !block.interjection;
+}
+
 function sealLastStream(blocks: Block[]): Block[] {
   let index = blocks.length - 1;
-  while (
-    index >= 0 &&
-    blocks[index].role === "system" &&
-    !blocks[index].interjection
-  )
-    index--;
+  while (index >= 0 && leavesStreamOpen(blocks[index])) index--;
   const last = blocks[index];
   if (
     !last?.streaming ||
