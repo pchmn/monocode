@@ -17,6 +17,7 @@ Settings → Editor sets the font family, size and line height of the file edito
 - `src/features/source-control/model/unifiedDiffDocument.ts` — `codeLineHeightPx()` for line rows in `buildBody`
 - `src/features/source-control/ui/UnifiedDiffView.tsx` — `useCodeFonts()`; the `ReviewDocumentBuilder` is rebuilt when the line height changes
 - `src/features/source-control/ui/GitChangesPanel.tsx` — `--explorer-row-height` / `--explorer-font-size` classes in `ChangeRow` and `ChangeDirRow`
+- `tests/browser/unified-diff.tsx` — `codeFonts.css` import and `applyCodeFonts()`, as in `main.tsx`; without them the diff lines overflow their rows and swallow the wheel
 - `src/features/files/ui/FileTree.tsx` — `--explorer-row-height` / `--explorer-font-size` classes on tree rows, the rename row and the workspace root header
 
 ## Verify
