@@ -60,7 +60,7 @@ afterEach(() => {
 });
 
 describe("LiveAgentsPreview", () => {
-  it("keeps the incoming activity order and the global four-agent cap", () => {
+  it("groups agents by project in order of their first agent", () => {
     render({
       agents: [
         agent("a-1", "/repo/a"),
@@ -75,27 +75,59 @@ describe("LiveAgentsPreview", () => {
       groupMascots: {},
     });
 
+    const headers = Array.from(
+      container.querySelectorAll<HTMLElement>("[data-working-group]"),
+    );
+    expect(headers.map((header) => header.textContent)).toEqual([
+      "Alpha2",
+      "Beta2",
+      "c1",
+    ]);
     const cards = Array.from(
       container.querySelectorAll<HTMLElement>("[data-live-agent-card]"),
     );
     expect(cards.map((card) => card.dataset.liveAgentCard)).toEqual([
       "a-1",
-      "b-1",
       "a-2",
+      "b-1",
       "b-2",
+      "c-1",
     ]);
-    expect(cards[0].textContent).toContain("Alpha");
-    expect(cards[1].textContent).toContain("Beta");
+    expect(cards[0].textContent).not.toContain("Alpha");
     expect(cards[0].querySelector(".mascot-active")).not.toBeNull();
-    expect(container.textContent).toContain("1 more");
+  });
 
-    const more = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("1 more"),
+  it("folds a project group and keeps its approval visible", () => {
+    render({
+      agents: [
+        agent("b-1", "/repo/b", { needsApproval: true }),
+        agent("a-1", "/repo/a"),
+      ],
+      groupLabels: { "/repo/a": "Alpha", "/repo/b": "Beta" },
+    });
+
+    const beta = container.querySelector<HTMLElement>(
+      '[data-working-group="/repo/b"]',
     )!;
-    act(() => more.click());
-    expect(container.querySelectorAll("[data-live-agent-card]")).toHaveLength(
-      5,
+    act(() => beta.click());
+    expect(beta.getAttribute("aria-expanded")).toBe("false");
+    expect(beta.querySelector('[aria-label="Needs approval"]')).not.toBeNull();
+    const cards = Array.from(
+      container.querySelectorAll<HTMLElement>("[data-live-agent-card]"),
     );
+    expect(cards.map((card) => card.dataset.liveAgentCard)).toEqual(["a-1"]);
+  });
+
+  it("lists a single project flat, with the project on each card", () => {
+    render({
+      agents: [agent("a-1", "/repo/a"), agent("a-2", "/repo/a")],
+      groupLabels: { "/repo/a": "Alpha" },
+    });
+
+    expect(container.querySelector("[data-working-group]")).toBeNull();
+    expect(
+      container.querySelector("[data-live-agent-card]")?.textContent,
+    ).toContain("Alpha");
   });
 
   it("shows only when an agent runs outside the active session", () => {
