@@ -1895,6 +1895,49 @@ describe("claude background tasks", () => {
     ).not.toContain("waiting");
   });
 
+  it("keeps a subagent's background command out of the main transcript", async () => {
+    const { events } = await startTurn("s1");
+    emit({
+      type: "assistant",
+      session_id: "sess_1",
+      message: {
+        content: [
+          {
+            type: "tool_use",
+            id: "toolu_agent",
+            name: "Agent",
+            input: { description: "Count slowly", run_in_background: true },
+          },
+        ],
+      },
+    });
+    emit({
+      type: "system",
+      subtype: "task_started",
+      task_id: "t1",
+      tool_use_id: "toolu_agent",
+      description: "Count slowly",
+      task_type: "local_agent",
+      is_backgrounded: true,
+    });
+    emit({
+      type: "system",
+      subtype: "task_started",
+      task_id: "b_sub",
+      tool_use_id: "toolu_subagent_bash",
+      description: "Count to 20",
+      task_type: "local_bash",
+    });
+    emit({ type: "result", subtype: "success", session_id: "sess_1" });
+    await new Promise((r) => setTimeout(r, 10));
+
+    const session = events.reduce(
+      applyHarnessEvent,
+      newSession("claude", "/repo"),
+    );
+    expect(session.blocks.some((block) => block.tool?.background)).toBe(false);
+  });
+
   it("shows the waited-on command as a live row under Claude's last message", async () => {
     const { events } = await startTurn("s1");
     emitBackgroundBash();

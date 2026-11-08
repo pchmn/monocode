@@ -1685,6 +1685,8 @@ function showBackgroundRows(live: Live): void {
       ? live.toolsById.get(task.toolUseId)
       : undefined;
     if (source && isAgentToolName(source.name)) continue;
+    // A call we never saw start was made by a subagent: it stays in its panel.
+    if (task.toolUseId && !source) continue;
     const callId = `background:${taskId}`;
     live.backgroundRows.set(taskId, callId);
     live.onEvent({
