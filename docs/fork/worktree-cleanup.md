@@ -12,6 +12,7 @@ When a session's tab closes (and "Stop sessions when closing their tab" is on), 
 - `src-tauri/src/lib.rs` — `mod worktree_cleanup`, `worktree_cleanup_status` in the invoke handler
 - `src/features/settings/ui/SettingsView.tsx` — stop-on-tab-close description mentions the worktree
 - `src/features/settings/model/settings.ts` — `worktree cleanup` keywords on `stop-sessions-on-tab-close`
+- `.gitignore` — `.worktrees/`, where agents create their worktrees
 
 ## Verify
 - `src/features/source-control/model/worktreeCleanup.test.ts`
