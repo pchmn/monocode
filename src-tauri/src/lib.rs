@@ -8,6 +8,7 @@ mod background_work;
 mod chat_background;
 mod checkpoint;
 mod claude_subagent_log;
+mod log_tail;
 mod codex_mono_store;
 mod control;
 pub mod control_cli;
@@ -499,6 +500,7 @@ pub fn run() {
             fs::omp_active_assistant_texts,
             fs::claude_shell_commands,
             claude_subagent_log::claude_subagent_log,
+            log_tail::read_log_tail,
             fs::write_text_file,
             skills::list_skills,
             search::search_project,

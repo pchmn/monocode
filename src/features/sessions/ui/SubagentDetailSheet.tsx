@@ -18,6 +18,7 @@ import { FilePreview } from "../../files/ui/FilePreview";
 import { ProjectMascot } from "../../projects/ui/ProjectMascot";
 import type { AgentStep, Block } from "../model/session";
 import {
+  DETAILS_TRIGGER_ATTR,
   clampSheetHeight,
   onSubagentDetailsOpen,
   openSubagentDetails,
@@ -34,13 +35,13 @@ import {
   toolCallState,
 } from "../model/transcriptActivity";
 import { AgentMarkdown } from "./AgentMarkdown";
+import { CommandLogBody, isCommandLogBlock } from "./CommandLogSheet";
 import {
   ToolDetailSession,
   ownStepBlock,
   useToolDetail,
 } from "./useToolDetail";
 
-const TRIGGER_ATTR = "data-subagent-details-trigger";
 const KEY_RESIZE_STEP = 32;
 
 /** Opens the run's full trail in the sheet above this pane's composer. */
@@ -48,7 +49,7 @@ export function SubagentDetailsButton({ block }: { block: Block }) {
   return (
     <button
       type="button"
-      {...{ [TRIGGER_ATTR]: "" }}
+      {...{ [DETAILS_TRIGGER_ATTR]: "" }}
       aria-label={`Show details of ${subagentName(block)}`}
       title="Details"
       onClick={(event) => openSubagentDetails(event.currentTarget, block)}
@@ -130,7 +131,7 @@ export function SubagentDetailSheet({
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target instanceof Element ? event.target : null;
       if (!target || sheetRef.current?.contains(target)) return;
-      if (target.closest(`[${TRIGGER_ATTR}]`)) return;
+      if (target.closest(`[${DETAILS_TRIGGER_ATTR}]`)) return;
       // Typing a reply about the run should not dismiss it.
       if (dock?.contains(target)) return;
       close();
@@ -152,7 +153,11 @@ export function SubagentDetailSheet({
         <section
           ref={sheetRef}
           role="dialog"
-          aria-label={`Details of ${subagentName(block)}`}
+          aria-label={
+            isCommandLogBlock(block)
+              ? "Command logs"
+              : `Details of ${subagentName(block)}`
+          }
           style={{ height: shown }}
           className="absolute inset-x-0 bottom-0 z-30 isolate flex flex-col rounded-t-xl border border-b-0 border-content/12 shadow-[0_-8px_24px_rgba(0,0,0,0.25)]"
         >
@@ -164,14 +169,25 @@ export function SubagentDetailSheet({
             onDone={saveSheetHeight}
           />
           <ToolDetailSession.Provider value={sessionId}>
-            <SubagentDetailBody
-              key={block.id}
-              block={block}
-              cwd={cwd}
-              onClose={close}
-              onOpenFile={onOpenFile}
-              onOpenDiff={onOpenDiff}
-            />
+            {isCommandLogBlock(block) ? (
+              <CommandLogBody
+                key={block.id}
+                block={block}
+                blocks={blocks}
+                cwd={cwd}
+                onClose={close}
+                onOpenFile={onOpenFile}
+              />
+            ) : (
+              <SubagentDetailBody
+                key={block.id}
+                block={block}
+                cwd={cwd}
+                onClose={close}
+                onOpenFile={onOpenFile}
+                onOpenDiff={onOpenDiff}
+              />
+            )}
           </ToolDetailSession.Provider>
         </section>
       ) : null}
