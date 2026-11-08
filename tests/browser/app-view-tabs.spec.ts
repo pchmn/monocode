@@ -303,6 +303,10 @@ test("sidebar session selection switches away from app tabs", async ({
       .getByRole("button", { name: "Close Session 2", exact: true })
       .click();
     await expect(sessionPane).toHaveCount(0);
+    // Fork: a closed session moves under the collapsed "Inactive sessions" group.
+    const inactive = page.locator('button[title="Inactive sessions"]');
+    if ((await inactive.getAttribute("aria-expanded")) === "false")
+      await inactive.click();
     await appTab(view).click();
     await expect(page.locator(`[data-app-${view}]`)).toBeVisible();
     await sessionCard.click();

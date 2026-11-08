@@ -7,6 +7,7 @@ New File / New Folder / Collapse All / Search sit on the explorer's root row ins
 
 ## Upstream hooks
 - `src/features/files/ui/FileTree.tsx` — `PaneHeader` and `HeaderIcon` removed; `actions` object exposed through `actionsRef` (`useImperativeHandle`); `<ExplorerToolbar>` on the root row
+- `tests/browser/right-panel-graph.spec.ts` — Explorer only checks that its toolbar is visible, not the 32px header layout
 
 ## Verify
 - Manual: the explorer root row shows the four actions; New File creates at the root, Collapse All folds the tree.

@@ -10,11 +10,15 @@ import {
   type UnifiedDiffFileModel,
 } from "../../src/features/source-control/ui/UnifiedDiffView";
 import "../../src/styles/index.css";
+import "../../src/styles/codeFonts.css";
+import { applyCodeFonts } from "../../src/features/settings/model/codeFonts";
 
 const params = new URLSearchParams(location.search);
 const theme = params.has("light") ? "light" : "dark";
 saveThemePreference(theme);
 applyThemePreference(theme);
+// Diff rows take their height from the code font settings, as in main.tsx.
+applyCodeFonts();
 const metrics = {
   commits: 0,
   renderMs: 0,

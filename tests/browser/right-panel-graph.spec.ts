@@ -105,8 +105,9 @@ test("gives History a persistent tab and working toolbar while classic keeps its
     path: testInfo.outputPath("changes-header.png"),
   });
   await explorer.click();
-  const explorerHeader = await checkHeader("Explorer");
-  expect((await explorerHeader.boundingBox())!.y).toBe(headerTop);
+  // Fork: the Explorer actions sit on the tree's root row, not in a 32px header.
+  const explorerHeader = panel.getByRole("toolbar", { name: "Explorer" });
+  await expect(explorerHeader).toBeVisible();
   await explorerHeader.screenshot({
     path: testInfo.outputPath("explorer-header.png"),
   });
@@ -242,7 +243,7 @@ test("gives History a persistent tab and working toolbar while classic keeps its
   await changes.click();
   await checkHeader("Changes");
   await explorer.click();
-  await checkHeader("Explorer");
+  await expect(explorerHeader).toBeVisible();
   await graphTab.click();
   await checkHeader("History");
   await graph.screenshot({ path: testInfo.outputPath("history-narrow.png") });
