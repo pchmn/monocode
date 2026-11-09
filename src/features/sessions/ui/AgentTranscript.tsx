@@ -2750,7 +2750,7 @@ function UserMessageBlock({
           ) : null}
         </div>
         {deliveryControl}
-        {block.steerPending ? <SteerPendingNote /> : null}
+        {block.steerPending ? <SteerPendingNote sentAt={block.sentAt} /> : null}
       </div>
     );
   }
@@ -2933,7 +2933,7 @@ function UserMessageBlock({
           )}
         </div>
         {deliveryControl}
-        {block.steerPending ? <SteerPendingNote /> : null}
+        {block.steerPending ? <SteerPendingNote sentAt={block.sentAt} /> : null}
         {!compactFollowUp &&
         (text || block.attachments?.length || messageAt != null || onEdit) ? (
           <div className="user-message-actions flex items-center gap-1 px-3 pt-1">
