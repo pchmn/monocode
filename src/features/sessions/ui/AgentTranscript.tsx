@@ -4045,14 +4045,14 @@ function SubagentPanel({
     <span className="flex min-w-0 flex-1 items-baseline gap-2">
       {active ? (
         <Shimmer
-          className="min-w-0 flex-1 truncate font-sans text-sm"
+          className="min-w-0 truncate font-sans text-sm"
           duration={1.6}
         >
           {name}
         </Shimmer>
       ) : (
         <span
-          className={`min-w-0 flex-1 truncate font-sans text-sm transition-colors duration-200 ${
+          className={`min-w-0 truncate font-sans text-sm transition-colors duration-200 ${
             state === "rejected"
               ? "text-red-400"
               : "text-content/75 group-hover:text-content"
@@ -4061,8 +4061,9 @@ function SubagentPanel({
           {name}
         </span>
       )}
+      <SubagentDetailsButton block={block} />
       {model || status ? (
-        <span className="flex min-w-0 max-w-[55%] shrink-0 items-baseline gap-2 font-sans text-[12px] text-content/40">
+        <span className="ml-auto flex min-w-0 max-w-[55%] shrink-0 items-baseline gap-2 font-sans text-[12px] text-content/40">
           {model ? (
             <span className="truncate" title={`Model: ${model}`}>
               {model}
@@ -4091,7 +4092,7 @@ function SubagentPanel({
   }
 
   return (
-    <div className="group/subagent grid min-w-0 grid-cols-[minmax(0,1fr)_auto]">
+    <div className="flex min-w-0 flex-col">
       <button
         type="button"
         aria-expanded={open}
@@ -4113,8 +4114,7 @@ function SubagentPanel({
           strokeWidth={1.75}
         />
       </button>
-      <SubagentDetailsButton block={block} />
-      <div className="zen-phase-body col-span-2" data-open={open}>
+      <div className="zen-phase-body" data-open={open}>
         {open ? (
           /*
            * No scroll window of its own. Each phase inside already keeps the

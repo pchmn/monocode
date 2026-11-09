@@ -5,14 +5,12 @@ import {
   backgroundTaskId,
   redirectTarget,
   redirectedLogFile,
+  renderTerminalLog,
   taskOutputFile,
 } from "../model/commandLogs";
 import type { Block } from "../model/session";
-import {
-  DETAILS_TRIGGER_ATTR,
-  openSubagentDetails,
-} from "../model/subagentDetail";
 import { toolCallLabel } from "../model/transcriptActivity";
+import { DetailsPill } from "./DetailsPill";
 import { isExpandableCommand } from "./ExpandableCommandRow";
 
 const POLL_MS = 1_000;
@@ -28,17 +26,11 @@ type LogTail = {
 export function CommandLogsButton({ block }: { block: Block }) {
   if (!isCommandLogBlock(block)) return null;
   return (
-    <button
-      type="button"
-      {...{ [DETAILS_TRIGGER_ATTR]: "" }}
-      aria-label={`Show logs of ${toolCallLabel(block)}`}
-      title="Logs"
-      onClick={(event) => openSubagentDetails(event.currentTarget, block)}
-      className="ml-1 flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[12px] text-content/40 opacity-0 transition-opacity duration-200 group-hover/command:opacity-100 hover:bg-content/8 hover:text-content focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-accent"
-    >
-      <Terminal className="size-3" strokeWidth={1.75} />
-      Logs
-    </button>
+    <DetailsPill
+      block={block}
+      label="Logs"
+      ariaLabel={`Show logs of ${toolCallLabel(block)}`}
+    />
   );
 }
 
@@ -186,7 +178,7 @@ function useLogTail(files: string[]): {
           setState({
             key,
             file,
-            text: tail.text ?? "",
+            text: renderTerminalLog(tail.text ?? ""),
             truncated: tail.truncated,
             loading: false,
           });
@@ -202,7 +194,7 @@ function useLogTail(files: string[]): {
           size = tail.size;
           setState((current) => ({
             ...current,
-            text: tail.text ?? "",
+            text: renderTerminalLog(tail.text ?? ""),
             truncated: tail.truncated,
           }));
         }

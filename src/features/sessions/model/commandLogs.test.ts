@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 import {
   backgroundTaskId,
   redirectedLogFile,
+  renderTerminalLog,
   taskOutputFile,
 } from "./commandLogs";
 import type { Block } from "./session";
@@ -66,4 +67,15 @@ it("follows the command's own stdout redirect", () => {
   expect(redirectedLogFile("npm test 2> err.log", "/app")).toBeUndefined();
   expect(redirectedLogFile("npm test > /dev/null 2>&1")).toBeUndefined();
   expect(redirectedLogFile("npm test 2>&1 | tee x", "/app")).toBeUndefined();
+});
+
+it("renders a terminal log without escapes, keeping each line's last redraw", () => {
+  const raw =
+    "\u001b[1m\u001b[96m    Building\u001b[0m [=>  ] 1/3\r\u001b[K\u001b[1m\u001b[96m    Building\u001b[0m [==> ] 2/3\r\u001b[K" +
+    "\u001b[1m\u001b[92m   Compiling\u001b[0m tauri\n" +
+    "\u001b[1m\u001b[92m    Finished\u001b[0m `dev`\r\n" +
+    "\u001b]0;title\u0007plain\n";
+  expect(renderTerminalLog(raw)).toBe(
+    "   Compiling tauri\n    Finished `dev`\nplain\n",
+  );
 });
