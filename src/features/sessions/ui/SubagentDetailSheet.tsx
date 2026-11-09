@@ -140,12 +140,13 @@ export function SubagentDetailSheet({
   return (
     <div
       ref={anchorRef}
-      // Same ledge inset as ApprovalSheet, so it stacks on the composer instead of overhanging it.
-      className="relative mx-[calc(0.375rem_+_var(--queue-inset)_+_var(--stack-inset,0px))] h-0 [--queue-inset:0.5rem] in-[.layout-inset]:[--queue-inset:var(--radius-xl,0.75rem)] in-[[data-session-composer]:has([data-message-queue])]:[--stack-inset:0.5rem]"
+      // One notch narrower per card below it (queue, approval), so the sheets read as a pile.
+      className="relative mx-[calc(0.375rem_+_var(--queue-inset)_+_var(--stack-inset,0px))] h-0 [--queue-inset:0.5rem] in-[.layout-inset]:[--queue-inset:var(--radius-xl,0.75rem)] in-[[data-session-composer]:has([data-message-queue])]:[--stack-inset:0.5rem] in-[[data-session-composer]:has([data-approval-sheet])]:[--stack-inset:0.5rem] in-[[data-session-composer]:has([data-message-queue]):has([data-approval-sheet])]:[--stack-inset:1rem]"
     >
       {block ? (
         <section
           ref={sheetRef}
+          data-detail-sheet
           role="dialog"
           aria-label={
             isCommandLogBlock(block)
