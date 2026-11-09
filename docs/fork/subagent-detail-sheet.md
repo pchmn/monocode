@@ -1,6 +1,6 @@
 # Subagent detail sheet
 
-A "Details" pill next to each subagent's name, shown on hover, opens the run's whole trail (messages, thinking, every tool call with its output and diff, final report) in a resizable sheet above the composer. It follows the run live, closes on Esc, its close button, or a click outside the sheet and the composer dock, and remembers its height.
+A "Details" pill next to each subagent's name, shown on hover, opens the run's whole trail (messages, thinking, every tool call with its output and diff, final report) in a resizable sheet above the composer. It steps in one notch per card below it (queue, approval), so they read as a pile, and the working runner walks on its top edge. It follows the run live, closes on Esc, its close button, or a click outside the sheet and the composer dock, and remembers its height.
 
 ## Fork files
 - `src/features/sessions/ui/SubagentDetailSheet.tsx` — the button and the sheet; they talk through a DOM event scoped to the session pane

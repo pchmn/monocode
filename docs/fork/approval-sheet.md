@@ -5,7 +5,7 @@ Pending tool approvals show in a keyboard-driven sheet above the composer, shape
 ## Fork files
 - `src/features/sessions/ui/ApprovalSheet.tsx`
 - `src/features/sessions/model/approvalSheetKeys.ts` — key bindings
-- `src/features/sessions/model/approvalSheetLedge.ts` — finds the sheet so the working runner walks on it
+- `src/features/sessions/model/approvalSheetLedge.ts` — finds the top sheet (details, else approval) so the working runner walks on it
 
 ## Upstream hooks
 - `src/features/sessions/ui/SessionPane.tsx` — `<ApprovalSheet>` rendered in `LocalSessionPane` unless `session.worktreeRemoved`
