@@ -164,7 +164,7 @@ function LiveAgentCard({
       aria-current={selected ? "true" : undefined}
       data-live-agent-card={agent.id}
       onClick={() => onSelect?.(agent.id)}
-      className={`relative flex w-full min-w-0 flex-col overflow-hidden rounded-md px-2 py-1.5 text-left ${
+      className={`relative flex w-full min-w-0 shrink-0 flex-col overflow-hidden rounded-md px-2 py-1.5 text-left ${
         selected ? "bg-selection" : "hover:bg-content/8"
       }`}
     >
