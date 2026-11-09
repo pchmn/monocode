@@ -2932,28 +2932,24 @@ fn git_range_context_for(root: &Path) -> Result<GitRangeContext, String> {
 fn git_pr_status_for(root: &Path) -> Option<GitPr> {
     let branch = git_branch(root)?;
     let repo = git_github_repo_for(root).ok()?;
-    let head = github_pr_head_filter(&repo, &branch)?;
+    let (owner, _) = split_github_repo(&repo).ok()?;
+    // `gh pr list --head` ignores `owner:branch` (matches nothing); filter the owner from the rows.
     let json = gh_stdout(
         root,
         &[
             "pr",
             "list",
             "--head",
-            &head,
+            &branch,
             "--json",
-            "number,title,url,state",
+            "number,title,url,state,headRepositoryOwner",
             "--limit",
             "20",
             "--state",
             "all",
         ],
     )?;
-    parse_gh_pr_list(&json)
-}
-
-fn github_pr_head_filter(repo: &str, branch: &str) -> Option<String> {
-    let (owner, _) = split_github_repo(repo).ok()?;
-    Some(format!("{owner}:{branch}"))
+    parse_gh_pr_list(&json, &owner)
 }
 
 fn git_github_repo_for(root: &Path) -> Result<String, String> {
@@ -4305,17 +4301,30 @@ fn parse_github_work_item(json: &str, kind: &str, repo: &str) -> Result<GitHubWo
         .ok_or_else(|| "GitHub did not return a work item".into())
 }
 
-fn parse_gh_pr_list(json: &str) -> Option<GitPr> {
+fn parse_gh_pr_list(json: &str, head_owner: &str) -> Option<GitPr> {
     #[derive(Deserialize)]
+    struct Owner {
+        login: String,
+    }
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
     struct Row {
         number: i64,
         title: String,
         url: String,
         state: String,
+        head_repository_owner: Option<Owner>,
     }
     let rows: Vec<Row> = serde_json::from_str(json).ok()?;
     let mut best: Option<GitPr> = None;
     for row in rows {
+        let same_owner = row
+            .head_repository_owner
+            .as_ref()
+            .is_some_and(|owner| owner.login.eq_ignore_ascii_case(head_owner));
+        if !same_owner {
+            continue;
+        }
         let pr = GitPr {
             number: row.number,
             title: row.title,
@@ -8530,19 +8539,18 @@ mod tests {
 
     #[test]
     fn parse_gh_pr_list_prefers_open() {
-        let json = r#"[{"number":2,"title":"Old","url":"https://example.com/2","state":"MERGED"},{"number":3,"title":"Now","url":"https://example.com/3","state":"OPEN"}]"#;
-        let pr = parse_gh_pr_list(json).unwrap();
+        let json = r#"[{"number":2,"title":"Old","url":"https://example.com/2","state":"MERGED","headRepositoryOwner":{"login":"acme"}},{"number":3,"title":"Now","url":"https://example.com/3","state":"OPEN","headRepositoryOwner":{"login":"acme"}}]"#;
+        let pr = parse_gh_pr_list(json, "acme").unwrap();
         assert_eq!(pr.number, 3);
         assert_eq!(pr.state, "open");
         assert_eq!(pr.title, "Now");
     }
 
     #[test]
-    fn pr_head_filter_qualifies_branch_with_repo_owner() {
-        assert_eq!(
-            github_pr_head_filter("hardbeat920/monocode", "main").as_deref(),
-            Some("hardbeat920:main")
-        );
+    fn parse_gh_pr_list_skips_prs_from_forks() {
+        let json = r#"[{"number":4,"title":"Fork","url":"https://example.com/4","state":"OPEN","headRepositoryOwner":{"login":"someone"}},{"number":2,"title":"Own","url":"https://example.com/2","state":"MERGED","headRepositoryOwner":{"login":"Acme"}}]"#;
+        assert_eq!(parse_gh_pr_list(json, "acme").unwrap().number, 2);
+        assert!(parse_gh_pr_list(json, "other").is_none());
     }
 
     #[test]
