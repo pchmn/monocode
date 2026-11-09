@@ -25,3 +25,8 @@ Upstream bug fixes with no feature of their own. On each sync, check whether ups
 - Fork files: `src/integrations/harness/providers/claude/claudeMissingConversation.ts`
 - `src/integrations/harness/providers/claude/claudeMissingConversation.test.ts`
 - Manual: send a message in a new Claude session and press Stop within a second; the next message gets a reply.
+
+## Branch PR lookup finds the PR
+- `src-tauri/src/fs.rs` — `git_pr_status_for` passes the bare branch to `gh pr list --head` (`owner:branch` matches nothing); `parse_gh_pr_list` keeps rows whose `headRepositoryOwner` is the repo owner
+- `cargo test parse_gh_pr_list`
+- Manual: on a branch with a PR, `PR #n` shows after the branch name under the composer.
