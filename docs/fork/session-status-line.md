@@ -20,4 +20,4 @@ Under the composer: tokens, context %, lifetime Claude cost, and the branch's PR
 ## Verify
 - `src/features/sessions/model/sessionStatusLine.test.ts`
 - `cargo test` (session store)
-- Manual: run a Claude turn; the cost appears under the composer and is unchanged after an app restart. On a branch with a PR, `PR #n` sits right after the branch name and opens the PR.
+- Manual: run a Claude turn; the cost appears under the composer and is unchanged after an app restart. On a branch with a PR, `PR #n` sits right after the branch name and opens the PR; a PR opened mid-session appears within ~20 s.

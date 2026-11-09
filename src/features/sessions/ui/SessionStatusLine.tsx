@@ -13,7 +13,11 @@ export type SessionStatusInfo = {
 };
 
 const PR_TTL_MS = 5 * 60_000;
+// Short so a PR opened during the session shows up within seconds.
+const NO_PR_TTL_MS = 20_000;
 const prCache = new Map<string, { at: number; pr: Pr }>();
+
+const prTtl = (pr: Pr) => (pr ? PR_TTL_MS : NO_PR_TTL_MS);
 
 function useBranchPr(cwd: string, branch: string | undefined): Pr {
   const key = `${cwd}\0${branch ?? ""}`;
@@ -21,24 +25,28 @@ function useBranchPr(cwd: string, branch: string | undefined): Pr {
   useEffect(() => {
     if (!cwd) return;
     let live = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const schedule = (entry: { at: number; pr: Pr }) => {
+      if (!live) return;
+      setPr(entry.pr);
+      const due = entry.at + prTtl(entry.pr) - Date.now();
+      timer = setTimeout(load, Math.max(due, 1_000));
+    };
     const load = () => {
       const hit = prCache.get(key);
-      if (hit && Date.now() - hit.at < PR_TTL_MS) {
-        setPr(hit.pr);
-        return;
-      }
+      if (hit && Date.now() - hit.at < prTtl(hit.pr)) return schedule(hit);
       void gitPrStatus(cwd)
         .catch(() => null)
         .then((next) => {
-          prCache.set(key, { at: Date.now(), pr: next });
-          if (live) setPr(next);
+          const entry = { at: Date.now(), pr: next };
+          prCache.set(key, entry);
+          schedule(entry);
         });
     };
     load();
-    const timer = setInterval(load, PR_TTL_MS);
     return () => {
       live = false;
-      clearInterval(timer);
+      clearTimeout(timer);
     };
   }, [cwd, key]);
   return pr;
