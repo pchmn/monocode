@@ -5,6 +5,7 @@ import {
   stopStreaming,
 } from "../../../integrations/harness/core/apply";
 import { newSession, type Session } from "./session";
+import { returnRefusedSteer } from "./steerDelivery";
 
 function steered(): Session {
   return appendSteerUser(
@@ -61,5 +62,23 @@ describe("steer delivery", () => {
     const stopped = stopStreaming(steered());
     expect(stopped.blocks.some((b) => b.id === "block-1")).toBe(true);
     expect(stopped.queuedMessages).toBeUndefined();
+  });
+
+  it("puts a steer refused after the turn ended back at the head of the queue", () => {
+    const refused = returnRefusedSteer(
+      {
+        ...steered(),
+        queuedMessages: [{ id: "later", text: "later", attachments: [] }],
+      },
+      "block-1",
+      { id: "queued-1", text: "also check the footer", attachments: [] },
+    );
+
+    expect(refused.blocks.some((b) => b.id === "block-1")).toBe(false);
+    expect(refused.queuedMessages?.map((m) => m.id)).toEqual([
+      "queued-1",
+      "later",
+    ]);
+    expect(refused.queueStatus).toBe("active");
   });
 });
