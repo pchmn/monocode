@@ -8,7 +8,6 @@ mod background_work;
 mod chat_background;
 mod checkpoint;
 mod claude_subagent_log;
-mod log_tail;
 mod codex_mono_store;
 mod control;
 pub mod control_cli;
@@ -27,6 +26,7 @@ mod jira;
 mod jsonc;
 mod linear;
 mod link_preview;
+mod log_tail;
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(target_os = "macos")]
