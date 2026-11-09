@@ -39,3 +39,17 @@ export function returnUnreadSteers(session: Session): Session {
     queueStatus: session.queueStatus ?? "active",
   };
 }
+
+/** A steer the provider refused because its turn had already ended goes back to the head of the queue. */
+export function returnRefusedSteer(
+  session: Session,
+  blockId: string,
+  message: QueuedMessage,
+): Session {
+  return {
+    ...session,
+    blocks: session.blocks.filter((block) => block.id !== blockId),
+    queuedMessages: [message, ...(session.queuedMessages ?? [])],
+    queueStatus: session.queueStatus ?? "active",
+  };
+}

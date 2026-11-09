@@ -352,6 +352,7 @@ import {
   applyHarnessEvents,
   appendUser,
   appendSteerUser,
+  TurnNotReadyError,
   bindHarnessSession,
   transferHarnessSessionAccount,
   cancelHarnessTurn,
@@ -561,6 +562,7 @@ import {
   queuedMessageForSubmit,
 } from "../features/sessions/model/messageQueue";
 import { deliverQueuedFollowUp } from "../features/sessions/model/queuedFollowUp";
+import { returnRefusedSteer } from "../features/sessions/model/steerDelivery";
 import {
   USAGE_LIMIT_RESUME_GRACE_MS,
   resumeUsageLimitedSession,
@@ -7672,6 +7674,23 @@ function Workspace({
               id: steerId,
             });
           } catch (error: unknown) {
+            if (error instanceof TurnNotReadyError) {
+              const next = sessionsRef.current.map((s) =>
+                s.id === sessionId
+                  ? returnRefusedSteer(s, steerId, {
+                      id: options?.queuedMessageId ?? steerId,
+                      text,
+                      attachments,
+                      noteCard,
+                      handoffCard,
+                      intent,
+                    })
+                  : s,
+              );
+              sessionsRef.current = next;
+              setSessions(next);
+              return;
+            }
             const message =
               error instanceof Error
                 ? error.message
