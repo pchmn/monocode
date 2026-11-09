@@ -66,6 +66,9 @@ fn start(dir: &Path) -> Option<DefaultBranchStart> {
 
 /// Commits the current branch lacks from its upstream, 0 unless a fast-forward can apply them.
 fn behind_upstream(dir: &Path) -> u32 {
+    if !tracks_same_name(dir) {
+        return 0;
+    }
     git(
         dir,
         &["rev-list", "--left-right", "--count", "HEAD...@{upstream}"],
@@ -75,6 +78,15 @@ fn behind_upstream(dir: &Path) -> u32 {
         (ahead == "0").then(|| behind.parse().ok()).flatten()
     })
     .unwrap_or(0)
+}
+
+/// `-b feat origin/main` tracks `main`: catching up with it is not a pull of the branch.
+fn tracks_same_name(dir: &Path) -> bool {
+    let Some(branch) = git(dir, &["symbolic-ref", "--short", "HEAD"]) else {
+        return false;
+    };
+    git(dir, &["config", "--get", &format!("branch.{branch}.merge")])
+        .is_some_and(|merge| merge == format!("refs/heads/{branch}"))
 }
 
 const FETCH_TIMEOUT: Duration = Duration::from_secs(10);
@@ -201,6 +213,14 @@ mod tests {
         run(&clone, &["switch", "main"]);
         assert_eq!(behind_upstream(&clone), 1);
         commit(&clone, "d.txt", "d");
+        assert_eq!(behind_upstream(&clone), 0);
+    }
+
+    #[test]
+    fn branch_tracking_another_branch_is_never_behind() {
+        let (_dir, _origin, clone) = setup();
+        run(&clone, &["switch", "-c", "fresh", "origin/main~1"]);
+        run(&clone, &["branch", "--set-upstream-to", "origin/main"]);
         assert_eq!(behind_upstream(&clone), 0);
     }
 
