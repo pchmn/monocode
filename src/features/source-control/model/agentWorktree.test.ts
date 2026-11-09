@@ -4,6 +4,7 @@ import {
   agentWorktreeCandidates,
   canAdoptAgentWorktree,
   pickAgentWorktree,
+  pickNewAgentWorktree,
   worktreeAddTargets,
 } from "./agentWorktree";
 import type { Worktree } from "./worktrees";
@@ -126,6 +127,56 @@ describe("pickAgentWorktree", () => {
     expect(
       pickAgentWorktree(candidates, [tree("/private/tmp/repo/wt/a", { missing: true })]),
     ).toBeUndefined();
+  });
+});
+
+describe("pickNewAgentWorktree", () => {
+  const SIBLING = "/Users/me/app-perf-leaner";
+  const OTHER = "/Users/me/app-perf-leaner-2";
+  const before = new Set([ROOT, "/Users/me/app-demo"]);
+  const listed = [
+    tree(ROOT, { isMain: true }),
+    tree("/Users/me/app-demo"),
+    tree(SIBLING),
+    tree(OTHER),
+  ];
+
+  it("follows a worktree a wrapper script created and the turn then used", () => {
+    const turn = [
+      shell("git fetch -q origin && pnpm worktree perf/leaner 2>&1 | tail -5"),
+      shell(`cd ${SIBLING} && pnpm dev`),
+    ];
+    expect(agentWorktreeCandidates(turn, ROOT)).toEqual([]);
+    expect(pickNewAgentWorktree(before, listed, turn, new Set())?.path).toBe(SIBLING);
+  });
+
+  it("finds the path in a tool's output or edited files", () => {
+    const created: Block = {
+      ...shell("pnpm worktree perf/leaner"),
+      tool: { kind: "execute", status: "completed", detail: `Worktree ready: ${OTHER}\n` },
+    };
+    expect(pickNewAgentWorktree(before, listed, [created], new Set())?.path).toBe(OTHER);
+    const edit: Block = {
+      id: "edit",
+      role: "tool",
+      text: "Edit read-tool.ts",
+      tool: { kind: "edit", status: "completed", paths: [`${SIBLING}/src/read-tool.ts`] },
+    };
+    expect(pickNewAgentWorktree(before, listed, [edit], new Set())?.path).toBe(SIBLING);
+  });
+
+  it("ignores worktrees that existed before the turn, belong to another session or go unmentioned", () => {
+    const turn = [shell("cd /Users/me/app-demo && git log -1")];
+    expect(pickNewAgentWorktree(before, listed, turn, new Set())).toBeUndefined();
+    const used = [shell(`cd ${SIBLING} && pnpm dev`)];
+    expect(pickNewAgentWorktree(before, listed, used, new Set([SIBLING]))).toBeUndefined();
+    expect(pickNewAgentWorktree(before, listed, [shell("pnpm worktree x")], new Set())).toBeUndefined();
+  });
+
+  it("does not take a path for a longer sibling's prefix", () => {
+    const turn = [shell(`cd ${OTHER} && pnpm dev`)];
+    const onlySibling = listed.filter((entry) => entry.path !== OTHER);
+    expect(pickNewAgentWorktree(before, onlySibling, turn, new Set())).toBeUndefined();
   });
 });
 

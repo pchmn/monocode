@@ -172,15 +172,56 @@ export function pickAgentWorktree(
   return undefined;
 }
 
-/** Sessions still on the project checkout (or workspace folder) whose conversation can follow them. */
-export function canAdoptAgentWorktree(session: Session): boolean {
+function mentionsPath(text: string, path: string): boolean {
+  for (let at = text.indexOf(path); at >= 0; at = text.indexOf(path, at + 1)) {
+    // `/repo-a` must not match inside `/repo-a-b`.
+    if (!/[\w.-]/.test(text[at + path.length] ?? "")) return true;
+  }
+  return false;
+}
+
+function blockMentions(block: Block, path: string): boolean {
+  const texts = [block.text, block.tool?.title, block.tool?.detail, ...(block.tool?.paths ?? [])];
+  return texts.some((text) => !!text && mentionsPath(text, path));
+}
+
+/**
+ * A worktree that appeared during the turn (`before` holds the path keys listed at its start)
+ * and that the turn's tool blocks point at: catches wrappers such as `pnpm worktree <branch>`.
+ */
+export function pickNewAgentWorktree(
+  before: ReadonlySet<string>,
+  worktrees: readonly Worktree[],
+  turnBlocks: readonly Block[],
+  claimed: ReadonlySet<string>,
+): Worktree | undefined {
+  const fresh = worktrees.filter((tree) => {
+    const key = pathKey(tree.path);
+    return !tree.isMain && !tree.missing && !before.has(key) && !claimed.has(key);
+  });
+  for (const block of [...turnBlocks].reverse()) {
+    if (block.role !== "tool" || block.tool?.status === "failed") continue;
+    const tree = fresh.find((entry) => blockMentions(block, entry.path));
+    if (tree) return tree;
+  }
+  return undefined;
+}
+
+/** Sessions on the project checkout (or workspace folder) whose conversation could follow a worktree. */
+export function followsAgentWorktrees(session: Session): boolean {
   return (
     RESUMES_ACROSS_CWD.has(session.harness) &&
-    !!session.providerSessionId &&
-    !session.busy &&
     !hasOwnWorktree(session) &&
     !session.worktreeRemoved &&
-    !session.workspaceMode &&
+    !session.workspaceMode
+  );
+}
+
+export function canAdoptAgentWorktree(session: Session): boolean {
+  return (
+    followsAgentWorktrees(session) &&
+    !!session.providerSessionId &&
+    !session.busy &&
     !session.pendingSwitch &&
     !session.queuedMessages?.length
   );
