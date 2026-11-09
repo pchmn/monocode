@@ -2783,7 +2783,7 @@ function UserMessageBlock({
           {photos.length ? (
             <div className="flex max-w-full flex-wrap justify-end gap-1.5">
               {photos.map((file) => (
-                <AttachmentChip key={file.id} attachment={file} photo />
+                <AttachmentChip key={file.id} attachment={file} photo gallery={block.attachments} />
               ))}
             </div>
           ) : null}
@@ -2809,7 +2809,7 @@ function UserMessageBlock({
                   className={`flex flex-wrap gap-1.5 ${text || card || note ? "mb-2" : ""}`}
                 >
                   {bubbleAttachments.map((file) => (
-                    <AttachmentChip key={file.id} attachment={file} />
+                    <AttachmentChip key={file.id} attachment={file} gallery={block.attachments} />
                   ))}
                 </div>
               ) : null}
