@@ -58,3 +58,23 @@ function commandDirectory(command: string): string | undefined {
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
+
+// CSI (colors, cursor, erase) and OSC (titles, links) escape sequences.
+const ANSI_ESCAPE =
+  /\u001b\[[0-?]*[ -/]*[@-~]|\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)?/g;
+
+/** A raw terminal log as the terminal showed it: no escapes, `\r` overwrites the line. */
+export function renderTerminalLog(text: string): string {
+  return text
+    .replace(ANSI_ESCAPE, "")
+    .split("\n")
+    .map((line) => {
+      const segments = line.split("\r");
+      // A trailing `\r` (CRLF, or a progress bar about to redraw) keeps the drawn text.
+      while (segments.length > 1 && segments[segments.length - 1] === "") {
+        segments.pop();
+      }
+      return segments[segments.length - 1];
+    })
+    .join("\n");
+}

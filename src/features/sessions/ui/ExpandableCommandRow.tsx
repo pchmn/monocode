@@ -35,19 +35,19 @@ export function ExpandableCommandRow({
         >
           {icon}
           <span
-            className="min-w-0 flex-1 truncate font-mono text-[13px] text-content/65 group-hover:text-content/85"
+            className="min-w-0 truncate font-mono text-[13px] text-content/65 group-hover:text-content/85"
             title={label}
           >
             {label}
           </span>
+          <CommandLogsButton block={block} />
           <ChevronRight
-            className={`size-3.5 shrink-0 text-content/35 transition-transform ${
+            className={`ml-auto size-3.5 shrink-0 text-content/35 transition-transform ${
               open ? "rotate-90" : "opacity-0 group-hover:opacity-100"
             }`}
             strokeWidth={1.75}
           />
         </button>
-        <CommandLogsButton block={block} />
       </div>
       {open ? (
         <div className="mb-1 min-w-0 overflow-hidden rounded-md bg-content/4 font-mono text-[12px] leading-5">

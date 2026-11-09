@@ -56,7 +56,7 @@ function render(block: Block) {
 }
 
 const logsButton = () =>
-  container.querySelector<HTMLButtonElement>('button[title="Logs"]');
+  container.querySelector<HTMLElement>('[aria-label^="Show logs of"]');
 
 it("opens a background command's output file in the sheet", async () => {
   invoke.mockResolvedValue({

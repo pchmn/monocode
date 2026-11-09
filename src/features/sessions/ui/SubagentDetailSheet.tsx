@@ -8,12 +8,7 @@ import {
 } from "react";
 import { GlassBackdrop } from "../../../app/shell/GlassBackdrop";
 import { isEditTool } from "../../../integrations/harness/core/preview";
-import {
-  ChevronRight,
-  LoaderCircle,
-  Maximize2,
-  X,
-} from "../../../shared/ui/icons";
+import { ChevronRight, LoaderCircle, X } from "../../../shared/ui/icons";
 import { FilePreview } from "../../files/ui/FilePreview";
 import { ProjectMascot } from "../../projects/ui/ProjectMascot";
 import type { AgentStep, Block } from "../model/session";
@@ -21,7 +16,6 @@ import {
   DETAILS_TRIGGER_ATTR,
   clampSheetHeight,
   onSubagentDetailsOpen,
-  openSubagentDetails,
   saveSheetHeight,
   savedSheetHeight,
   subagentStepCounts,
@@ -35,6 +29,7 @@ import {
   toolCallState,
 } from "../model/transcriptActivity";
 import { AgentMarkdown } from "./AgentMarkdown";
+import { DetailsPill } from "./DetailsPill";
 import { CommandLogBody, isCommandLogBlock } from "./CommandLogSheet";
 import {
   ToolDetailSession,
@@ -46,18 +41,13 @@ const KEY_RESIZE_STEP = 32;
 
 /** Opens the run's full trail in the sheet above this pane's composer. */
 export function SubagentDetailsButton({ block }: { block: Block }) {
+  if (!block.agentRun?.steps?.length) return null;
   return (
-    <button
-      type="button"
-      {...{ [DETAILS_TRIGGER_ATTR]: "" }}
-      aria-label={`Show details of ${subagentName(block)}`}
-      title="Details"
-      onClick={(event) => openSubagentDetails(event.currentTarget, block)}
-      className="ml-1 flex h-6 shrink-0 items-center gap-1 self-start rounded-md px-1.5 text-[12px] text-content/40 opacity-0 transition-opacity duration-200 group-hover/subagent:opacity-100 hover:bg-content/8 hover:text-content focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-accent"
-    >
-      <Maximize2 className="size-3" strokeWidth={1.75} />
-      Details
-    </button>
+    <DetailsPill
+      block={block}
+      label="Details"
+      ariaLabel={`Show details of ${subagentName(block)}`}
+    />
   );
 }
 
@@ -148,7 +138,11 @@ export function SubagentDetailSheet({
   const shown = block ? clampSheetHeight(height, room) : 0;
 
   return (
-    <div ref={anchorRef} className="relative h-0">
+    <div
+      ref={anchorRef}
+      // Same ledge inset as ApprovalSheet, so it stacks on the composer instead of overhanging it.
+      className="relative mx-[calc(0.375rem_+_var(--queue-inset)_+_var(--stack-inset,0px))] h-0 [--queue-inset:0.5rem] in-[.layout-inset]:[--queue-inset:var(--radius-xl,0.75rem)] in-[[data-session-composer]:has([data-message-queue])]:[--stack-inset:0.5rem]"
+    >
       {block ? (
         <section
           ref={sheetRef}
@@ -159,7 +153,7 @@ export function SubagentDetailSheet({
               : `Details of ${subagentName(block)}`
           }
           style={{ height: shown }}
-          className="absolute inset-x-0 bottom-0 z-30 isolate flex flex-col rounded-t-xl border border-b-0 border-content/12 shadow-[0_-8px_24px_rgba(0,0,0,0.25)]"
+          className="absolute inset-x-0 bottom-0 z-30 isolate flex flex-col rounded-t-[10px] in-[.layout-inset]:rounded-t-xl border border-b-0 border-content/10 shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
         >
           <GlassBackdrop />
           <ResizeHandle
@@ -250,7 +244,7 @@ function ResizeHandle({
         event.preventDefault();
         onDone(resize(height + delta));
       }}
-      className="group/handle relative z-[1] flex h-3 shrink-0 cursor-row-resize items-center justify-center rounded-t-xl outline-none"
+      className="group/handle relative z-[1] flex h-3 shrink-0 cursor-row-resize items-center justify-center rounded-t-[inherit] outline-none"
     >
       <span className="h-1 w-9 rounded-full bg-content/15 transition-colors group-hover/handle:bg-content/35 group-focus-visible/handle:bg-accent" />
     </div>
