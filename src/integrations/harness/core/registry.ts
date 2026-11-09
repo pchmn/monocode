@@ -310,7 +310,11 @@ export function canCompactHarnessContext(id: HarnessId): boolean {
 export function compactHarnessContext(
   input: CompactContextInput & { harness: HarnessId },
 ): Promise<void> {
-  return queueSessionOperation(input.sessionId, async () => {
+  // A turn resting on background work holds the session queue until that work ends.
+  const queue = activeTurnSessions.has(input.sessionId)
+    ? queueSteerOperation
+    : queueSessionOperation;
+  return queue(input.sessionId, async () => {
     const adapter = requireHarness(input.harness);
     if (!adapter.live) {
       throw new Error(`${input.harness} is not connected yet`);

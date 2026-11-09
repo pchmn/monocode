@@ -17,9 +17,11 @@ An agent whose turn has yielded but still has background tasks shows as "resting
 - `src/features/sessions/ui/LiveAgentsPreview.tsx` — `useSessionBackgroundTasks`, `BackgroundDot` and `backgroundActivity` (`[bg] <task>`) in `LiveAgentCard`
 - `src/features/workspace/ui/StackedTabs.tsx` — `BackgroundBadge` on the session sub-tab (fork file from session-sub-tabs)
 - `src/integrations/harness/providers/claude/claude.ts` — `compactWhileResting` branch in `compactClaudeContext`, `compactionSettled` on `Live` (settled in `handleResult`, `finishActiveTurn`, exit, `stopClaudeSession`); `followBackgroundAgent` in `handleAgentLifecycle`; `stopClaudeSubagentLog(s)` in `stopClaudeSession`, `runTurn`, `completeAgentTask`
+- `src/integrations/harness/core/registry.ts` — `compactHarnessContext` takes the steer queue during an active turn (the turn holds the session queue until its background work ends)
 - `src-tauri/src/lib.rs` — `mod claude_subagent_log`, `claude_subagent_log` in the invoke handler
 
 ## Verify
 - `src/features/sessions/ui/LiveAgentsPreview.test.ts` — "shows an agent resting on background tasks with its task"
+- `src/integrations/harness/core/registry.test.ts` — "compacts a session whose turn rests on background work"
 - `src/integrations/harness/providers/claude/claudeLive.test.ts` — "mirrors a backgrounded subagent's trail from its transcript file", "compacts inside a turn resting on a background command"
 - Manual: have Claude start a background subagent; its steps appear in the transcript and the tab shows the resting badge once the turn ends. A message queued during the turn is sent as soon as it yields. With a dev server left running, `/compact` compacts and the tab stays resting.
