@@ -105,7 +105,7 @@ export function imageAtCaret(
 export function openImageAtCaret(
   field: HTMLTextAreaElement,
   attachments: Attachment[],
-  open: (file: Attachment) => void,
+  open: (file: Attachment, attachments: Attachment[]) => void,
 ) {
   const { value, selectionStart, selectionEnd } = field;
   if (selectionStart !== selectionEnd) return;
@@ -113,7 +113,7 @@ export function openImageAtCaret(
   if (!image) return;
   const end = value.indexOf("]", selectionStart) + 1;
   field.setSelectionRange(end, end);
-  open(image);
+  open(image, attachments);
 }
 
 export function applyAtomicTokenKey(e: KeyboardEvent<HTMLTextAreaElement>) {

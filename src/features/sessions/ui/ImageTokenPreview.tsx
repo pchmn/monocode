@@ -1,16 +1,21 @@
 import { useState } from "react";
-import { ImageLightbox } from "../../../shared/ui/ImageLightbox";
-import { attachmentPreviewSrc } from "../model/attachments";
 import type { Attachment } from "../model/session";
+import { ImageGallery } from "./ImageGallery";
 
 export function useImageTokenPreview() {
-  const [file, setFile] = useState<Attachment | null>(null);
-  const src = file && attachmentPreviewSrc(file);
+  const [opened, setOpened] = useState<{
+    file: Attachment;
+    attachments: readonly Attachment[];
+  } | null>(null);
   return {
-    open: setFile,
-    node:
-      file && src ? (
-        <ImageLightbox src={src} alt={file.name} onClose={() => setFile(null)} />
-      ) : null,
+    open: (file: Attachment, attachments: readonly Attachment[] = [file]) =>
+      setOpened({ file, attachments }),
+    node: opened ? (
+      <ImageGallery
+        start={opened.file}
+        attachments={opened.attachments}
+        onClose={() => setOpened(null)}
+      />
+    ) : null,
   };
 }

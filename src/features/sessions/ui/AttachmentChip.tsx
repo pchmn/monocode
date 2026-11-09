@@ -3,16 +3,17 @@ import { X } from "../../../shared/ui/icons";
 import { attachmentPreviewSrc, isAttachmentFolder } from "../model/attachments";
 import type { Attachment } from "../model/session";
 import { FileTypeIcon } from "../../files/ui/FileTypeIcon";
-import { ImageLightbox } from "../../../shared/ui/ImageLightbox";
+import { ImageGallery } from "./ImageGallery";
 
 type Props = {
   attachment: Attachment;
   onRemove?: () => void;
   /** A sent image shown large on its own, like a photo in a messaging app. */
   photo?: boolean;
+  gallery?: readonly Attachment[];
 };
 
-export function AttachmentChip({ attachment, onRemove, photo = false }: Props) {
+export function AttachmentChip({ attachment, onRemove, photo = false, gallery }: Props) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const preview = attachmentPreviewSrc(attachment);
   const image = attachment.kind === "image" && preview;
@@ -81,9 +82,9 @@ export function AttachmentChip({ attachment, onRemove, photo = false }: Props) {
         ) : null}
       </div>
       {image && previewOpen ? (
-        <ImageLightbox
-          src={preview}
-          alt={attachment.name}
+        <ImageGallery
+          start={attachment}
+          attachments={gallery ?? [attachment]}
           onClose={() => setPreviewOpen(false)}
         />
       ) : null}

@@ -62,7 +62,7 @@ describe("openImageAtCaret", () => {
     const file = { id: "a", imageNumber: 1 } as Attachment;
     const open = vi.fn();
     openImageAtCaret(field, [file], open);
-    expect(open).toHaveBeenCalledWith(file);
+    expect(open).toHaveBeenCalledWith(file, [file]);
     expect(field.selectionStart).toBe(14);
   });
 });

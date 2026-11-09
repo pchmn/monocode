@@ -40,7 +40,7 @@ export function SentImageTokens({
           title={`Open ${file.name} full screen`}
           onClick={(event) => {
             event.stopPropagation();
-            preview.open(file);
+            preview.open(file, attachments);
           }}
           className="cursor-zoom-in rounded-sm bg-accent/15 text-accent hover:bg-accent/25"
         >

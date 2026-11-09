@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { resolveZoomKeybinding } from "../../features/settings/model/zoomKeybinding";
 import { claimTrackpadMagnify } from "../../platform/tauri/trackpadZoom";
@@ -9,6 +9,7 @@ type Props = {
   src: string;
   alt: string;
   onClose: () => void;
+  children?: ReactNode;
 };
 
 type View = { scale: number; x: number; y: number };
@@ -19,7 +20,7 @@ const DOUBLE_CLICK_SCALE = 2.5;
 const KEY_ZOOM_STEP = 1.25;
 const IDENTITY: View = { scale: 1, x: 0, y: 0 };
 
-export function ImageLightbox({ src, alt, onClose }: Props) {
+export function ImageLightbox({ src, alt, onClose, children }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -228,6 +229,7 @@ export function ImageLightbox({ src, alt, onClose }: Props) {
       >
         <X className="size-4" strokeWidth={2} />
       </button>
+      {children}
     </div>,
     document.body,
   );
