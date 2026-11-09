@@ -1,0 +1,14 @@
+/* Unlayered, so it wins over the rounded-* utility set in AgentTranscript. */
+.user-message-bubble {
+  border-bottom-right-radius: 0.25rem;
+}
+
+/* An infinite pill radius makes the browser scale every corner down, flattening the 4px one. */
+.user-message-bubble.rounded-full {
+  border-radius: 1.125rem 1.125rem 0.25rem 1.125rem;
+}
+
+/* Full width (no `w-fit`): match chat's 12px corners. */
+.user-message-bubble:not(.w-fit) {
+  border-radius: 0.75rem 0.75rem 0.25rem 0.75rem;
+}
