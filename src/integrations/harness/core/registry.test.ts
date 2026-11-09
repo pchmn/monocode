@@ -497,6 +497,39 @@ describe("harness registry", () => {
     ]);
   });
 
+  it("compacts a session whose turn rests on background work", async () => {
+    let endTurn!: () => void;
+    const turnOpen = new Promise<void>((resolve) => {
+      endTurn = resolve;
+    });
+    const sendTurn = vi.fn(() => turnOpen);
+    const compactContext = vi.fn(async () => undefined);
+    registerHarness(stub("claude", { sendTurn, compactContext }));
+    const turn = sendHarnessTurn({
+      harness: "claude",
+      sessionId: "resting",
+      cwd: "/tmp",
+      model: "claude:sonnet",
+      text: "start the dev server",
+      runtimeMode: "supervised",
+      onEvent: () => undefined,
+    });
+    await vi.waitFor(() => expect(sendTurn).toHaveBeenCalled());
+
+    await compactHarnessContext({
+      harness: "claude",
+      sessionId: "resting",
+      cwd: "/tmp",
+      model: "claude:sonnet",
+      runtimeMode: "supervised",
+      onEvent: () => undefined,
+    });
+
+    expect(compactContext).toHaveBeenCalledOnce();
+    endTurn();
+    await turn;
+  });
+
   it("binds a restored session and forwards its task panels", () => {
     const bindSession = vi.fn();
     const restoreTaskLists = vi.fn();
