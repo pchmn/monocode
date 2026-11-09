@@ -69,13 +69,13 @@ export function LiveAgentsPreview({
   return (
     <section
       aria-label="Working agents"
-      className={`shrink-0 px-2 ${bottomSpacing ? "pb-2" : ""}`}
+      className={`flex min-h-0 flex-col px-2 ${bottomSpacing ? "pb-2" : ""}`}
       data-live-agents-preview="full"
     >
       <span className="sr-only" aria-live="polite" aria-atomic="true">
         {agents.length} working agents
       </span>
-      <div className="overflow-hidden rounded-lg bg-content/5">
+      <div className="flex min-h-0 flex-col overflow-hidden rounded-lg bg-content/5">
         <WorkingPanelHeader
           collapsed={collapsed}
           count={agents.length}

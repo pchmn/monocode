@@ -62,7 +62,7 @@ export function WorkingAgentList({
   const mask = maskFor(above, hidden > 0);
 
   return (
-    <div className="relative">
+    <div className="relative flex min-h-0 flex-col">
       <div
         ref={setRef}
         onScroll={measure}

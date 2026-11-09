@@ -50,7 +50,8 @@ export function StackedToolsPane({
     <div
       className={
         shown
-          ? "relative flex min-h-[120px] flex-col border-t border-content/15 pt-1.5"
+          ? // Near-zero shrink: the Working list scrolls away before the tools lose height.
+            "relative flex min-h-[120px] shrink-[0.001] flex-col border-t border-content/15 pt-1.5"
           : "hidden"
       }
       style={{ height }}
