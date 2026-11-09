@@ -360,7 +360,8 @@ function groupTranscriptTurns(
       current = [];
       continue;
     }
-    if (block.role === "user" && current.length > 0) {
+    // Until Claude reads it, a steered message sits under the running turn's work.
+    if (block.role === "user" && current.length > 0 && !block.steerPending) {
       turns.push(current);
       current = [];
     }

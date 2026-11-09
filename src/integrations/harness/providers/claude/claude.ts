@@ -382,6 +382,16 @@ export async function cancelClaudeTurn(sessionId: string): Promise<void> {
   ]);
 }
 
+// Unlike cancel, keeps the turn and background tasks: Claude then reads the waiting steer.
+export async function interruptClaudeStep(sessionId: string): Promise<void> {
+  const live = liveByThread.get(sessionId);
+  if (!live || !hasWaitingSteers(live)) return;
+  await writeJson(
+    sessionId,
+    buildControlRequest(nextControlId(live), { subtype: "interrupt" }),
+  );
+}
+
 export async function stopClaudeSession(sessionId: string): Promise<void> {
   cancelledThreads.delete(sessionId);
   const live = liveByThread.get(sessionId);
