@@ -2291,11 +2291,14 @@ describe("sidebar working agents", () => {
       '[data-live-agents-preview="full"]',
     )!;
     expect(preview.querySelectorAll("[data-live-agent-card]")).toHaveLength(2);
+    // Agents from two projects are grouped under one header per project.
     expect(
-      preview.querySelector('[data-live-agent-card="agent-a"]')!.textContent,
+      preview.querySelector('[data-working-group="/workspace/alpha"]')!
+        .textContent,
     ).toContain("alpha");
     expect(
-      preview.querySelector('[data-live-agent-card="agent-b"]')!.textContent,
+      preview.querySelector('[data-working-group="/workspace/beta"]')!
+        .textContent,
     ).toContain("beta");
     expect(preview.querySelector(".mascot-active")).not.toBeNull();
 
