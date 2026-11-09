@@ -10,7 +10,7 @@ The sidebar's Working panel (`LiveAgentsPreview`) shows as soon as an agent runs
 - `src/features/sessions/ui/WorkingAgentGroups.tsx` — project accordion
 
 ## Upstream hooks
-- `src/features/sessions/ui/LiveAgentsPreview.tsx` — `shown` (any agent other than `activeSessionId`) replacing `LIVE_AGENT_MIN`; `min-w-0 overflow-hidden` / `w-full` classes in `LiveAgentCard`; `WorkingPanelHeader` replaces the header row, `collapsed` hides the list; the cards render inside `WorkingAgentList` (replacing the list `div` and its `useLockOverscroll`) (`LIVE_AGENT_CAP`, `expanded` and the "more" button removed); `WorkingAgentGroups` wraps the card map via `renderCard`; `hideProject` prop on `LiveAgentCard`
+- `src/features/sessions/ui/LiveAgentsPreview.tsx` — `shown` (any agent other than `activeSessionId`) replacing `LIVE_AGENT_MIN`; `min-w-0 overflow-hidden` / `w-full` classes in `LiveAgentCard`; `WorkingPanelHeader` replaces the header row, `collapsed` hides the list; the cards render inside `WorkingAgentList` (replacing the list `div` and its `useLockOverscroll`) (`LIVE_AGENT_CAP`, `expanded` and the "more" button removed); `WorkingAgentGroups` wraps the card map via `renderCard`; `hideProject` prop on `LiveAgentCard`; `flex min-h-0 flex-col` on the section and its card box (was `shrink-0`) so the list shrinks when the sidebar runs out of room
 - `src/features/sessions/ui/LiveAgentsPreview.test.ts` — "shows only when an agent runs outside the active session"; "groups agents by project…" (was the four-agent cap), "folds a project group…", "lists a single project flat…"
 
 ## Verify
