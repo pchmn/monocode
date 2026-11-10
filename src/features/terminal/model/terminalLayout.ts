@@ -83,25 +83,15 @@ export function fitTerminal(
   const size = availableSize(host, mode, term);
   if (!size) return null;
 
-  let cell = cellSize(term);
+  // Measure unstretched cells: a stretched grid would shrink the row count on every refit.
+  if (mode === "tui") resetGridStretch(term);
+  const cell = cellSize(term);
   if (!cell) return null;
 
-  const round = mode === "tui" ? Math.ceil : Math.floor;
-  let cols = Math.max(2, round(size.width / cell.width));
-  let rows = Math.max(1, round(size.height / cell.height));
-
-  if (term.cols !== cols || term.rows !== rows) {
-    term.resize(cols, rows);
-    cell = cellSize(term);
-    if (!cell) return { cols, rows };
-    if (mode === "tui") {
-      while (cols * cell.width < size.width - 0.5) cols++;
-      while (rows * cell.height < size.height - 0.5) rows++;
-      if (term.cols !== cols || term.rows !== rows) {
-        term.resize(cols, rows);
-      }
-    }
-  }
+  // Round down so the last row stays inside the host; TUI mode stretches cells to fill the gap.
+  const cols = Math.max(2, Math.floor(size.width / cell.width));
+  const rows = Math.max(1, Math.floor(size.height / cell.height));
+  if (term.cols !== cols || term.rows !== rows) term.resize(cols, rows);
 
   if (mode === "tui") {
     stretchGridToHost(term, host, mode);
