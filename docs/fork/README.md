@@ -28,7 +28,7 @@ A PR that adds, changes or removes fork behaviour updates its entry in the same 
 
 ## Sync settings
 
-Read by `/sync-upstream` (from [pchmn/skills](https://github.com/pchmn/skills/tree/main/skills/misc/sync-upstream), installed globally), which merges upstream through a reviewed PR and runs the sync check.
+Read by `/sync-upstream` (from [pchmn/skills](https://github.com/pchmn/skills/tree/main/skills/misc/sync-upstream), installed in this repo with `npx skills add pchmn/skills --skill sync-upstream`), which merges upstream through a reviewed PR and runs the sync check.
 
 - **Upstream**: `hardbeat920/monocode`
 - **Fork**: `pchmn/monocode`
