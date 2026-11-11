@@ -1,38 +1,53 @@
 import { useEffect, useRef } from "react";
 import {
+  CheckCircle,
   CircleDot,
+  CircleX,
+  GitMerge,
   GitPullRequest,
+  GitPullRequestClosed,
   GitPullRequestDraft,
 } from "../../../shared/ui/icons";
 import { useLockOverscroll } from "../../../shared/hooks/useLockOverscroll";
 import { MatchText } from "../../../shared/ui/MatchText";
-import type { RankedIssue } from "../model/issueMentions";
+import type { IssueScope, RankedIssue } from "../model/issueMentions";
+import type { useIssueMentions } from "../hooks/useIssueMentions";
 
 type Props = {
-  items: RankedIssue[];
-  query: string;
-  active: number;
-  loading: boolean;
-  error: string | null;
-  onActive: (index: number) => void;
-  onPick: (item: RankedIssue) => void;
+  mentions: ReturnType<typeof useIssueMentions>;
 };
 
-function kindIcon(item: RankedIssue) {
-  if (item.kind === "issue") return { Icon: CircleDot, tone: "text-emerald-400/90" };
-  if (item.draft) return { Icon: GitPullRequestDraft, tone: "text-content/50" };
-  return { Icon: GitPullRequest, tone: "text-emerald-400/90" };
+const SCOPES: { value: IssueScope; label: string }[] = [
+  { value: "open", label: "Open" },
+  { value: "all", label: "All" },
+];
+
+function statusIcon(item: RankedIssue) {
+  const pr = item.kind === "pr";
+  if (item.state === "merged") return { Icon: GitMerge, tone: "text-violet-400/90" };
+  if (item.state === "closed") {
+    if (!pr && item.stateReason === "completed") {
+      return { Icon: CheckCircle, tone: "text-violet-400/90" };
+    }
+    return { Icon: pr ? GitPullRequestClosed : CircleX, tone: "text-rose-400/90" };
+  }
+  if (pr && item.draft) return { Icon: GitPullRequestDraft, tone: "text-content/50" };
+  return { Icon: pr ? GitPullRequest : CircleDot, tone: "text-emerald-400/90" };
 }
 
-export function IssueMentionPicker({
-  items,
-  query,
-  active,
-  loading,
-  error,
-  onActive,
-  onPick,
-}: Props) {
+export function IssueMentionPicker({ mentions }: Props) {
+  const {
+    items,
+    query,
+    active,
+    loading,
+    searching,
+    error,
+    scope,
+    setScope,
+    setActive: onActive,
+    pick: onPick,
+  } = mentions;
   const lockOverscroll = useLockOverscroll<HTMLDivElement>();
   const activeRef = useRef<HTMLButtonElement>(null);
   // Rows scrolled under a still pointer must not steal the keyboard selection.
@@ -46,19 +61,43 @@ export function IssueMentionPicker({
     pointerMoved.current = false;
   }, [items]);
 
+  const which = scope === "open" ? "open issues or pull requests" : "issues or pull requests";
   const empty = loading
     ? "Loading issues and pull requests…"
     : error
       ? error
-      : query.trim()
-        ? "No matching open issues or pull requests"
-        : "No open issues or pull requests";
+      : searching
+        ? "Searching GitHub…"
+        : query.trim()
+          ? `No matching ${which}`
+          : `No ${which}`;
 
   return (
     <div
       data-mention-picker
       className="overflow-hidden rounded-lg border border-content/10 bg-content/5 backdrop-blur-xl"
     >
+      <div className="flex items-center gap-1 border-b border-content/10 px-2 py-1">
+        {SCOPES.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={scope === value}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setScope(value)}
+            className={`rounded px-1.5 py-0.5 text-[11px] ${
+              scope === value
+                ? "bg-content/10 text-content"
+                : "text-content/50 hover:text-content"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+        <span className="ml-auto text-[11px] text-content/40">
+          {searching && items.length > 0 ? "Searching GitHub…" : "⌥A toggles"}
+        </span>
+      </div>
       {items.length === 0 ? (
         <p className="px-3 py-2.5 text-[12px] text-content/50">{empty}</p>
       ) : (
@@ -73,7 +112,7 @@ export function IssueMentionPicker({
         >
           {items.map((item, index) => {
             const highlighted = index === active;
-            const { Icon, tone } = kindIcon(item);
+            const { Icon, tone } = statusIcon(item);
             return (
               <button
                 key={`${item.kind}:${item.number}`}

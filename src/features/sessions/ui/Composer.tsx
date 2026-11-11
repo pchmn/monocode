@@ -2129,7 +2129,7 @@ export function Composer({
         ) : null}
         {issueMentions.open && !pickerOpen ? (
           <div className="absolute inset-x-0 bottom-full z-30 mb-1">
-            <IssueMentionPicker items={issueMentions.items} query={issueMentions.query} active={issueMentions.active} loading={issueMentions.loading} error={issueMentions.error} onActive={issueMentions.setActive} onPick={issueMentions.pick} />
+            <IssueMentionPicker mentions={issueMentions} />
           </div>
         ) : null}
         {mentionOpen && !pickerOpen ? (

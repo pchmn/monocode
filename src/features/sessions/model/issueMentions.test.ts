@@ -63,4 +63,16 @@ describe("rankIssues", () => {
     expect(login.map((i) => i.number)).toEqual([7, 12]);
     expect(login[0]!.positions).toEqual([4, 5, 6, 7, 8]);
   });
+
+  it("adds GitHub-side hits: numbers first, other matches last", () => {
+    const byNumber = [item(1234, "Old crash", "2025-01-01", "pr")];
+    expect(rankIssues(items, "123", byNumber).map((i) => i.number)).toEqual([1234]);
+    const byText = [
+      item(3, "Session expires", "2026-06-01"),
+      item(7, "Add login button", "2026-02-01"),
+    ];
+    expect(rankIssues(items, "login", byText).map((i) => i.number)).toEqual([
+      7, 12, 3,
+    ]);
+  });
 });
