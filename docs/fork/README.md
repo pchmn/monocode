@@ -26,19 +26,14 @@ Name each hook by a symbol to search for, never by line number: line numbers dri
 
 A PR that adds, changes or removes fork behaviour updates its entry in the same PR (new feature: new file; feature dropped: delete the file). Small upstream bug fixes with no feature of their own go in [`small-fixes.md`](small-fixes.md).
 
-## Upstream sync check
+## Sync settings
 
-Sync with `git merge upstream/main`, and land a sync PR with a merge commit, never a squash: a squash drops `upstream/main` as a parent, so the merge-base stays put and the next sync replays every upstream change since. Feature PRs can still be squashed.
+Read by `/sync-upstream` (from [pchmn/skills](https://github.com/pchmn/skills/tree/main/skills/misc/sync-upstream), installed globally), which merges upstream through a reviewed PR and runs the sync check.
 
-Run after the merge, before pushing (the `/sync-upstream` skill runs the whole sync end to end):
-
-1. List the upstream files the sync changed: `git diff --name-only <previous merge-base> upstream/main`.
-2. Find the features at risk: entries whose **Upstream hooks** name one of those files (`grep -l <path> docs/fork/*.md`).
-3. For each feature at risk:
-   - every hook still exists **and is still reached** (a call site upstream rewrote can keep the import and drop the call);
-   - its **Verify** tests pass;
-   - upstream has not shipped the same behaviour; if it has, propose dropping the fork version rather than keeping both.
-4. Coverage: every upstream file in `git diff --name-only upstream/main...main` appears in at least one entry. Report any that do not.
-5. `npm run check` passes.
-
-Done when every feature at risk has a verdict: **intact**, **repaired** (say how), **superseded by upstream**, or **broken** (needs a human), and the coverage report lists no unexplained file.
+- **Upstream**: `hardbeat920/monocode`
+- **Fork**: `pchmn/monocode`
+- **Install**: `npm ci`
+- **Checks**: `npm run check`
+- **Release files**: `CHANGELOG.md`, the `version` in `package.json`, `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml`
+- **Ignored paths**: none
+- **PR summary**: desktop-relevant changes (`src/`, `src-tauri/`, `crates/monocode-core/`) grouped by theme; mobile and native in one line; whether a production build is worth it, and why.

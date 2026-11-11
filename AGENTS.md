@@ -26,4 +26,4 @@ Worktrees are removed when their session's tab closes, once clean and merged ([`
 
 ## Fork manifest
 
-[`docs/fork/`](docs/fork/README.md) has one entry per fork feature: its upstream hooks and how to verify it. Read it when you change fork behaviour (update the feature's entry in the same PR) and when you sync with upstream (run its sync check).
+[`docs/fork/`](docs/fork/README.md) has one entry per fork feature: its upstream hooks and how to verify it. Read it when you change fork behaviour (update the feature's entry in the same PR) and when you sync with upstream (run `/sync-upstream`, which reads its sync settings).
