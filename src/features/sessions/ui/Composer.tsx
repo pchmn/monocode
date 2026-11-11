@@ -129,6 +129,8 @@ import {
 } from "../../projects/model/codeWorkspace";
 import { useIsCheckoutRoot } from "../../projects/model/workspaceFolderWorktrees";
 import { FileMentionPicker } from "./FileMentionPicker";
+import { IssueMentionPicker } from "./IssueMentionPicker";
+import { useIssueMentions } from "../hooks/useIssueMentions";
 import { McpServerPicker } from "./McpServerPicker";
 import { FileTypeIcon } from "../../files/ui/FileTypeIcon";
 import { InboxMiniCard } from "../../inbox/ui/InboxMiniCard";
@@ -692,6 +694,20 @@ export function Composer({
     },
     [inboxCard, noteCard, handoffCard],
   );
+  const onIssueReplace = useCallback(
+    (el: HTMLTextAreaElement, next: string) => {
+      resizeComposer(el);
+      setDraft(next);
+      syncHasValue(next, attachmentsRef.current);
+    },
+    [syncHasValue],
+  );
+  const issueMentions = useIssueMentions({
+    inputRef: ref,
+    cwd: executionCwd,
+    enabled: !remote && looksLikeProject(executionCwd),
+    onReplace: onIssueReplace,
+  });
 
   // A leading mode command in the text shows the same pill as picking the mode.
   const operatorActive =
@@ -1033,6 +1049,7 @@ export function Composer({
     const token = slashTokenAt(el.value, cursor, hasNativeCommands(harness));
     setSlash(token);
     setMention(token ? null : mentionTokenAt(el.value, cursor));
+    issueMentions.sync(el);
   };
 
   const openSessionFolderPicker = useCallback(() => {
@@ -1571,6 +1588,7 @@ export function Composer({
       return;
     }
 
+    if (!pickerOpen && issueMentions.onKeyDown(e)) return;
     if (mentionOpen) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -2107,6 +2125,11 @@ export function Composer({
                   .finally(() => setCreateBusy(false));
               }}
             />
+          </div>
+        ) : null}
+        {issueMentions.open && !pickerOpen ? (
+          <div className="absolute inset-x-0 bottom-full z-30 mb-1">
+            <IssueMentionPicker items={issueMentions.items} query={issueMentions.query} active={issueMentions.active} loading={issueMentions.loading} error={issueMentions.error} onActive={issueMentions.setActive} onPick={issueMentions.pick} />
           </div>
         ) : null}
         {mentionOpen && !pickerOpen ? (
