@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "skills": {
+    "sync-upstream": {
+      "source": "pchmn/skills",
+      "sourceType": "github",
+      "skillPath": "skills/misc/sync-upstream/SKILL.md",
+      "computedHash": "8bb1b569f4430d37cece2d753cb1a86615bd9a8b5e390efdfa5233165710cc8a"
+    }
+  }
+}
