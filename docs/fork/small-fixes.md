@@ -34,3 +34,9 @@ Upstream bug fixes with no feature of their own. On each sync, check whether ups
 ## Full-screen terminal apps keep their last row visible
 - `src/features/terminal/model/terminalLayout.ts` — `fitTerminal`: TUI mode resets the grid stretch, rounds cols/rows down like shell mode, then `stretchGridToHost` fills the gap (rounding up pushed the last row under the host's `overflow: hidden`)
 - Manual: open `vim` in a terminal tab and type `:`; the command line shows in full, also after resizing the panel.
+
+## Claude side questions answer without tools
+- `src/integrations/harness/providers/claude/claudeText.ts` — `textSettings`: the read-only (`/btw`) runner adds `tools: []` next to `maxTurns: 1`, like the Claude Code CLI's `/btw`. A tool call used to end the single turn with "Reached maximum number of turns (1)"
+- `src/integrations/harness/providers/claude/claudeProtocol.ts` — `tools` option in `buildClaudeSpawnArgs` (`--tools`)
+- `src/integrations/harness/providers/claude/claudeProtocol.test.ts`
+- Manual: in a Claude session, ask a `/btw` question that would need a file read; it answers (or says what it lacks) instead of "Couldn't finish".

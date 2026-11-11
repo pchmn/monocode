@@ -166,6 +166,11 @@ describe("buildClaudeSpawnArgs", () => {
     );
   });
 
+  it("disables every tool when given an empty list", () => {
+    const args = buildClaudeSpawnArgs({ isolated: true, tools: [] });
+    expect(args).toEqual(expect.arrayContaining(["--tools", ""]));
+  });
+
   it("adds bypass flag for full-access", () => {
     const args = buildClaudeSpawnArgs({
       permissionMode: "bypassPermissions",
