@@ -1,0 +1,5 @@
+interface:
+  display_name: "Sync Upstream"
+  short_description: "Merge a fork's upstream through a reviewed PR"
+policy:
+  allow_implicit_invocation: false
