@@ -44,3 +44,9 @@ Upstream bug fixes with no feature of their own. On each sync, check whether ups
 ## Session title ellipsis sits against the row's trailing icons
 - `src/app/shell/Sidebar.tsx` — `SessionCard`: the dense title's `ParticleText` uses `truncate` instead of `line-clamp-1`, which cut at the last whole word and left a gap before the time
 - Manual: with a long session title, the `…` touches the time/PR icon, hovered or not.
+
+## Middle-clicked links open in the browser
+- `src/main.tsx`, `src/features/monos/floatingMain.tsx`, `src/features/quick-composer/main.tsx` — `installMiddleClickLinkGuard()` next to `installNativeContextMenuGuard()`: the webview used to load a middle-clicked link in place of the app
+- Fork files: `src/shared/lib/middleClickLinks.ts`
+- `src/shared/lib/middleClickLinks.test.ts`
+- Manual: middle-click a link or a `#123` reference in a session; it opens in the default browser and the app stays put.
