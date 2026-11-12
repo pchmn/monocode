@@ -24,6 +24,7 @@ import { FloatingMonoChat } from "./ui/FloatingMonoChat";
 import { homeDir } from "../../platform/tauri/fs";
 import { setHomeDir } from "../../shared/lib/paths";
 import { installNativeContextMenuGuard } from "../../shared/lib/nativeContextMenu";
+import { installMiddleClickLinkGuard } from "../../shared/lib/middleClickLinks";
 import "../../styles/index.css";
 
 let appearanceKey = "";
@@ -57,6 +58,7 @@ function applyFloatingAppearance() {
 applyFloatingAppearance();
 watchSystemColorScheme();
 installNativeContextMenuGuard();
+installMiddleClickLinkGuard();
 window.addEventListener("storage", applyFloatingAppearance);
 void homeDir()
   .then(setHomeDir)

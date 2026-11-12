@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { IS_MAC } from "../../platform/tauri/platform";
 import { installNativeContextMenuGuard } from "../../shared/lib/nativeContextMenu";
+import { installMiddleClickLinkGuard } from "../../shared/lib/middleClickLinks";
 import {
   applyAccentColor,
   applyThemeDarkLightness,
@@ -38,6 +39,7 @@ function applyAppearance() {
 
 applyAppearance();
 installNativeContextMenuGuard();
+installMiddleClickLinkGuard();
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
