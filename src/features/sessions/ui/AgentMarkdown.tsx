@@ -46,6 +46,8 @@ import type { EditorNavigation, OpenFileFn } from "../../search/model/search";
 import { remarkWorkspaceFileLinks } from "../../files/model/markdownFileLinks";
 import { issueReferenceNumber, remarkIssueReferences } from "../model/issueReferences";
 import { IssueReferenceLink } from "./IssueReferenceLink";
+import { inlineCodeUrl } from "../model/inlineCodeUrl";
+import { InlineCodeUrl } from "./InlineCodeUrl";
 import { isAtxHeadingLine } from "../../files/model/markdownSource";
 import { useColorScheme } from "../../../shared/hooks/useColorScheme";
 import { useLockOverscroll } from "../../../shared/hooks/useLockOverscroll";
@@ -162,6 +164,7 @@ type FileLinkMenu = {
   y: number;
   path: string;
   navigation?: EditorNavigation;
+  text?: string;
 };
 
 const FileOpenContext = createContext<{
@@ -171,6 +174,7 @@ const FileOpenContext = createContext<{
     event: ReactMouseEvent,
     path: string,
     navigation?: EditorNavigation,
+    text?: string,
   ) => void;
   /**
    * The Markdown file a preview shows and the project it may load images
@@ -213,6 +217,7 @@ function fileLinkMenuItems(
           },
         ]
       : []),
+    { kind: "item", id: "copy-text", label: "Copy Text" },
   ];
 }
 
@@ -325,7 +330,7 @@ function MarkdownLink({
       onContextMenu={(event) => {
         onContextMenu?.(event);
         if (event.defaultPrevented || !file || !onFileContextMenu) return;
-        onFileContextMenu(event, file.path, file.navigation);
+        onFileContextMenu(event, file.path, file.navigation, label);
       }}
     >
       {children}
@@ -359,6 +364,8 @@ function MarkdownCode({
     const text = textContent(children);
     const fileName = inlineFileName(text);
     const { cwd, onOpenFile, onFileContextMenu } = useContext(FileOpenContext);
+    const url = inlineCodeUrl(text);
+    if (url) return <InlineCodeUrl {...props} url={url} text={text} className={className} onContextMenu={onContextMenu}>{children}</InlineCodeUrl>;
     const file = fileName
       ? resolveWorkspaceFileReference(text, cwd)
       : undefined;
@@ -379,7 +386,7 @@ function MarkdownCode({
         onContextMenu={(event) => {
           onContextMenu?.(event);
           if (event.defaultPrevented || !file || !onFileContextMenu) return;
-          onFileContextMenu(event, file.path, file.navigation);
+          onFileContextMenu(event, file.path, file.navigation, text);
         }}
         onKeyDown={
           open
@@ -664,10 +671,10 @@ export const AgentMarkdown = memo(function AgentMarkdown({
   const [fileMenu, setFileMenu] = useState<FileLinkMenu | null>(null);
   const [fileActionError, setFileActionError] = useState<string | null>(null);
   const onFileContextMenu = useCallback(
-    (event: ReactMouseEvent, path: string, navigation?: EditorNavigation) => {
+    (event: ReactMouseEvent, path: string, navigation?: EditorNavigation, text?: string) => {
       event.preventDefault();
       event.stopPropagation();
-      setFileMenu({ x: event.clientX, y: event.clientY, path, navigation });
+      setFileMenu({ x: event.clientX, y: event.clientY, path, navigation, text });
     },
     [],
   );
@@ -787,6 +794,9 @@ export const AgentMarkdown = memo(function AgentMarkdown({
         break;
       case "copy-relative-path":
         action = copyText(displayPath(path, cwd));
+        break;
+      case "copy-text":
+        action = copyText(fileMenu.text ?? path);
         break;
       default:
         return;
@@ -1095,7 +1105,7 @@ function MarkdownCodePath({
       title={file.path}
       onClick={() => onOpenFile(file.path, navigation)}
       onContextMenu={(event) =>
-        onFileContextMenu?.(event, file.path, navigation)
+        onFileContextMenu?.(event, file.path, navigation, path)
       }
     >
       {path}
