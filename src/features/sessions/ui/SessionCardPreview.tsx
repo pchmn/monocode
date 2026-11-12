@@ -7,6 +7,7 @@ import type { SessionSummary } from "../data/sessionStore";
 import { resolveModel } from "../model/models";
 import { sessionDisplayTitle } from "../model/session";
 import { HarnessIcon } from "./HarnessIcon";
+import { LinkedWorkItemLink } from "./LinkedWorkItemLink";
 
 export function SessionCardPreview({
   anchor,
@@ -135,7 +136,7 @@ export function SessionCardPreview({
               session.linkedWorkItem.kind === "pr" ? "Pull request" : "Issue"
             }
           >
-            {session.linkedWorkItem.repo} #{session.linkedWorkItem.number}
+            <LinkedWorkItemLink item={session.linkedWorkItem} />
           </Detail>
         ) : null}
       </dl>

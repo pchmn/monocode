@@ -685,6 +685,7 @@ const LocalSessionPane = memo(function LocalSessionPane({
       context={session.context}
       statusInfo={{
         costUsd: session.costUsd,
+        sessionId: session.id,
         pr:
           session.linkedWorkItem?.kind === "pr"
             ? session.linkedWorkItem

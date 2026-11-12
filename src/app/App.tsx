@@ -862,6 +862,7 @@ import {
   workspaceSnapshotKey,
 } from "../features/workspace/model/workspaceSnapshot";
 import type { InstalledUpdate } from "./model/updateNotice";
+import { useBranchPrAutoLink } from "../features/sessions/hooks/useBranchPrAutoLink";
 import {
   bindResumedSessions,
   closeBusyWindow,
@@ -6097,6 +6098,7 @@ function Workspace({
     },
     [history, invalidateLoadedSession, refreshHistory, sidebarCwd],
   );
+  useBranchPrAutoLink(onSetHistorySessionLinkedWorkItem);
 
   const onArchiveHistorySessions = useCallback(
     async (sessionIds: readonly string[], archived: boolean) => {
