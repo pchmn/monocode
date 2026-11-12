@@ -30,6 +30,18 @@ export function issueReferenceNumber(href: string | undefined): number | null {
   return Number.isInteger(number) && number > 0 ? number : null;
 }
 
+export function findIssueReference(
+  text: string,
+): { number: number; index: number; length: number } | null {
+  const [match] = text.matchAll(REFERENCE);
+  if (!match) return null;
+  return {
+    number: Number(match[1]),
+    index: match.index,
+    length: match[0].length,
+  };
+}
+
 function splitText(value: string): MarkdownNode[] | null {
   const parts: MarkdownNode[] = [];
   let last = 0;

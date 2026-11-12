@@ -134,7 +134,7 @@ import { monoWorkStatus } from "../model/monoWorkStatus";
 import { isEmojiOnlyMessage } from "../model/emojiMessage";
 import { attachmentPreviewSrc } from "../model/attachments";
 import { TranscriptSelectionMenu } from "./TranscriptSelectionMenu";
-import { parseUserMessageLink } from "../model/linkPreview";
+import { useUserMessageLink } from "../hooks/useUserMessageLink";
 import { UserLinkPreview } from "./UserLinkPreview";
 import {
   activityPhaseTitle,
@@ -2598,7 +2598,7 @@ function UserMessageBlock({
     card && card.kind !== "handoff"
       ? ""
       : visibleUserPrompt(monocode ? operatorUserPrompt(block) : block.text);
-  const messageLink = text ? parseUserMessageLink(text) : null;
+  const messageLink = useUserMessageLink(text, cwd);
   const displayText = messageLink
     ? `${messageLink.beforeText}${messageLink.afterText}`
     : text;
