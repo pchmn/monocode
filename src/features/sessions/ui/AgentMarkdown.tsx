@@ -44,6 +44,8 @@ import {
 } from "../../../shared/lib/paths";
 import type { EditorNavigation, OpenFileFn } from "../../search/model/search";
 import { remarkWorkspaceFileLinks } from "../../files/model/markdownFileLinks";
+import { issueReferenceNumber, remarkIssueReferences } from "../model/issueReferences";
+import { IssueReferenceLink } from "./IssueReferenceLink";
 import { isAtxHeadingLine } from "../../files/model/markdownSource";
 import { useColorScheme } from "../../../shared/hooks/useColorScheme";
 import { useLockOverscroll } from "../../../shared/hooks/useLockOverscroll";
@@ -293,6 +295,8 @@ function MarkdownLink({
   const file = href ? resolveWorkspaceFileReference(href, cwd) : undefined;
   const label = textContent(children);
   const localMedia = useContext(LocalMediaContext);
+  const issueNumber = issueReferenceNumber(href);
+  if (issueNumber && cwd) return <IssueReferenceLink cwd={cwd} number={issueNumber}>{children}</IssueReferenceLink>;
   if (allowRemoteMedia && href && isInboxMediaUrl(href)) {
     return <InboxMedia src={href} alt={label} />;
   }
@@ -681,6 +685,7 @@ export const AgentMarkdown = memo(function AgentMarkdown({
     () => [
       ...Object.values(defaultRemarkPlugins),
       [remarkWorkspaceFileLinks, { cwd }],
+      ...(cwd ? [remarkIssueReferences] : []),
     ],
     [cwd],
   );
