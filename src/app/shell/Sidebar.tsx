@@ -5344,7 +5344,7 @@ export const SessionCard = memo(function SessionCard({
                 ) : null}
                 <ParticleText
                   text={title}
-                  className={`line-clamp-1 min-w-0 flex-1 leading-tight ${
+                  className={`truncate min-w-0 flex-1 leading-tight ${
                     nested
                       ? `text-[13px] ${
                           isActive || isSelected
