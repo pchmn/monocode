@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { issueReferenceNumber, remarkIssueReferences } from "./issueReferences";
+import {
+  findIssueReference,
+  issueReferenceNumber,
+  remarkIssueReferences,
+} from "./issueReferences";
 
 type Node = { type: string; value?: string; url?: string; children?: Node[] };
 
@@ -56,5 +60,19 @@ describe("issueReferenceNumber", () => {
     expect(issueReferenceNumber("#monocode-issue-42")).toBe(42);
     expect(issueReferenceNumber("#section")).toBeNull();
     expect(issueReferenceNumber(undefined)).toBeNull();
+  });
+});
+
+describe("findIssueReference", () => {
+  it("locates the first #number", () => {
+    expect(findIssueReference("implemente #290 puis #291")).toEqual({
+      number: 290,
+      index: 11,
+      length: 4,
+    });
+  });
+
+  it("ignores anchors and other hashes", () => {
+    expect(findIssueReference("see a#12, ##3 and #abc")).toBeNull();
   });
 });
