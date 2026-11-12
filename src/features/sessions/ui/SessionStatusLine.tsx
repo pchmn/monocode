@@ -3,6 +3,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { gitPrStatus } from "../../../platform/tauri/fs";
 import type { ContextUsage } from "../model/contextUsage";
 import { formatContextText, formatCost } from "../model/sessionStatusLine";
+import { reportBranchPr } from "../model/branchPrAutoLink";
 
 type Pr = { number: number; url: string; title?: string } | null;
 
@@ -10,6 +11,8 @@ export type SessionStatusInfo = {
   costUsd?: number;
   /** PR already linked to the session; skips the `gh` lookup. */
   pr?: NonNullable<Pr>;
+  /** Set to link the session to the PR its branch gets. */
+  sessionId?: string;
 };
 
 const PR_TTL_MS = 5 * 60_000;
@@ -82,6 +85,10 @@ export function SessionPrLink({
   branch?: string;
 }) {
   const lookedUp = useBranchPr(info?.pr ? "" : cwd, branch);
+  const sessionId = info?.sessionId;
+  useEffect(() => {
+    if (sessionId && lookedUp) reportBranchPr(sessionId, lookedUp);
+  }, [sessionId, lookedUp]);
   const pr = info?.pr ?? lookedUp;
   if (!pr) return null;
   return (
