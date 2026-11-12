@@ -40,3 +40,7 @@ Upstream bug fixes with no feature of their own. On each sync, check whether ups
 - `src/integrations/harness/providers/claude/claudeProtocol.ts` — `tools` option in `buildClaudeSpawnArgs` (`--tools`)
 - `src/integrations/harness/providers/claude/claudeProtocol.test.ts`
 - Manual: in a Claude session, ask a `/btw` question that would need a file read; it answers (or says what it lacks) instead of "Couldn't finish".
+
+## Session title ellipsis sits against the row's trailing icons
+- `src/app/shell/Sidebar.tsx` — `SessionCard`: the dense title's `ParticleText` uses `truncate` instead of `line-clamp-1`, which cut at the last whole word and left a gap before the time
+- Manual: with a long session title, the `…` touches the time/PR icon, hovered or not.
