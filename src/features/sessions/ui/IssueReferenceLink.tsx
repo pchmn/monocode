@@ -32,7 +32,7 @@ export function IssueReferenceLink({
     <a
       href={item.url}
       title={`${kind} #${item.number} · ${item.title}`}
-      className="underline decoration-content/35 decoration-dotted underline-offset-2 hover:decoration-solid hover:decoration-current"
+      className="underline decoration-content/60 decoration-dotted underline-offset-2 hover:decoration-solid hover:decoration-current"
       onClick={(event) => {
         event.preventDefault();
         void openUrl(item.url).catch((error) => {
