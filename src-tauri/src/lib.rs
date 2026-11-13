@@ -27,6 +27,7 @@ mod jsonc;
 mod linear;
 mod link_preview;
 mod log_tail;
+mod lsp_definition;
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(target_os = "macos")]
@@ -504,6 +505,8 @@ pub fn run() {
             fs::write_text_file,
             skills::list_skills,
             search::search_project,
+            lsp_definition::lsp_definition,
+            lsp_definition::lsp_close_document,
             search::cancel_project_search,
             cursor_store::cursor_tool_calls,
             cursor_store::cursor_subagent_runs,
