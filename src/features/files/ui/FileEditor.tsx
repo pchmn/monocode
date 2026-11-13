@@ -107,6 +107,7 @@ import { editorLspNavigation } from "../editor/editorLspNavigation";
 import { editorLspAssist } from "../editor/editorLspAssist";
 import { editorLanguageServer } from "../editor/lsp/languageServer";
 import { FilePreviewSearch } from "./FilePreviewSearch";
+import { SaveCommandFailure } from "./SaveCommandFailure";
 
 type EditorNavigationRequest = EditorNavigation & { token: number };
 
@@ -133,7 +134,7 @@ type LoadState =
 
 type SaveState =
   | { status: "idle" | "saving" | "saved" }
-  | { status: "error"; message: string };
+  | { status: "error" | "commandFailed"; message: string };
 
 export function FileEditor({
   path,
@@ -371,7 +372,7 @@ export function FileEditor({
         if (generation === saveGeneration.current) {
           setSaveState(
             hookError
-              ? { status: "error", message: hookError }
+              ? { status: "commandFailed", message: hookError }
               : { status: "saved" },
           );
         }
@@ -565,6 +566,8 @@ export function FileEditor({
           <span>Saving…</span>
         ) : saveState.status === "saved" ? (
           <span>Saved</span>
+        ) : saveState.status === "commandFailed" ? (
+          <SaveCommandFailure message={saveState.message} />
         ) : saveState.status === "error" ? (
           <span
             className="max-w-64 truncate text-red-400"

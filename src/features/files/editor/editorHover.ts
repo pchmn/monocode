@@ -1,5 +1,5 @@
 import type { Extension } from "@codemirror/state";
-import { EditorView, hoverTooltip } from "@codemirror/view";
+import { EditorView, hoverTooltip, tooltips } from "@codemirror/view";
 import { languageForPath } from "./editorLanguage";
 import { lspRequest, supportsLanguageServer } from "./lsp/languageServer";
 import { highlightSource } from "./syntaxTokens";
@@ -39,6 +39,8 @@ export function editorHover(path: string): Extension {
       { hoverTime: HOVER_DELAY_MS },
     ),
     hoverTheme,
+    // The pane clips tooltips, so CodeMirror must flip them below before they leave the editor.
+    tooltips({ tooltipSpace: (view) => view.dom.getBoundingClientRect() }),
   ];
 }
 

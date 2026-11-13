@@ -176,7 +176,9 @@ export const editorLspDiagnostics: Extension = [
     ".cm-lintRange-hint": { backgroundImage: "none" },
     ".cm-lintRange-warning": {
       backgroundImage: "none",
-      textDecoration: "underline wavy #fbbf24",
+      textDecorationLine: "underline",
+      textDecorationStyle: "wavy",
+      textDecorationColor: "#fbbf24",
       textDecorationSkipInk: "none",
       textUnderlineOffset: "3px",
     },
