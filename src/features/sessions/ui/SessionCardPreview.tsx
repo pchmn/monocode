@@ -136,7 +136,7 @@ export function SessionCardPreview({
               session.linkedWorkItem.kind === "pr" ? "Pull request" : "Issue"
             }
           >
-            <LinkedWorkItemLink item={session.linkedWorkItem} />
+            <LinkedWorkItemLink item={session.linkedWorkItem} cwd={session.cwd} />
           </Detail>
         ) : null}
       </dl>
