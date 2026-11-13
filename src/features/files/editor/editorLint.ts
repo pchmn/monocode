@@ -220,7 +220,10 @@ const lintTheme = EditorView.theme({
     // can only be recoloured by reproducing the whole SVG. A text-decoration
     // squiggle takes the palette directly and renders sharper.
     backgroundImage: "none",
-    textDecoration: "underline wavy #f87171",
+    // macOS WebKit ignores the `text-decoration` shorthand with a style or colour.
+    textDecorationLine: "underline",
+    textDecorationStyle: "wavy",
+    textDecorationColor: "#f87171",
     textDecorationSkipInk: "none",
     textUnderlineOffset: "3px",
   },
