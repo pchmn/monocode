@@ -311,7 +311,7 @@ function GithubWorkItemPreview({
   );
 }
 
-function GithubWorkItemCard({
+export function GithubWorkItemCard({
   parsed,
   item,
   details,
