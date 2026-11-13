@@ -1,9 +1,10 @@
-import { useState, type PointerEvent } from "react";
+import { useLayoutEffect, useRef, useState, type PointerEvent } from "react";
 import {
   clampToolsHeight,
   loadToolsHeight,
   saveToolsHeight,
   TOOLS_HEIGHT_DEFAULT,
+  toolsSpace,
 } from "../../features/settings/model/stackedPanels";
 
 /** Hosts the project tools under the session list when the side panels are stacked. */
@@ -16,9 +17,29 @@ export function StackedToolsPane({
 }) {
   const [height, setHeight] = useState(loadToolsHeight);
   const [dragging, setDragging] = useState(false);
+  const [space, setSpace] = useState(Infinity);
+  const paneRef = useRef<HTMLDivElement>(null);
 
-  const panelHeight = (el: Element) =>
-    el.closest("aside")?.getBoundingClientRect().height ?? Infinity;
+  useLayoutEffect(() => {
+    const pane = paneRef.current;
+    const sidebar = pane?.parentElement;
+    if (!shown || !pane || !sidebar) return;
+    const measure = () => setSpace(toolsSpace(sidebar, pane));
+    const resize = new ResizeObserver(measure);
+    const observeRows = () => {
+      resize.disconnect();
+      resize.observe(sidebar);
+      for (const child of sidebar.children) resize.observe(child);
+    };
+    observeRows();
+    const rows = new MutationObserver(observeRows);
+    rows.observe(sidebar, { childList: true });
+    return () => {
+      resize.disconnect();
+      rows.disconnect();
+    };
+  }, [shown]);
+  const fitted = clampToolsHeight(height, space);
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
@@ -26,12 +47,11 @@ export function StackedToolsPane({
     const handle = event.currentTarget;
     handle.setPointerCapture(event.pointerId);
     const startY = event.clientY;
-    const startHeight = height;
-    const max = panelHeight(handle);
+    const startHeight = fitted;
     let next = startHeight;
     setDragging(true);
     const onMove = (move: globalThis.PointerEvent) => {
-      next = clampToolsHeight(startHeight + startY - move.clientY, max);
+      next = clampToolsHeight(startHeight + startY - move.clientY, space);
       setHeight(next);
     };
     const onUp = () => {
@@ -48,19 +68,20 @@ export function StackedToolsPane({
 
   return (
     <div
+      ref={paneRef}
       className={
         shown
           ? // Near-zero shrink: the Working list scrolls away before the tools lose height.
             "relative flex min-h-[120px] shrink-[0.001] flex-col border-t border-content/15 pt-1.5"
           : "hidden"
       }
-      style={{ height }}
+      style={{ height: fitted }}
     >
       <div
         role="separator"
         aria-orientation="horizontal"
         aria-label="Resize project tools"
-        aria-valuenow={height}
+        aria-valuenow={fitted}
         className={`absolute inset-x-0 -top-px z-10 h-1.5 cursor-row-resize touch-none ${
           dragging ? "bg-content/15" : "hover:bg-content/10"
         }`}
