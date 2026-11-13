@@ -3,7 +3,11 @@ import { linter, type Diagnostic } from "@codemirror/lint";
 import type { EditorState, Extension } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { basename } from "../../../platform/tauri/fs";
-import { lintErrorCount, withLspDiagnostics } from "./editorLspDiagnostics";
+import {
+  lintErrorCount,
+  squiggle,
+  withLspDiagnostics,
+} from "./editorLspDiagnostics";
 
 /**
  * Syntax diagnostics straight off the Lezer parse tree.
@@ -216,16 +220,7 @@ function quote(text: string): string {
 
 const lintTheme = EditorView.theme({
   ".cm-lintRange-error": {
-    // The base theme paints a wavy line as a data-URI background image, which
-    // can only be recoloured by reproducing the whole SVG. A text-decoration
-    // squiggle takes the palette directly and renders sharper.
-    backgroundImage: "none",
-    // macOS WebKit ignores the `text-decoration` shorthand with a style or colour.
-    textDecorationLine: "underline",
-    textDecorationStyle: "wavy",
-    textDecorationColor: "#f87171",
-    textDecorationSkipInk: "none",
-    textUnderlineOffset: "3px",
+    backgroundImage: squiggle("#f87171"),
   },
   ".cm-lintPoint:after": {
     borderBottomColor: "#f87171",
