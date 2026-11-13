@@ -174,6 +174,7 @@ import { MenuBar } from "./shell/MenuBar";
 import { FilePicker } from "../features/files/ui/FilePicker";
 import { useExplorerRevealSource } from "../features/files/model/explorerReveal";
 import { useOpenDefinitionEvents } from "../features/files/hooks/useOpenDefinitionEvents";
+import { LspNavigationHost } from "../features/files/ui/LspNavigationHost";
 import {
   DeleteSessionDialog,
   type SessionDeleteChoice,
@@ -14852,6 +14853,7 @@ function Workspace({
               onClose={() => setFilePickerOpen(false)}
             />
           ) : null}
+          <LspNavigationHost />
 
           {sessionDeleteDialog && (
             <DeleteSessionDialog

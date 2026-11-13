@@ -18,6 +18,7 @@ const IDLE_TIMEOUT: Duration = Duration::from_secs(15 * 60);
 const REAP_INTERVAL: Duration = Duration::from_secs(30);
 // Each worktree is its own repository root, hence its own server.
 const MAX_SERVERS: usize = 2;
+const MAX_WORKSPACE_SYMBOLS: usize = 250;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -37,34 +38,174 @@ pub struct DefinitionLocation {
     character: u32,
 }
 
-#[tauri::command]
-pub async fn lsp_definition(request: PositionRequest) -> Result<Vec<DefinitionLocation>, String> {
-    tauri::async_runtime::spawn_blocking(move || definition(request))
-        .await
-        .map_err(|error| error.to_string())?
+#[derive(Serialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct Reference {
+    path: String,
+    relative: String,
+    /// 1-based, like project search matches.
+    line: u32,
+    column: u32,
+    preview: String,
 }
 
-fn definition(request: PositionRequest) -> Result<Vec<DefinitionLocation>, String> {
-    Ok(parse_locations(&position_request(
-        "textDocument/definition",
-        request,
-    )?))
+#[derive(Serialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct Symbol {
+    name: String,
+    /// LSP `SymbolKind`.
+    kind: u32,
+    container: Option<String>,
+    path: String,
+    relative: String,
+    line: u32,
+    character: u32,
+}
+
+#[tauri::command]
+pub async fn lsp_definition(request: PositionRequest) -> Result<Vec<DefinitionLocation>, String> {
+    locations_command("textDocument/definition", request).await
+}
+
+#[tauri::command]
+pub async fn lsp_implementation(
+    request: PositionRequest,
+) -> Result<Vec<DefinitionLocation>, String> {
+    locations_command("textDocument/implementation", request).await
+}
+
+#[tauri::command]
+pub async fn lsp_type_definition(
+    request: PositionRequest,
+) -> Result<Vec<DefinitionLocation>, String> {
+    locations_command("textDocument/typeDefinition", request).await
+}
+
+async fn locations_command(
+    method: &'static str,
+    request: PositionRequest,
+) -> Result<Vec<DefinitionLocation>, String> {
+    blocking(move || {
+        Ok(parse_locations(&position_request(
+            method,
+            request,
+            json!({}),
+        )?))
+    })
+    .await
 }
 
 #[tauri::command]
 pub async fn lsp_hover(request: PositionRequest) -> Result<Option<String>, String> {
-    tauri::async_runtime::spawn_blocking(move || {
+    blocking(move || {
         Ok(parse_hover(&position_request(
             "textDocument/hover",
             request,
+            json!({}),
         )?))
     })
     .await
-    .map_err(|error| error.to_string())?
 }
 
-fn position_request(method: &str, request: PositionRequest) -> Result<Value, String> {
-    let file = PathBuf::from(&request.path);
+#[tauri::command]
+pub async fn lsp_references(request: PositionRequest) -> Result<Vec<Reference>, String> {
+    blocking(move || {
+        let path = request.path.clone();
+        let text = request.text.clone();
+        let result = position_request(
+            "textDocument/references",
+            request,
+            json!({ "context": { "includeDeclaration": false } }),
+        )?;
+        let root = project_root(Path::new(&path));
+        Ok(references_with_previews(
+            parse_locations(&result),
+            &root,
+            &path,
+            &text,
+        ))
+    })
+    .await
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DocumentRequest {
+    path: String,
+    text: String,
+}
+
+#[tauri::command]
+pub async fn lsp_document_symbols(request: DocumentRequest) -> Result<Vec<Symbol>, String> {
+    blocking(move || {
+        let path = request.path.clone();
+        let result = document_request(
+            "textDocument/documentSymbol",
+            &request.path,
+            &request.text,
+            |uri| json!({ "textDocument": { "uri": uri } }),
+        )?;
+        Ok(parse_symbols(&result, &path))
+    })
+    .await
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceSymbolRequest {
+    /// An open file of the repository: picks its server and loads its project.
+    path: String,
+    text: String,
+    query: String,
+}
+
+#[tauri::command]
+pub async fn lsp_workspace_symbols(request: WorkspaceSymbolRequest) -> Result<Vec<Symbol>, String> {
+    blocking(move || {
+        let query = request.query;
+        let result = document_request(
+            "workspace/symbol",
+            &request.path,
+            &request.text,
+            |_| json!({ "query": query }),
+        )?;
+        let mut symbols = parse_symbols(&result, &request.path);
+        symbols.truncate(MAX_WORKSPACE_SYMBOLS);
+        Ok(symbols)
+    })
+    .await
+}
+
+async fn blocking<T: Send + 'static>(
+    work: impl FnOnce() -> Result<T, String> + Send + 'static,
+) -> Result<T, String> {
+    tauri::async_runtime::spawn_blocking(work)
+        .await
+        .map_err(|error| error.to_string())?
+}
+
+fn position_request(method: &str, request: PositionRequest, extra: Value) -> Result<Value, String> {
+    let position = json!({ "line": request.line, "character": request.character });
+    document_request(method, &request.path, &request.text, |uri| {
+        let mut params = json!({
+            "textDocument": { "uri": uri },
+            "position": position,
+        });
+        if let (Some(params), Value::Object(extra)) = (params.as_object_mut(), extra) {
+            params.extend(extra);
+        }
+        params
+    })
+}
+
+/// Syncs the file's text, then sends `method` with the params built from its URI.
+fn document_request(
+    method: &str,
+    path: &str,
+    text: &str,
+    params: impl FnOnce(&str) -> Value,
+) -> Result<Value, String> {
+    let file = PathBuf::from(path);
     let Some(language) = language_id(&file) else {
         return Ok(Value::Null);
     };
@@ -74,22 +215,13 @@ fn position_request(method: &str, request: PositionRequest) -> Result<Value, Str
     let root = project_root(&file);
     let server = server_for(&root, &file)?;
     let uri = file_uri(&file)?;
-    server.sync_document(&uri, language, &request.text)?;
-    server.request(
-        method,
-        json!({
-            "textDocument": { "uri": uri },
-            "position": { "line": request.line, "character": request.character },
-        }),
-        REQUEST_TIMEOUT,
-    )
+    server.sync_document(&uri, language, text)?;
+    server.request(method, params(&uri), REQUEST_TIMEOUT)
 }
 
 #[tauri::command]
 pub async fn lsp_close_document(path: String) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || close_document(Path::new(&path)))
-        .await
-        .map_err(|error| error.to_string())?
+    blocking(move || close_document(Path::new(&path))).await
 }
 
 fn close_document(file: &Path) -> Result<(), String> {
@@ -235,6 +367,114 @@ fn parse_hover(result: &Value) -> Option<String> {
     (!markdown.is_empty()).then(|| markdown.to_string())
 }
 
+/// The open editor's `text` stands in for `source` so unsaved lines preview as shown.
+fn references_with_previews(
+    locations: Vec<DefinitionLocation>,
+    root: &Path,
+    source: &str,
+    text: &str,
+) -> Vec<Reference> {
+    let mut files: HashMap<String, Option<Vec<String>>> = HashMap::new();
+    files.insert(
+        source.to_string(),
+        Some(text.lines().map(str::to_string).collect()),
+    );
+    locations
+        .into_iter()
+        .map(|location| {
+            let lines = files.entry(location.path.clone()).or_insert_with(|| {
+                std::fs::read_to_string(&location.path)
+                    .ok()
+                    .map(|content| content.lines().map(str::to_string).collect())
+            });
+            let preview = lines
+                .as_ref()
+                .and_then(|lines| lines.get(location.line as usize))
+                .cloned()
+                .unwrap_or_default();
+            Reference {
+                relative: relative_path(Path::new(&location.path), root),
+                line: location.line + 1,
+                column: location.character + 1,
+                preview,
+                path: location.path,
+            }
+        })
+        .collect()
+}
+
+fn relative_path(path: &Path, root: &Path) -> String {
+    path.strip_prefix(root)
+        .unwrap_or(path)
+        .to_string_lossy()
+        .replace('\\', "/")
+}
+
+/// Flattens `DocumentSymbol` trees and `SymbolInformation`/`WorkspaceSymbol` lists.
+fn parse_symbols(result: &Value, document: &str) -> Vec<Symbol> {
+    let root = project_root(Path::new(document));
+    let walk_root = root.as_path();
+    fn walk(
+        item: &Value,
+        container: Option<&str>,
+        document: &str,
+        root: &Path,
+        out: &mut Vec<Symbol>,
+    ) {
+        let Some(name) = item.get("name").and_then(Value::as_str) else {
+            return;
+        };
+        let kind = item.get("kind").and_then(Value::as_u64).unwrap_or(0) as u32;
+        let (path, start) = match item.get("location") {
+            Some(location) => {
+                let path = location
+                    .get("uri")
+                    .and_then(Value::as_str)
+                    .and_then(|uri| url::Url::parse(uri).ok()?.to_file_path().ok())
+                    .map(|path| path.to_string_lossy().into_owned());
+                (path, location.pointer("/range/start"))
+            }
+            None => (
+                Some(document.to_string()),
+                item.pointer("/selectionRange/start")
+                    .or_else(|| item.pointer("/range/start")),
+            ),
+        };
+        if let Some(path) = path {
+            let at = |key: &str| {
+                start
+                    .and_then(|start| start.get(key))
+                    .and_then(Value::as_u64)
+                    .unwrap_or(0) as u32
+            };
+            let container = item
+                .get("containerName")
+                .and_then(Value::as_str)
+                .or(container)
+                .filter(|name| !name.is_empty());
+            out.push(Symbol {
+                name: name.to_string(),
+                kind,
+                container: container.map(str::to_string),
+                relative: relative_path(Path::new(&path), root),
+                path,
+                line: at("line"),
+                character: at("character"),
+            });
+        }
+        if let Some(children) = item.get("children").and_then(Value::as_array) {
+            for child in children {
+                walk(child, Some(name), document, root, out);
+            }
+        }
+    }
+    let mut out = Vec::new();
+    for item in result.as_array().into_iter().flatten() {
+        walk(item, None, document, walk_root, &mut out);
+    }
+    out
+}
+
 type Pending = Arc<Mutex<HashMap<i64, mpsc::Sender<Result<Value, String>>>>>;
 
 struct Server {
@@ -351,9 +591,14 @@ impl Server {
                 "capabilities": {
                     "textDocument": {
                         "definition": { "linkSupport": true },
+                        "implementation": { "linkSupport": true },
+                        "typeDefinition": { "linkSupport": true },
+                        "references": {},
+                        "documentSymbol": { "hierarchicalDocumentSymbolSupport": true },
                         "hover": { "contentFormat": ["markdown", "plaintext"] },
                         "synchronization": { "didSave": false },
                     },
+                    "workspace": { "symbol": {} },
                 },
             }),
             INITIALIZE_TIMEOUT,
@@ -600,6 +845,81 @@ mod tests {
         );
         assert!(parse_hover(&json!({ "contents": "" })).is_none());
         assert!(parse_hover(&Value::Null).is_none());
+    }
+
+    #[test]
+    fn flattens_document_symbol_trees_and_symbol_information() {
+        let root = if cfg!(windows) { "C:/repo" } else { "/repo" };
+        let path = Path::new(root).join("a.ts").to_string_lossy().into_owned();
+        let tree = json!([{
+            "name": "Greeter",
+            "kind": 5,
+            "range": { "start": { "line": 0, "character": 0 } },
+            "selectionRange": { "start": { "line": 0, "character": 6 } },
+            "children": [{
+                "name": "greet",
+                "kind": 6,
+                "range": { "start": { "line": 1, "character": 2 } },
+                "selectionRange": { "start": { "line": 1, "character": 2 } },
+            }],
+        }]);
+        let symbols = parse_symbols(&tree, &path);
+        assert_eq!(symbols.len(), 2);
+        assert_eq!(symbols[0].container, None);
+        assert_eq!(symbols[0].character, 6);
+        assert_eq!(symbols[1].container.as_deref(), Some("Greeter"));
+        assert_eq!(symbols[1].line, 1);
+
+        let uri = url::Url::from_file_path(Path::new(root).join("b.ts"))
+            .unwrap()
+            .to_string();
+        let information = json!([{
+            "name": "helper",
+            "kind": 12,
+            "containerName": "",
+            "location": { "uri": uri, "range": { "start": { "line": 4, "character": 16 } } },
+        }]);
+        let symbols = parse_symbols(&information, &path);
+        assert_eq!(
+            symbols,
+            vec![Symbol {
+                name: "helper".into(),
+                kind: 12,
+                container: None,
+                path: Path::new(root).join("b.ts").to_string_lossy().into_owned(),
+                relative: "b.ts".into(),
+                line: 4,
+                character: 16,
+            }]
+        );
+        assert!(parse_symbols(&Value::Null, &path).is_empty());
+    }
+
+    #[test]
+    fn previews_references_from_the_unsaved_text() {
+        let root = Path::new(if cfg!(windows) { "C:/repo" } else { "/repo" });
+        let source = root.join("src/a.ts").to_string_lossy().into_owned();
+        let references = references_with_previews(
+            vec![
+                DefinitionLocation {
+                    path: source.clone(),
+                    line: 1,
+                    character: 2,
+                },
+                DefinitionLocation {
+                    path: root.join("missing.ts").to_string_lossy().into_owned(),
+                    line: 0,
+                    character: 0,
+                },
+            ],
+            root,
+            &source,
+            "const a = 1;\n  use(a);",
+        );
+        assert_eq!(references[0].relative, "src/a.ts");
+        assert_eq!((references[0].line, references[0].column), (2, 3));
+        assert_eq!(references[0].preview, "  use(a);");
+        assert_eq!(references[1].preview, "");
     }
 
     #[test]

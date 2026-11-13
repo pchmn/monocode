@@ -7,7 +7,6 @@ import {
 import {
   Decoration,
   EditorView,
-  keymap,
   showTooltip,
   ViewPlugin,
   type DecorationSet,
@@ -21,7 +20,8 @@ export const OPEN_DEFINITION_EVENT = "monocode:open-definition";
 
 export type OpenDefinitionDetail = EditorNavigation & { path: string };
 
-type DefinitionLocation = { path: string; line: number; character: number };
+/** 0-based, as the LSP commands return it. */
+export type LspLocation = { path: string; line: number; character: number };
 
 const SCRIPT_FILE = /\.(?:[cm]?[jt]s|[jt]sx)$/i;
 const MESSAGE_MS = 4000;
@@ -36,22 +36,13 @@ export function editorGoToDefinition(path: string): Extension {
     linkField,
     messageField,
     documentTracker(path),
-    keymap.of([
-      {
-        key: "F12",
-        run: (view) => {
-          void goToDefinition(view, path, view.state.selection.main.head);
-          return true;
-        },
-      },
-    ]),
     EditorView.domEventHandlers({
       mousedown(event, view) {
         if (event.button !== 0 || !isLinkModifier(event)) return false;
         const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
         if (pos == null) return false;
         event.preventDefault();
-        void goToDefinition(view, path, pos);
+        void goToLocation(view, path, pos, "lsp_definition");
         return true;
       },
       mousemove(event, view) {
@@ -88,30 +79,54 @@ function documentTracker(path: string) {
   }));
 }
 
-async function goToDefinition(view: EditorView, path: string, pos: number) {
+export function positionRequest(view: EditorView, path: string, pos: number) {
   const line = view.state.doc.lineAt(pos);
   markLspSynced(view);
-  let locations: DefinitionLocation[];
+  return {
+    path,
+    text: view.state.doc.toString(),
+    line: line.number - 1,
+    character: pos - line.from,
+  };
+}
+
+const NOT_FOUND: Record<string, string> = {
+  lsp_definition: "No definition found",
+  lsp_implementation: "No implementation found",
+  lsp_type_definition: "No type definition found",
+};
+
+export async function goToLocation(
+  view: EditorView,
+  path: string,
+  pos: number,
+  command: "lsp_definition" | "lsp_implementation" | "lsp_type_definition",
+) {
+  let locations: LspLocation[];
   try {
-    locations = await invoke<DefinitionLocation[]>("lsp_definition", {
-      request: {
-        path,
-        text: view.state.doc.toString(),
-        line: line.number - 1,
-        character: pos - line.from,
-      },
+    locations = await invoke<LspLocation[]>(command, {
+      request: positionRequest(view, path, pos),
     });
   } catch (error) {
-    showMessage(view, pos, String(error));
+    showLspMessage(view, pos, String(error));
     return;
   }
   const target = locations[0];
   if (!target) {
-    showMessage(view, pos, "No definition found");
+    showLspMessage(view, pos, NOT_FOUND[command]);
     return;
   }
   setLink(view, null);
-  if (target.path === path) {
+  openLocation(view, path, target);
+}
+
+/** Moves `view` when `target` is its own file, else opens the file there. */
+export function openLocation(
+  view: EditorView | null,
+  path: string | null,
+  target: LspLocation,
+) {
+  if (view && target.path === path) {
     revealInView(view, target);
     return;
   }
@@ -126,7 +141,7 @@ async function goToDefinition(view: EditorView, path: string, pos: number) {
   );
 }
 
-function revealInView(view: EditorView, target: DefinitionLocation) {
+function revealInView(view: EditorView, target: LspLocation) {
   const doc = view.state.doc;
   const line = doc.line(Math.min(target.line + 1, doc.lines));
   const head = Math.min(line.from + target.character, line.to);
@@ -182,7 +197,7 @@ const linkField = StateField.define<DecorationSet>({
 
 const setMessageEffect = StateEffect.define<Tooltip | null>();
 
-function showMessage(view: EditorView, pos: number, text: string) {
+export function showLspMessage(view: EditorView, pos: number, text: string) {
   view.dispatch({
     effects: setMessageEffect.of({
       pos,

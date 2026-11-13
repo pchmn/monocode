@@ -22,10 +22,23 @@ const KEYS = {
     ? `${MOD}${CTRL}${SHIFT}→`
     : `${ALT}${SHIFT}→`,
   ...(IS_MAC ? { "Editor: Go to Line": `${CTRL}G` } : {}),
+  "Editor: Go to Definition": "F12",
+  "Editor: Go to Implementation": `${MOD}F12`,
+  "Editor: Go to Type Definition": `${MOD}${SHIFT}F12`,
+  "Editor: Find All References": `${SHIFT}F12`,
+  "Editor: Go to Symbol in File": `${MOD}${SHIFT}O`,
 };
+
+// ⌘T stays Tab: New, a native menu accelerator the webview never receives.
+export const WORKSPACE_SYMBOL_COMMAND = "App: Go to Symbol in Workspace";
 
 export type EditorKeyCommand = keyof typeof KEYS | "Editor: Go to Line";
 
-export const EDITOR_KEYBINDINGS: KeybindingRow[] = Object.entries(KEYS).map(
-  ([command, keys]) => ({ command, keys, when: "editorFocus" }),
-);
+export const EDITOR_KEYBINDINGS: KeybindingRow[] = [
+  ...Object.entries(KEYS).map(([command, keys]) => ({
+    command,
+    keys,
+    when: "editorFocus",
+  })),
+  { command: WORKSPACE_SYMBOL_COMMAND, keys: `${MOD}${ALT}O`, when: "Always" },
+];
