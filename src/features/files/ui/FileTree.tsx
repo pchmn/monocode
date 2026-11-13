@@ -65,6 +65,7 @@ import {
 } from "../../../shared/lib/drag";
 import { ExplorerMenu, type ExplorerMenuItem } from "./ExplorerMenu";
 import { FileTypeIcon } from "./FileTypeIcon";
+import { useRevealInTree } from "../model/explorerReveal";
 import { ExplorerToolbar, type ExplorerActions } from "./ExplorerToolbar";
 
 const GIT_STATUS_COLOR: Record<string, string> = {
@@ -507,6 +508,7 @@ export const FileTree = memo(function FileTree({
     },
   };
   useImperativeHandle(actionsRef, () => actions);
+  useRevealInTree(cwd, rootRef, expandDirs, onSelect);
 
   const startRename = (path: string) => {
     if (path === cwd) return;
