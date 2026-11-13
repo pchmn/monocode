@@ -27,6 +27,10 @@ const KEYS = {
   "Editor: Go to Type Definition": `${MOD}${SHIFT}F12`,
   "Editor: Find All References": `${SHIFT}F12`,
   "Editor: Go to Symbol in File": `${MOD}${SHIFT}O`,
+  // ⌘. is App: Switch Model and ⇧⌘Space App: Quick Composer, both native.
+  "Editor: Quick Fix": `${ALT}Enter`,
+  "Editor: Organize Imports": `${ALT}${SHIFT}O`,
+  "Editor: Trigger Parameter Hints": `${CTRL}${SHIFT}Space`,
 };
 
 // ⌘T stays Tab: New, a native menu accelerator the webview never receives.

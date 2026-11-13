@@ -100,6 +100,7 @@ import { editorVscodeKeys } from "../editor/editorVscodeKeys";
 import { editorGoToDefinition } from "../editor/editorGoToDefinition";
 import { editorHover } from "../editor/editorHover";
 import { editorLspNavigation } from "../editor/editorLspNavigation";
+import { editorLspAssist } from "../editor/editorLspAssist";
 import { editorLanguageServer } from "../editor/lsp/languageServer";
 import { FilePreviewSearch } from "./FilePreviewSearch";
 
@@ -817,6 +818,7 @@ export function CodeMirrorEditor({
         editorGoToDefinition(path),
         editorHover(path),
         editorLspNavigation(path),
+        editorLspAssist(path),
         Prec.high(
           keymap.of([
             ...foldKeymap,

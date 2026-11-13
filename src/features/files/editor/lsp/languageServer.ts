@@ -1,5 +1,5 @@
 import { LSPClient, LSPPlugin } from "@codemirror/lsp-client";
-import { Compartment, type Extension } from "@codemirror/state";
+import { Compartment, StateEffect, type Extension } from "@codemirror/state";
 import { EditorView, ViewPlugin } from "@codemirror/view";
 import { invoke } from "@tauri-apps/api/core";
 import { EditorWorkspace } from "./editorWorkspace";
@@ -15,13 +15,31 @@ type LspDocument = {
 // The first request on a large monorepo waits for its project to load.
 const REQUEST_TIMEOUT_MS = 30_000;
 const SYNC_DELAY_MS = 250;
-// Beyond the client's defaults, for go to definition and the symbol pickers.
+// Background requests (diagnostics, completion) stop retrying a missing tsgo for this long.
+const RETRY_AFTER_FAILURE_MS = 60_000;
+// Merged into the client's defaults, which already cover diagnostics and
+// signature help; arrays there must not be repeated (they merge as objects).
 const CAPABILITIES = {
   textDocument: {
     definition: { linkSupport: true },
     implementation: { linkSupport: true },
     typeDefinition: { linkSupport: true },
     documentSymbol: { hierarchicalDocumentSymbolSupport: true },
+    completion: {
+      completionItem: {
+        snippetSupport: true,
+        labelDetailsSupport: true,
+        resolveSupport: {
+          properties: ["documentation", "detail", "additionalTextEdits"],
+        },
+      },
+    },
+    codeAction: {
+      codeActionLiteralSupport: {
+        codeActionKind: { valueSet: ["quickfix", "source", "refactor"] },
+      },
+      resolveSupport: { properties: ["edit"] },
+    },
   },
   workspace: { symbol: {} },
 };
@@ -35,6 +53,7 @@ class ServerConnection {
   readonly client: LSPClient;
   private transport: TauriTransport | null = null;
   private starting: Promise<void> | null = null;
+  private failedAt = -Infinity;
 
   constructor(
     readonly root: string,
@@ -48,13 +67,21 @@ class ServerConnection {
     });
   }
 
-  ready(path: string): Promise<void> {
+  ready(path: string, background = false): Promise<void> {
     if (this.transport && !this.transport.closed) {
       return this.client.initializing.then(() => {});
     }
-    this.starting ??= this.start(path).finally(() => {
-      this.starting = null;
-    });
+    if (background && Date.now() - this.failedAt < RETRY_AFTER_FAILURE_MS) {
+      return Promise.reject(new Error("tsgo unavailable"));
+    }
+    this.starting ??= this.start(path)
+      .catch((error: unknown) => {
+        this.failedAt = Date.now();
+        throw error;
+      })
+      .finally(() => {
+        this.starting = null;
+      });
     return this.starting;
   }
 
@@ -147,6 +174,15 @@ const debouncedSync = ViewPlugin.define((view) => {
   };
 });
 
+/** Dispatched once tsgo first answers for an editor. */
+export const lspServed = StateEffect.define<null>();
+
+const servedViews = new WeakSet<EditorView>();
+
+export function isLspServed(view: EditorView): boolean {
+  return servedViews.has(view);
+}
+
 /**
  * Sends a request about this editor's file, starting the server if needed.
  * Resolves to `undefined` when no server handles the file.
@@ -155,10 +191,11 @@ export async function lspRequest<Result>(
   view: EditorView,
   method: string,
   params: (plugin: LSPPlugin) => unknown,
+  { background = false }: { background?: boolean } = {},
 ): Promise<{ result: Result; plugin: LSPPlugin; root: string } | undefined> {
   const session = await sessions.get(view);
   if (!session) return undefined;
-  await session.connection.ready(session.path);
+  await session.connection.ready(session.path, background);
   const plugin = LSPPlugin.get(view);
   if (!plugin) return undefined;
   plugin.client.sync();
@@ -166,6 +203,10 @@ export async function lspRequest<Result>(
     method,
     params(plugin),
   );
+  if (!servedViews.has(view)) {
+    servedViews.add(view);
+    view.dispatch({ effects: lspServed.of(null) });
+  }
   return { result, plugin, root: session.connection.root };
 }
 

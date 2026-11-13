@@ -9,6 +9,7 @@ let nextRoot = 0;
 export function fakeTsgo(
   invoke: Mock,
   respond: (method: string, params: any) => unknown = () => null,
+  capabilities: Record<string, unknown> = {},
 ) {
   const root = `/repo${nextRoot++}`;
   const sent: Message[] = [];
@@ -33,7 +34,7 @@ export function fakeTsgo(
       if (message.id == null || !message.method) continue;
       const result =
         message.method === "initialize"
-          ? { capabilities: { textDocumentSync: 2 } }
+          ? { capabilities: { textDocumentSync: 2, ...capabilities } }
           : respond(message.method, message.params);
       queueMicrotask(() =>
         channel?.onmessage(

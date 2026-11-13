@@ -1,8 +1,9 @@
 import { ensureSyntaxTree, syntaxTree } from "@codemirror/language";
-import { diagnosticCount, linter, type Diagnostic } from "@codemirror/lint";
+import { linter, type Diagnostic } from "@codemirror/lint";
 import type { EditorState, Extension } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { basename } from "../../../platform/tauri/fs";
+import { lintErrorCount, withLspDiagnostics } from "./editorLspDiagnostics";
 
 /**
  * Syntax diagnostics straight off the Lezer parse tree.
@@ -62,7 +63,7 @@ export function editorLint(
 ): Extension {
   if (!isLintable(path)) return [];
   return [
-    linter((view) => syntaxDiagnostics(view.state), {
+    linter(withLspDiagnostics((view) => syntaxDiagnostics(view.state)), {
       delay: LINT_DELAY_MS,
       /**
        * The language arrives in a compartment after an async import, and large
@@ -85,7 +86,7 @@ export function editorLint(
 function errorCountReporter(onErrorCount: (count: number) => void): Extension {
   let reported = 0;
   return EditorView.updateListener.of((update) => {
-    const count = diagnosticCount(update.state);
+    const count = lintErrorCount(update.state);
     if (count === reported) return;
     reported = count;
     onErrorCount(count);
