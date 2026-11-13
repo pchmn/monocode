@@ -18,7 +18,7 @@ import {
   type LspSymbol,
   type RankedSymbol,
 } from "../model/lspSymbols";
-import { documentText, type ScriptEditor } from "../editor/editorLspNavigation";
+import type { ScriptEditor } from "../editor/editorLspNavigation";
 import { openLocation } from "../editor/editorGoToDefinition";
 
 const WORKSPACE_DEBOUNCE_MS = 150;
@@ -46,7 +46,7 @@ export function SymbolPicker({ scope, source, onClose }: Props) {
   useEffect(() => {
     if (!source || scope !== "document") return;
     let cancelled = false;
-    documentSymbols(documentText(source))
+    documentSymbols(source)
       .then((next) => !cancelled && setSymbols(next))
       .catch((err: unknown) => !cancelled && setError(String(err)))
       .finally(() => !cancelled && setLoading(false));
@@ -66,7 +66,7 @@ export function SymbolPicker({ scope, source, onClose }: Props) {
     let cancelled = false;
     setLoading(true);
     const timer = window.setTimeout(() => {
-      workspaceSymbols(documentText(source), trimmed)
+      workspaceSymbols(source, trimmed)
         .then((next) => {
           if (cancelled) return;
           setSymbols(next);

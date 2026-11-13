@@ -1,10 +1,7 @@
 import type { Extension } from "@codemirror/state";
 import { EditorView, ViewPlugin } from "@codemirror/view";
-import {
-  goToLocation,
-  markLspSynced,
-  supportsGoToDefinition,
-} from "./editorGoToDefinition";
+import { goToLocation } from "./editorGoToDefinition";
+import { supportsLanguageServer } from "./lsp/languageServer";
 import { rebindableKeymap, type EditorKey } from "./editorVscodeKeys";
 
 export const LSP_NAVIGATION_EVENT = "monocode:lsp-navigation";
@@ -33,20 +30,15 @@ export function requestLspNavigation(request: LspNavigationRequest) {
   );
 }
 
-export function documentText(editor: ScriptEditor) {
-  markLspSynced(editor.view);
-  return { path: editor.path, text: editor.view.state.doc.toString() };
-}
-
 export function editorLspNavigation(path: string): Extension {
-  if (!supportsGoToDefinition(path)) return [];
+  if (!supportsLanguageServer(path)) return [];
   const caret = (view: EditorView) => view.state.selection.main.head;
   const keys: EditorKey[] = [
     {
       command: "Editor: Go to Definition",
       key: "F12",
       run: (view) => {
-        void goToLocation(view, path, caret(view), "lsp_definition");
+        void goToLocation(view, path, caret(view), "textDocument/definition");
         return true;
       },
     },
@@ -54,7 +46,12 @@ export function editorLspNavigation(path: string): Extension {
       command: "Editor: Go to Implementation",
       key: "Mod-F12",
       run: (view) => {
-        void goToLocation(view, path, caret(view), "lsp_implementation");
+        void goToLocation(
+          view,
+          path,
+          caret(view),
+          "textDocument/implementation",
+        );
         return true;
       },
     },
@@ -62,7 +59,12 @@ export function editorLspNavigation(path: string): Extension {
       command: "Editor: Go to Type Definition",
       key: "Shift-Mod-F12",
       run: (view) => {
-        void goToLocation(view, path, caret(view), "lsp_type_definition");
+        void goToLocation(
+          view,
+          path,
+          caret(view),
+          "textDocument/typeDefinition",
+        );
         return true;
       },
     },

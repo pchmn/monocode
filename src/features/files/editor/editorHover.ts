@@ -1,31 +1,29 @@
 import type { Extension } from "@codemirror/state";
 import { EditorView, hoverTooltip } from "@codemirror/view";
-import { invoke } from "@tauri-apps/api/core";
 import { languageForPath } from "./editorLanguage";
-import { markLspSynced, supportsGoToDefinition } from "./editorGoToDefinition";
+import { lspRequest, supportsLanguageServer } from "./lsp/languageServer";
 import { highlightSource } from "./syntaxTokens";
 
 const HOVER_DELAY_MS = 300;
 
 export function editorHover(path: string): Extension {
-  if (!supportsGoToDefinition(path)) return [];
+  if (!supportsLanguageServer(path)) return [];
   return [
     hoverTooltip(
       async (view, pos) => {
         const word = view.state.wordAt(pos);
         if (!word) return null;
-        const line = view.state.doc.lineAt(pos);
-        markLspSynced(view);
         let markdown: string | null;
         try {
-          markdown = await invoke<string | null>("lsp_hover", {
-            request: {
-              path,
-              text: view.state.doc.toString(),
-              line: line.number - 1,
-              character: pos - line.from,
-            },
-          });
+          const response = await lspRequest<unknown>(
+            view,
+            "textDocument/hover",
+            (plugin) => ({
+              textDocument: { uri: plugin.uri },
+              position: plugin.toPosition(pos),
+            }),
+          );
+          markdown = response ? hoverMarkdown(response.result) : null;
         } catch {
           return null;
         }
@@ -42,6 +40,28 @@ export function editorHover(path: string): Extension {
     ),
     hoverTheme,
   ];
+}
+
+type MarkedString = string | { language?: string; value?: string };
+
+// Hover contents as Markdown, whichever of the LSP shapes the server sent.
+export function hoverMarkdown(result: unknown): string | null {
+  const contents = (result as { contents?: MarkedString | MarkedString[] })
+    ?.contents;
+  const marked = (value: MarkedString) => {
+    if (typeof value === "string") return value;
+    if (typeof value?.value !== "string") return "";
+    return value.language
+      ? `\`\`\`${value.language}\n${value.value}\n\`\`\``
+      : value.value;
+  };
+  if (contents == null) return null;
+  const markdown = (Array.isArray(contents) ? contents : [contents])
+    .map(marked)
+    .filter(Boolean)
+    .join("\n\n")
+    .trim();
+  return markdown || null;
 }
 
 type Segment = { code: string; language: string } | { text: string };
