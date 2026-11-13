@@ -20,6 +20,7 @@ import {
   loadThemeSaturation,
   watchSystemColorScheme,
 } from "../settings/model/appearance";
+import { nativeWindowTheme } from "../settings/model/nativeWindowTheme";
 import { FloatingMonoChat } from "./ui/FloatingMonoChat";
 import { homeDir } from "../../platform/tauri/fs";
 import { setHomeDir } from "../../shared/lib/paths";
@@ -48,10 +49,10 @@ function applyFloatingAppearance() {
   applySidebarOpacity(loadSidebarOpacity());
   applySidebarBlur(loadSidebarBlur());
   applyBodyGlass(loadBodyGlass());
-  const scheme = applyThemePreference(loadThemePreference());
+  applyThemePreference(loadThemePreference());
   activateWindowAppearance();
   void getCurrentWindow()
-    .setTheme(scheme)
+    .setTheme(nativeWindowTheme())
     .catch(() => undefined);
 }
 

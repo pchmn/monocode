@@ -15,6 +15,7 @@ import {
   loadThemePreference,
   loadThemeSaturation,
 } from "../settings/model/appearance";
+import { nativeWindowTheme } from "../settings/model/nativeWindowTheme";
 import { QuickGitPopup } from "./ui/QuickGitPopup";
 import { QuickComposer } from "./ui/QuickComposer";
 import "../../styles/index.css";
@@ -29,15 +30,16 @@ function applyAppearance() {
   applyAccentColor(loadAccentColor());
   applyThemeTint(loadThemeHue(), loadThemeSaturation());
   applyThemeDarkLightness(loadThemeDarkLightness());
-  const scheme = applyThemePreference(loadThemePreference());
+  applyThemePreference(loadThemePreference());
   // The native blur follows the window's appearance, not the page's, so
   // match it to the app theme rather than the system one.
   void getCurrentWindow()
-    .setTheme(scheme)
+    .setTheme(nativeWindowTheme())
     .catch(() => undefined);
 }
 
 applyAppearance();
+window.addEventListener("storage", applyAppearance);
 installNativeContextMenuGuard();
 installMiddleClickLinkGuard();
 
