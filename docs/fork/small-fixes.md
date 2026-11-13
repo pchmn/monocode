@@ -50,3 +50,8 @@ Upstream bug fixes with no feature of their own. On each sync, check whether ups
 - Fork files: `src/shared/lib/middleClickLinks.ts`
 - `src/shared/lib/middleClickLinks.test.ts`
 - Manual: middle-click a link or a `#123` reference in a session; it opens in the default browser and the app stays put.
+
+## A subagent's approval keeps the main reply whole
+- `src/integrations/harness/core/apply.ts` — `leavesStreamOpen` in `appendBlock`, `patchStreaming`, `sealLastStream`: a tool row arriving with its approval (a subagent's) no longer seals the streaming reply
+- `src/integrations/harness/core/apply.test.ts` — "keeps a reply whole when a subagent asks for approval mid-stream"
+- Manual: while a Claude reply streams, have a background subagent ask for approval; the reply stays one block.
