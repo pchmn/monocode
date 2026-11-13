@@ -46,6 +46,10 @@ import { isLightScheme } from "../../settings/model/appearance";
 import { loadAutosave, loadFormatOnSave } from "../../settings/model/settings";
 import { formatText } from "../../../shared/lib/format";
 import {
+  hasProjectSaveCommand,
+  runProjectSaveCommand,
+} from "../model/projectSaveCommand";
+import {
   basename,
   gitDiffFiles,
   gitFileDiff,
@@ -345,7 +349,7 @@ export function FileEditor({
   }, [loadState.status, path, reloadFromDisk]);
 
   const save = useCallback(
-    async (content: string) => {
+    async (content: string, automatic = false) => {
       const generation = ++saveGeneration.current;
       setSaveState({ status: "saving" });
       const serializedContent = restoreLineEnding(content, eolRef.current);
@@ -356,9 +360,16 @@ export function FileEditor({
       try {
         await operation;
         await syncWatchedMtime(path);
+        const hookError = automatic
+          ? null
+          : await runProjectSaveCommand(path, reloadFromDisk);
         notifyGitChanged();
         if (generation === saveGeneration.current) {
-          setSaveState({ status: "saved" });
+          setSaveState(
+            hookError
+              ? { status: "error", message: hookError }
+              : { status: "saved" },
+          );
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -368,7 +379,7 @@ export function FileEditor({
         throw error;
       }
     },
-    [path],
+    [path, reloadFromDisk],
   );
 
   const stageGit = useCallback(
@@ -588,7 +599,7 @@ export function CodeMirrorEditor({
   navigation?: EditorNavigationRequest | null;
   onDirtyChange: (dirty: boolean) => void;
   onErrorCountChange: (count: number) => void;
-  onSave: (content: string) => Promise<void>;
+  onSave: (content: string, automatic?: boolean) => Promise<void>;
   canAutosave: () => boolean;
   onStageGit?: (contents: string) => Promise<void>;
   onDocChange?: (content: string) => void;
@@ -729,7 +740,11 @@ export function CodeMirrorEditor({
       const generation = ++saveGeneration;
       void (async () => {
         const before = view.state.doc.toString();
-        if (formatOnSave && loadFormatOnSave()) {
+        if (
+          formatOnSave &&
+          loadFormatOnSave() &&
+          !(await hasProjectSaveCommand(path))
+        ) {
           const result = await formatText(
             path,
             before,
@@ -756,7 +771,7 @@ export function CodeMirrorEditor({
         const document = view.state.doc;
         if (automatic && !canAutosaveRef.current()) return;
         try {
-          await onSaveRef.current(document.toString());
+          await onSaveRef.current(document.toString(), automatic);
         } catch {
           if (
             retryPendingAutosave &&
