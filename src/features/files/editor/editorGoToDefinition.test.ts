@@ -7,6 +7,10 @@ import {
   OPEN_DEFINITION_EVENT,
   supportsGoToDefinition,
 } from "./editorGoToDefinition";
+import {
+  LSP_NAVIGATION_EVENT,
+  editorLspNavigation,
+} from "./editorLspNavigation";
 
 const invoke = vi.hoisted(() => vi.fn());
 vi.mock("@tauri-apps/api/core", async (original) => ({
@@ -23,16 +27,21 @@ function editor(doc: string, cursor: number) {
     state: EditorState.create({
       doc,
       selection: EditorSelection.cursor(cursor),
-      extensions: editorGoToDefinition(PATH),
+      extensions: [editorGoToDefinition(PATH), editorLspNavigation(PATH)],
     }),
   });
 }
 
-function pressF12() {
-  const event = new KeyboardEvent("keydown", { key: "F12" });
+function press(init: KeyboardEventInit = {}) {
+  const event = new KeyboardEvent("keydown", { key: "F12", ...init });
   Object.defineProperty(event, "keyCode", { value: 123 });
   return runScopeHandlers(view, event, "editor");
 }
+
+const pressF12 = () => press();
+const MOD = /Mac/.test(navigator.platform)
+  ? { metaKey: true }
+  : { ctrlKey: true };
 
 afterEach(() => {
   view?.destroy();
@@ -101,5 +110,49 @@ describe("go to definition", () => {
     expect(invoke).toHaveBeenLastCalledWith("lsp_close_document", {
       path: PATH,
     });
+  });
+
+  it("goes to the implementation and type definition with their own command", async () => {
+    invoke.mockResolvedValue([{ path: PATH, line: 0, character: 6 }]);
+    editor("class Greeter {}\nnew Greeter();", 22);
+
+    press(MOD);
+    await vi.waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith(
+        "lsp_implementation",
+        expect.anything(),
+      ),
+    );
+    press({ ...MOD, shiftKey: true });
+    await vi.waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith(
+        "lsp_type_definition",
+        expect.anything(),
+      ),
+    );
+  });
+
+  it("says when there is no implementation", async () => {
+    invoke.mockResolvedValue([]);
+    editor("greet();", 1);
+
+    press(MOD);
+    await vi.waitFor(() =>
+      expect(
+        document.querySelector(".cm-definition-message")?.textContent,
+      ).toBe("No implementation found"),
+    );
+  });
+
+  it("asks the app for the references at the caret", () => {
+    const requested = vi.fn();
+    window.addEventListener(LSP_NAVIGATION_EVENT, requested);
+    editor("greet();", 2);
+
+    expect(press({ shiftKey: true })).toBe(true);
+    window.removeEventListener(LSP_NAVIGATION_EVENT, requested);
+    const detail = (requested.mock.calls[0][0] as CustomEvent).detail;
+    expect(detail).toMatchObject({ kind: "references", pos: 2 });
+    expect(detail.source.path).toBe(PATH);
   });
 });

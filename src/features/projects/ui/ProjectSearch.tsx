@@ -36,7 +36,7 @@ type Props = {
     }
 );
 
-type MatchGroup = {
+export type MatchGroup = {
   path: string;
   relative: string;
   name: string;
@@ -336,7 +336,7 @@ function Toggle({
   );
 }
 
-function groupMatches(matches: ProjectSearchMatch[]): MatchGroup[] {
+export function groupMatches(matches: ProjectSearchMatch[]): MatchGroup[] {
   const byPath = new Map<string, MatchGroup>();
   for (const match of matches) {
     const existing = byPath.get(match.path);

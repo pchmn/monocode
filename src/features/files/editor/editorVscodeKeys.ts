@@ -48,7 +48,7 @@ function insertLineAbove(view: EditorView): boolean {
   return true;
 }
 
-type EditorKey = {
+export type EditorKey = {
   command: EditorKeyCommand;
   key?: string;
   mac?: string;
@@ -117,34 +117,36 @@ const EDITOR_KEYS: EditorKey[] = [
   { command: "Editor: Go to Line", mac: "Ctrl-g", run: gotoLine },
 ];
 
-const defaultChords = keymap.of(
-  EDITOR_KEYS.map(({ command, key, mac, run }) => ({
-    key,
-    mac,
-    // A rebound or disabled command must not fall through to CodeMirror's.
-    run: (view) => (command in loadKeybindingOverrides() ? true : run(view)),
-    preventDefault: true,
-  })),
-);
-
-const reboundChords = EditorView.domEventHandlers({
-  keydown(event, view) {
-    if (event.isComposing) return false;
-    const overrides = loadKeybindingOverrides();
-    for (const { command, run } of EDITOR_KEYS) {
-      const shortcut = overrides[command]?.shortcut;
-      if (!shortcut || !shortcutMatches(shortcut, event)) continue;
-      event.preventDefault();
-      run(view);
-      return true;
-    }
-    return false;
-  },
-});
+/** Default chords plus the ones rebound in Settings; a disabled command does nothing. */
+export function rebindableKeymap(keys: EditorKey[]): Extension {
+  const defaultChords = keymap.of(
+    keys.map(({ command, key, mac, run }) => ({
+      key,
+      mac,
+      // A rebound or disabled command must not fall through to CodeMirror's.
+      run: (view) => (command in loadKeybindingOverrides() ? true : run(view)),
+      preventDefault: true,
+    })),
+  );
+  const reboundChords = EditorView.domEventHandlers({
+    keydown(event, view) {
+      if (event.isComposing) return false;
+      const overrides = loadKeybindingOverrides();
+      for (const { command, run } of keys) {
+        const shortcut = overrides[command]?.shortcut;
+        if (!shortcut || !shortcutMatches(shortcut, event)) continue;
+        event.preventDefault();
+        run(view);
+        return true;
+      }
+      return false;
+    },
+  });
+  return [Prec.highest(reboundChords), Prec.high(defaultChords)];
+}
 
 export const editorVscodeKeys: Extension = [
-  Prec.highest(reboundChords),
-  Prec.high(defaultChords),
+  rebindableKeymap(EDITOR_KEYS),
   EditorState.allowMultipleSelections.of(true),
   EditorView.clickAddsSelectionRange.of((event) => event.altKey),
   rectangularSelection({
