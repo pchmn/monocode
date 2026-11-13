@@ -81,7 +81,7 @@ export function hoverSegments(markdown: string): Segment[] {
   return segments;
 }
 
-async function renderHover(markdown: string): Promise<HTMLElement> {
+export async function renderHover(markdown: string): Promise<HTMLElement> {
   const dom = document.createElement("div");
   dom.className = "cm-lsp-hover";
   for (const segment of hoverSegments(markdown)) {

@@ -65,6 +65,22 @@ describe("language server sync", () => {
     });
   });
 
+  it("keeps capability lists as arrays once merged with the client's defaults", async () => {
+    const server = fakeTsgo(invoke);
+    const view = editor("const a = 1;");
+    await attached(view);
+    await hover(view);
+    const objectArrays: string[] = [];
+    const walk = (value: unknown, path: string) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) return;
+      if ("0" in value) objectArrays.push(path);
+      for (const [key, child] of Object.entries(value))
+        walk(child, `${path}.${key}`);
+    };
+    walk(server.sent[0].params.capabilities, "capabilities");
+    expect(objectArrays).toEqual([]);
+  });
+
   it("sends one batched incremental change after typing pauses", async () => {
     const server = fakeTsgo(invoke);
     const doc = "x".repeat(2000);
