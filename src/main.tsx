@@ -31,6 +31,7 @@ import "./styles/gruvboxTheme.css";
 import "./styles/codeFonts.css";
 import "./styles/tabDividers.css";
 import "./styles/userBubble.css";
+import "./styles/htmlFilePreview.css";
 
 performance.mark("monocode:bootstrap");
 // Let local boot IPC overlap loading/evaluating the workspace UI.

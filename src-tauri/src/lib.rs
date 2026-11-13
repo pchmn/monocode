@@ -21,6 +21,7 @@ mod github_accounts;
 mod gitlab;
 mod harness;
 mod harness_updates;
+mod html_file_preview;
 mod inbox_media;
 mod jira;
 mod jsonc;
@@ -287,7 +288,8 @@ pub fn run() {
                 .build(),
         )
         .register_uri_scheme_protocol(artifacts::HTML_SCHEME, |ctx, request| {
-            artifacts::serve_html(ctx.app_handle(), &request)
+            html_file_preview::serve(&request)
+                .unwrap_or_else(|| artifacts::serve_html(ctx.app_handle(), &request))
         })
         .manage(harness::HarnessHost::new())
         .manage(pty::PtyHost::new())
@@ -582,6 +584,8 @@ pub fn run() {
             artifacts::artifacts_get,
             artifacts::artifacts_upsert,
             artifacts::artifacts_delete,
+            html_file_preview::html_file_preview_set,
+            html_file_preview::html_file_preview_clear,
             notes::notes_delete,
             notes::notes_save_image,
             notes::notes_image_path,
