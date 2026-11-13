@@ -96,6 +96,8 @@ import { editorLint } from "../editor/editorLint";
 import { editorSearch } from "../editor/editorSearch";
 import { editorScrollbar } from "../editor/editorScrollbar";
 import { editorVscodeKeys } from "../editor/editorVscodeKeys";
+import { editorGoToDefinition } from "../editor/editorGoToDefinition";
+import { editorHover } from "../editor/editorHover";
 import { FilePreviewSearch } from "./FilePreviewSearch";
 
 type EditorNavigationRequest = EditorNavigation & { token: number };
@@ -801,6 +803,8 @@ export function CodeMirrorEditor({
         editorScrollbar,
         editorSearch,
         editorVscodeKeys,
+        editorGoToDefinition(path),
+        editorHover(path),
         Prec.high(
           keymap.of([
             ...foldKeymap,
@@ -846,7 +850,9 @@ export function CodeMirrorEditor({
           scheduleAutosave();
         }),
         EditorView.domEventHandlers({
-          blur: () => {
+          blur: (_event, blurred) => {
+            // A focused view blurs while it is destroyed; the next view keeps the line.
+            if (viewRef.current !== blurred) return;
             pendingNavigationRef.current = null;
           },
         }),

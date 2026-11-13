@@ -173,6 +173,7 @@ import {
 import { MenuBar } from "./shell/MenuBar";
 import { FilePicker } from "../features/files/ui/FilePicker";
 import { useExplorerRevealSource } from "../features/files/model/explorerReveal";
+import { useOpenDefinitionEvents } from "../features/files/hooks/useOpenDefinitionEvents";
 import {
   DeleteSessionDialog,
   type SessionDeleteChoice,
@@ -6990,6 +6991,7 @@ function Workspace({
     },
     [activateTab, insertBesideActive, closeMonoView],
   );
+  useOpenDefinitionEvents(onOpenFile);
 
   const onOpenPlan = useCallback(
     (sessionId: string, blockId: string) => {

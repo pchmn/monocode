@@ -137,6 +137,34 @@ describe("file pane source navigation", () => {
     );
   });
 
+  it("keeps a pending location when the focused editor view is rebuilt", async () => {
+    disk.content = "first line";
+    const first = await render("/repo/rebuilt.txt", 3);
+    first.focus();
+    const [file] = paneProps.pane.files;
+    const pane = { ...paneProps.pane, files: [{ ...file, review: true }] };
+    await act(async () =>
+      root.render(createElement(FilePane, { ...paneProps, pane })),
+    );
+    const editor = () =>
+      EditorView.findFromDOM(
+        container.querySelector<HTMLElement>(".cm-editor")!,
+      )!;
+    await act(async () => vi.waitFor(() => expect(editor()).not.toBe(first)));
+    await act(async () => {
+      disk.content = "first line\nsecond line\nthird line";
+      invalidateWatchedFiles(["/repo/rebuilt.txt"]);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+    await act(async () =>
+      vi.waitFor(() =>
+        expect(
+          editor().state.doc.lineAt(editor().state.selection.main.head).number,
+        ).toBe(3),
+      ),
+    );
+  });
+
   it("reapplies the requested location when a pending file reload adds its line", async () => {
     // Watcher stat calls can arrive before the initial read on slower runners.
     // Model the file itself instead of whichever IPC call happens to run next.
