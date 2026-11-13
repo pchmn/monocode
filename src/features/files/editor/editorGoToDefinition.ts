@@ -8,41 +8,41 @@ import {
   Decoration,
   EditorView,
   showTooltip,
-  ViewPlugin,
   type DecorationSet,
   type Tooltip,
 } from "@codemirror/view";
-import { invoke } from "@tauri-apps/api/core";
 import { IS_MAC } from "../../../platform/tauri/platform";
 import type { EditorNavigation } from "../../search/model/search";
+import {
+  lspErrorMessage,
+  lspRequest,
+  supportsLanguageServer,
+  uriToPath,
+} from "./lsp/languageServer";
 
 export const OPEN_DEFINITION_EVENT = "monocode:open-definition";
 
 export type OpenDefinitionDetail = EditorNavigation & { path: string };
 
-/** 0-based, as the LSP commands return it. */
+/** 0-based, as LSP counts. */
 export type LspLocation = { path: string; line: number; character: number };
 
-const SCRIPT_FILE = /\.(?:[cm]?[jt]s|[jt]sx)$/i;
+type Position = { line: number; character: number };
+
 const MESSAGE_MS = 4000;
 
-export function supportsGoToDefinition(path: string): boolean {
-  return SCRIPT_FILE.test(path);
-}
-
 export function editorGoToDefinition(path: string): Extension {
-  if (!supportsGoToDefinition(path)) return [];
+  if (!supportsLanguageServer(path)) return [];
   return [
     linkField,
     messageField,
-    documentTracker(path),
     EditorView.domEventHandlers({
       mousedown(event, view) {
         if (event.button !== 0 || !isLinkModifier(event)) return false;
         const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
         if (pos == null) return false;
         event.preventDefault();
-        void goToLocation(view, path, pos, "lsp_definition");
+        void goToLocation(view, path, pos, "textDocument/definition");
         return true;
       },
       mousemove(event, view) {
@@ -63,57 +63,60 @@ function isLinkModifier(event: MouseEvent | KeyboardEvent): boolean {
   return mod && !event.altKey && !event.shiftKey;
 }
 
-const syncedViews = new WeakSet<EditorView>();
-
-export function markLspSynced(view: EditorView) {
-  syncedViews.add(view);
+// Location has `uri`/`range`; LocationLink has `targetUri`/`targetSelectionRange`.
+export function lspLocations(result: unknown): LspLocation[] {
+  const items: unknown[] = Array.isArray(result)
+    ? result
+    : result
+      ? [result]
+      : [];
+  return items.flatMap((item) => {
+    const link = item as {
+      uri?: string;
+      targetUri?: string;
+      range?: { start: Position };
+      targetSelectionRange?: { start: Position };
+    } | null;
+    const uri = link?.uri ?? link?.targetUri;
+    const path = typeof uri === "string" ? uriToPath(uri) : null;
+    const start = (link?.targetSelectionRange ?? link?.range)?.start;
+    return path && start
+      ? [{ path, line: start.line, character: start.character }]
+      : [];
+  });
 }
 
-// Lets tsgo drop a closed file's project instead of holding it until it stops.
-function documentTracker(path: string) {
-  return ViewPlugin.define((view) => ({
-    destroy() {
-      if (!syncedViews.has(view)) return;
-      void invoke("lsp_close_document", { path }).catch(() => {});
-    },
-  }));
-}
+export type LocationMethod =
+  | "textDocument/definition"
+  | "textDocument/implementation"
+  | "textDocument/typeDefinition";
 
-export function positionRequest(view: EditorView, path: string, pos: number) {
-  const line = view.state.doc.lineAt(pos);
-  markLspSynced(view);
-  return {
-    path,
-    text: view.state.doc.toString(),
-    line: line.number - 1,
-    character: pos - line.from,
-  };
-}
-
-const NOT_FOUND: Record<string, string> = {
-  lsp_definition: "No definition found",
-  lsp_implementation: "No implementation found",
-  lsp_type_definition: "No type definition found",
+const NOT_FOUND: Record<LocationMethod, string> = {
+  "textDocument/definition": "No definition found",
+  "textDocument/implementation": "No implementation found",
+  "textDocument/typeDefinition": "No type definition found",
 };
 
 export async function goToLocation(
   view: EditorView,
   path: string,
   pos: number,
-  command: "lsp_definition" | "lsp_implementation" | "lsp_type_definition",
+  method: LocationMethod,
 ) {
-  let locations: LspLocation[];
+  let response;
   try {
-    locations = await invoke<LspLocation[]>(command, {
-      request: positionRequest(view, path, pos),
-    });
+    response = await lspRequest<unknown>(view, method, (plugin) => ({
+      textDocument: { uri: plugin.uri },
+      position: plugin.toPosition(pos),
+    }));
   } catch (error) {
-    showLspMessage(view, pos, String(error));
+    showLspMessage(view, pos, lspErrorMessage(error));
     return;
   }
-  const target = locations[0];
+  if (!response) return;
+  const target = lspLocations(response.result)[0];
   if (!target) {
-    showLspMessage(view, pos, NOT_FOUND[command]);
+    showLspMessage(view, pos, NOT_FOUND[method]);
     return;
   }
   setLink(view, null);

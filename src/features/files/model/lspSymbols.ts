@@ -1,6 +1,13 @@
-import { invoke } from "@tauri-apps/api/core";
+import type { EditorView } from "@codemirror/view";
+import { readTextFile } from "../../../platform/tauri/fs";
 import { fuzzyMatch, type FuzzyHit } from "../../../shared/lib/fuzzy";
 import type { ProjectSearchMatch } from "../../search/model/search";
+import { lspLocations } from "../editor/editorGoToDefinition";
+import {
+  lspErrorMessage,
+  lspRequest,
+  uriToPath,
+} from "../editor/lsp/languageServer";
 
 export type LspSymbol = {
   name: string;
@@ -15,28 +22,136 @@ export type LspSymbol = {
 
 export type RankedSymbol = LspSymbol & FuzzyHit;
 
-type Document = { path: string; text: string };
+type Editor = { view: EditorView; path: string };
 
-export function documentSymbols(document: Document): Promise<LspSymbol[]> {
-  return invoke<LspSymbol[]>("lsp_document_symbols", { request: document });
+const MAX_WORKSPACE_SYMBOLS = 250;
+
+// Rejects with a readable message, as the pickers print errors with `String`.
+async function request<Result>(
+  editor: Editor,
+  method: string,
+  params: Parameters<typeof lspRequest>[2],
+) {
+  try {
+    return await lspRequest<Result>(editor.view, method, params);
+  } catch (error) {
+    throw lspErrorMessage(error);
+  }
 }
 
-export function workspaceSymbols(
-  document: Document,
+export async function documentSymbols(editor: Editor): Promise<LspSymbol[]> {
+  const response = await request<unknown>(
+    editor,
+    "textDocument/documentSymbol",
+    (plugin) => ({ textDocument: { uri: plugin.uri } }),
+  );
+  return response
+    ? parseSymbols(response.result, editor.path, response.root)
+    : [];
+}
+
+/** `editor` is an open file of the repository: it picks the server. */
+export async function workspaceSymbols(
+  editor: Editor,
   query: string,
 ): Promise<LspSymbol[]> {
-  return invoke<LspSymbol[]>("lsp_workspace_symbols", {
-    request: { ...document, query },
-  });
+  const response = await request<unknown>(editor, "workspace/symbol", () => ({
+    query,
+  }));
+  return response
+    ? parseSymbols(response.result, editor.path, response.root).slice(
+        0,
+        MAX_WORKSPACE_SYMBOLS,
+      )
+    : [];
 }
 
-export function findReferences(request: {
-  path: string;
-  text: string;
-  line: number;
-  character: number;
-}): Promise<ProjectSearchMatch[]> {
-  return invoke<ProjectSearchMatch[]>("lsp_references", { request });
+export async function findReferences(
+  editor: Editor,
+  pos: number,
+): Promise<ProjectSearchMatch[]> {
+  const response = await request<unknown>(
+    editor,
+    "textDocument/references",
+    (plugin) => ({
+      textDocument: { uri: plugin.uri },
+      position: plugin.toPosition(pos),
+      context: { includeDeclaration: false },
+    }),
+  );
+  if (!response) return [];
+  // The editor's own text stands in for its file so unsaved lines preview as shown.
+  const files = new Map<string, Promise<string[]>>([
+    [editor.path, Promise.resolve(editor.view.state.doc.toJSON())],
+  ]);
+  const linesOf = (path: string) => {
+    let lines = files.get(path);
+    if (!lines) {
+      lines = readTextFile(path).then(
+        (text) => text.split(/\r?\n/),
+        () => [],
+      );
+      files.set(path, lines);
+    }
+    return lines;
+  };
+  return Promise.all(
+    lspLocations(response.result).map(async (location) => ({
+      path: location.path,
+      relative: relativePath(location.path, response.root),
+      line: location.line + 1,
+      column: location.character + 1,
+      preview: (await linesOf(location.path))[location.line] ?? "",
+    })),
+  );
+}
+
+function relativePath(path: string, root: string): string {
+  const prefix = root.endsWith("/") ? root : `${root}/`;
+  return path.startsWith(prefix) ? path.slice(prefix.length) : path;
+}
+
+type Position = { line: number; character: number };
+type RawSymbol = {
+  name?: unknown;
+  kind?: number;
+  containerName?: string;
+  location?: { uri?: string; range?: { start?: Position } };
+  range?: { start?: Position };
+  selectionRange?: { start?: Position };
+  children?: RawSymbol[];
+};
+
+/** Flattens `DocumentSymbol` trees and `SymbolInformation`/`WorkspaceSymbol` lists. */
+export function parseSymbols(
+  result: unknown,
+  document: string,
+  root: string,
+): LspSymbol[] {
+  const symbols: LspSymbol[] = [];
+  const walk = (item: RawSymbol, container: string | null) => {
+    if (typeof item?.name !== "string") return;
+    const path = item.location
+      ? item.location.uri && uriToPath(item.location.uri)
+      : document;
+    const start = item.location
+      ? item.location.range?.start
+      : (item.selectionRange?.start ?? item.range?.start);
+    if (path) {
+      symbols.push({
+        name: item.name,
+        kind: item.kind ?? 0,
+        container: item.containerName || container,
+        path,
+        relative: relativePath(path, root),
+        line: start?.line ?? 0,
+        character: start?.character ?? 0,
+      });
+    }
+    for (const child of item.children ?? []) walk(child, item.name);
+  };
+  if (Array.isArray(result)) for (const item of result) walk(item, null);
+  return symbols;
 }
 
 /** An empty query keeps the server's order: source order for a file. */

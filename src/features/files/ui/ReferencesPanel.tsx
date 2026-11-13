@@ -13,7 +13,7 @@ import type { ProjectSearchMatch } from "../../search/model/search";
 import { groupMatches } from "../../projects/ui/ProjectSearch";
 import { findReferences } from "../model/lspSymbols";
 import type { ScriptEditor } from "../editor/editorLspNavigation";
-import { openLocation, positionRequest } from "../editor/editorGoToDefinition";
+import { openLocation } from "../editor/editorGoToDefinition";
 import { FileTypeIcon } from "./FileTypeIcon";
 
 type Props = {
@@ -38,7 +38,7 @@ export function ReferencesPanel({ source, pos, onClose }: Props) {
   useEffect(() => {
     panel.current?.focus();
     let cancelled = false;
-    findReferences(positionRequest(source.view, source.path, pos))
+    findReferences(source, pos)
       .then((next) => !cancelled && setReferences(next))
       .catch((err: unknown) => !cancelled && setError(String(err)))
       .finally(() => !cancelled && setLoading(false));
