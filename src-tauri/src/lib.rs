@@ -506,6 +506,7 @@ pub fn run() {
             skills::list_skills,
             search::search_project,
             lsp_definition::lsp_definition,
+            lsp_definition::lsp_hover,
             lsp_definition::lsp_close_document,
             search::cancel_project_search,
             cursor_store::cursor_tool_calls,

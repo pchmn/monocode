@@ -97,6 +97,7 @@ import { editorSearch } from "../editor/editorSearch";
 import { editorScrollbar } from "../editor/editorScrollbar";
 import { editorVscodeKeys } from "../editor/editorVscodeKeys";
 import { editorGoToDefinition } from "../editor/editorGoToDefinition";
+import { editorHover } from "../editor/editorHover";
 import { FilePreviewSearch } from "./FilePreviewSearch";
 
 type EditorNavigationRequest = EditorNavigation & { token: number };
@@ -803,6 +804,7 @@ export function CodeMirrorEditor({
         editorSearch,
         editorVscodeKeys,
         editorGoToDefinition(path),
+        editorHover(path),
         Prec.high(
           keymap.of([
             ...foldKeymap,
