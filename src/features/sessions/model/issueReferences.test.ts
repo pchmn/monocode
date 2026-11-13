@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  findIssueReference,
+  findIssueReferences,
   issueReferenceNumber,
   remarkIssueReferences,
+  userMessageLinks,
 } from "./issueReferences";
+import { parseUserMessageLink } from "./linkPreview";
 
 type Node = { type: string; value?: string; url?: string; children?: Node[] };
 
@@ -34,7 +36,15 @@ describe("remarkIssueReferences", () => {
   });
 
   it("ignores hashes that are not references", () => {
-    for (const value of ["a#12", "#12a", "##12", "x/#12", "#12-3", "#abc"]) {
+    for (const value of [
+      "a#12",
+      "#12a",
+      "##12",
+      "x/#12",
+      "#12-3",
+      "#abc",
+      "[Image #1]",
+    ]) {
       expect(run([text(value)])).toEqual([text(value)]);
     }
   });
@@ -63,16 +73,66 @@ describe("issueReferenceNumber", () => {
   });
 });
 
-describe("findIssueReference", () => {
-  it("locates the first #number", () => {
-    expect(findIssueReference("implemente #290 puis #291")).toEqual({
-      number: 290,
-      index: 11,
-      length: 4,
-    });
+const chip = (number: number) => ({
+  url: `https://github.com/o/r/issues/${number}`,
+  host: "github.com",
+  displayUrl: `o/r#${number}`,
+});
+
+describe("findIssueReferences", () => {
+  it("locates every #number", () => {
+    expect(findIssueReferences("implemente #290 puis #291")).toEqual([
+      { number: 290, index: 11, length: 4 },
+      { number: 291, index: 21, length: 4 },
+    ]);
   });
 
-  it("ignores anchors and other hashes", () => {
-    expect(findIssueReference("see a#12, ##3 and #abc")).toBeNull();
+  it("ignores anchors, other hashes and image tokens", () => {
+    expect(findIssueReferences("see a#12, ##3, #abc and [Image #1]")).toEqual(
+      [],
+    );
+  });
+});
+
+describe("userMessageLinks", () => {
+  it("makes the first resolved reference the main chip and the rest extra chips", () => {
+    const text = "do #9 #122 #123 #124 now";
+    const resolved = new Map([122, 123, 124].map((n) => [n, chip(n)]));
+    const result = userMessageLinks(
+      text,
+      null,
+      findIssueReferences(text),
+      resolved,
+    );
+    expect(result?.beforeText).toBe("do #9 ");
+    expect(result?.link).toBe(resolved.get(122));
+    expect(result?.afterText).toBe(" #123 #124 now");
+    expect(result?.afterLinks).toEqual([
+      { link: resolved.get(123), index: 1, length: 4 },
+      { link: resolved.get(124), index: 6, length: 4 },
+    ]);
+  });
+
+  it("adds references after a URL", () => {
+    const text = "see https://x.dev and #5";
+    const url = parseUserMessageLink(text);
+    const resolved = new Map([[5, chip(5)]]);
+    const result = userMessageLinks(
+      text,
+      url,
+      findIssueReferences(text),
+      resolved,
+    );
+    expect(result?.link).toBe(url?.link);
+    expect(result?.afterLinks).toEqual([
+      { link: resolved.get(5), index: 5, length: 2 },
+    ]);
+  });
+
+  it("is null without a URL or resolved reference", () => {
+    const text = "#7";
+    expect(
+      userMessageLinks(text, null, findIssueReferences(text), new Map()),
+    ).toBeNull();
   });
 });
