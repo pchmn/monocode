@@ -195,7 +195,7 @@ pub const HTML_SCHEME: &str = "monoartifact";
 /// The page may run inline scripts and load public styles, scripts, images and
 /// fonts, but it cannot fetch, frame, submit forms or leave its sandbox, even
 /// if something opens its URL outside a sandboxed frame.
-const HTML_CSP: &str = "sandbox allow-scripts; default-src 'none'; \
+pub(crate) const HTML_CSP: &str = "sandbox allow-scripts; default-src 'none'; \
     script-src 'unsafe-inline' https:; style-src 'unsafe-inline' https:; \
     img-src data: blob: https:; font-src data: https:; media-src data: blob: https:; \
     worker-src blob:; connect-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'";
@@ -245,7 +245,7 @@ pub fn serve_html<R: tauri::Runtime>(
 
 /// Inserts the bootstrap at the start of `<head>`, else after `<html>` or the
 /// doctype. Never before the doctype, which would switch to quirks mode.
-fn with_bootstrap(body: &str) -> String {
+pub(crate) fn with_bootstrap(body: &str) -> String {
     // ASCII lowercasing keeps byte offsets, so they index into `body`.
     let lower = body.to_ascii_lowercase();
     let at = tag_end(&lower, "<head")

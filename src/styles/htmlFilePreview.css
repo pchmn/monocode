@@ -1,0 +1,5 @@
+/* The page under an HTML preview has its own colors: keep the toggle on the app's background. */
+.markdown-view-shell:has(> [data-markdown-view-active] [data-html-file-preview])
+  [role="tablist"][aria-label="Markdown view"] {
+  background-color: var(--color-background-base);
+}

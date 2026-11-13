@@ -57,7 +57,7 @@ function readTheme(): FrameTheme {
 }
 
 /** The app theme as page variables, following theme and appearance changes. */
-function useFrameTheme(): FrameTheme {
+export function useFrameTheme(): FrameTheme {
   const [theme, setTheme] = useState(readTheme);
   useEffect(() => {
     const observer = new MutationObserver(() => setTheme(readTheme()));
