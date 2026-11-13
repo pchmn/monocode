@@ -46,6 +46,7 @@ mod notifications;
 mod pasteboard;
 mod pi_usage;
 mod project_logo;
+mod project_settings;
 mod provider_session_transfer;
 mod pty;
 #[cfg(target_os = "macos")]
@@ -590,6 +591,8 @@ pub fn run() {
             artifacts::artifacts_delete,
             html_file_preview::html_file_preview_set,
             html_file_preview::html_file_preview_clear,
+            project_settings::project_save_command,
+            project_settings::project_run_save_command,
             notes::notes_delete,
             notes::notes_save_image,
             notes::notes_image_path,
