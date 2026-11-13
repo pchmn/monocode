@@ -9,8 +9,6 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import {
-  loadProjectFiles,
-  peekProjectFiles,
   rankProjectFiles,
   recentOpenedFiles,
   rememberOpenedFile,
@@ -26,6 +24,7 @@ import { useLockOverscroll } from "../../../shared/hooks/useLockOverscroll";
 import { FileTypeIcon } from "./FileTypeIcon";
 import { MatchText } from "../../../shared/ui/MatchText";
 import { MOD, SHIFT } from "../../../platform/tauri/platform";
+import { loadSearchFiles, peekSearchFiles } from "../../projects/model/workspaceFileIndex";
 type Action = {
   id: string;
   label: string;
@@ -44,6 +43,8 @@ const ACTIONS: Action[] = [
 type Props = {
   open: boolean;
   cwd: string;
+  /** A `.code-workspace` project: the picker searches all its folders. */
+  workspace?: string;
   openPaths?: string[];
   initialQuery?: string;
   onOpenFile: OpenFileFn;
@@ -54,13 +55,14 @@ type Props = {
 export function FilePicker({
   open,
   cwd,
+  workspace,
   openPaths = [],
   initialQuery = "",
   onOpenFile,
   onRunAction,
   onClose,
 }: Props) {
-  const peekFiles = () => peekProjectFiles(cwd);
+  const peekFiles = () => peekSearchFiles(cwd, workspace);
   const search = useRef<HTMLInputElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -122,7 +124,7 @@ export function FilePicker({
       return;
     }
     let cancelled = false;
-    void loadProjectFiles(cwd, true)
+    void loadSearchFiles(cwd, workspace)
       .then((next) => {
         if (cancelled) return;
         setFiles(next);
@@ -136,7 +138,7 @@ export function FilePicker({
     return () => {
       cancelled = true;
     };
-  }, [open, cwd, initialQuery]);
+  }, [open, cwd, workspace, initialQuery]);
 
   useEffect(() => {
     setActive((index) =>

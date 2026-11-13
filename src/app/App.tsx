@@ -14840,6 +14840,7 @@ function Workspace({
               key={filePickerResetToken}
               open
               cwd={filesCwd}
+              workspace={sidebarCwd}
               openPaths={openFilePaths}
               initialQuery={filePickerInitialQuery}
               onOpenFile={onOpenFile}
