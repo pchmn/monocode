@@ -55,3 +55,9 @@ Upstream bug fixes with no feature of their own. On each sync, check whether ups
 - `src/integrations/harness/core/apply.ts` — `leavesStreamOpen` in `appendBlock`, `patchStreaming`, `sealLastStream`: a tool row arriving with its approval (a subagent's) no longer seals the streaming reply
 - `src/integrations/harness/core/apply.test.ts` — "keeps a reply whole when a subagent asks for approval mid-stream"
 - Manual: while a Claude reply streams, have a background subagent ask for approval; the reply stays one block.
+
+## Clippy `needless_bool` on Rust 1.100
+- `src-tauri/src/link_preview.rs` — `is_public_ipv6` returns `!(…)` instead of `if … { return false; } true`
+- `crates/monocode-core/src/provider.rs` — `executable`: `meta.is_file()` folded into each `cfg` branch
+- On sync: keep upstream's version once it fixes the same lint.
+- `cargo clippy --workspace --all-targets -- -D warnings` on stable ≥ 1.100 (CI `check` and `Core (windows-latest)`)
