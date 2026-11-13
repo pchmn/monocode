@@ -180,15 +180,15 @@ export const editorLspDiagnostics: Extension = [
       textDecorationSkipInk: "none",
       textUnderlineOffset: "3px",
     },
+    // Overlapping diagnostics share one span: an error inside unreachable code keeps its squiggle.
     ".cm-lintRange.cm-lsp-unnecessary": {
-      backgroundImage: "none",
-      textDecoration: "none",
       opacity: "0.55",
     },
-    ".cm-lintRange.cm-lsp-deprecated": {
-      backgroundImage: "none",
-      textDecoration: "line-through",
-    },
+    ".cm-lintRange.cm-lsp-deprecated:not(.cm-lintRange-error):not(.cm-lintRange-warning)":
+      {
+        backgroundImage: "none",
+        textDecoration: "line-through",
+      },
     ".cm-tooltip-lint .cm-diagnostic-warning": {
       borderLeft: "2px solid #fbbf24",
     },
