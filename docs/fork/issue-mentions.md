@@ -4,7 +4,7 @@ Typing `#` in the composer suggests the issues and pull requests of the project'
 
 In rendered Markdown with a project (chat replies, previews), a `#123` that names an existing issue or PR of the repo becomes a link to it, with its title as tooltip; other `#123` stay plain text.
 
-In a sent message, the first `#123` naming an existing issue or PR shows as the same chip (with hover card) as a pasted GitHub issue or PR URL, unless the message already has a URL.
+In a sent message, the first `#123` naming an existing issue or PR shows as the same chip (with hover card) as a pasted GitHub issue or PR URL, unless the message already has a URL. A pasted image token (`[Image #1]`) is not a reference.
 
 ## Fork files
 - `src/features/sessions/model/issueMentions.ts` — `#` token detection, ranking, scope, cached `gh` listing and search (reuses `git_github_work_items`, `git_github_work_item`)

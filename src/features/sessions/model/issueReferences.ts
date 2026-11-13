@@ -14,7 +14,7 @@ type MarkdownNode = {
 
 // A fragment href survives sanitizing and hardening, unlike a custom scheme.
 const HREF_PREFIX = "#monocode-issue-";
-const REFERENCE = /(?<![\w#&/.-])#(\d{1,7})(?![\w-])/g;
+const REFERENCE = /(?<![\w#&/.-])(?<!\[Image )#(\d{1,7})(?![\w-])/g;
 const SKIPPED = new Set([
   "link",
   "linkReference",

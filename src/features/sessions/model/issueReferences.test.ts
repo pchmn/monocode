@@ -34,7 +34,15 @@ describe("remarkIssueReferences", () => {
   });
 
   it("ignores hashes that are not references", () => {
-    for (const value of ["a#12", "#12a", "##12", "x/#12", "#12-3", "#abc"]) {
+    for (const value of [
+      "a#12",
+      "#12a",
+      "##12",
+      "x/#12",
+      "#12-3",
+      "#abc",
+      "[Image #1]",
+    ]) {
       expect(run([text(value)])).toEqual([text(value)]);
     }
   });
@@ -74,5 +82,6 @@ describe("findIssueReference", () => {
 
   it("ignores anchors and other hashes", () => {
     expect(findIssueReference("see a#12, ##3 and #abc")).toBeNull();
+    expect(findIssueReference("[Image #1] voir #7")?.number).toBe(7);
   });
 });
