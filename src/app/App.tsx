@@ -172,6 +172,7 @@ import {
 } from "../features/monos/model/monoActivity";
 import { MenuBar } from "./shell/MenuBar";
 import { FilePicker } from "../features/files/ui/FilePicker";
+import { useExplorerRevealSource } from "../features/files/model/explorerReveal";
 import {
   DeleteSessionDialog,
   type SessionDeleteChoice,
@@ -2140,6 +2141,7 @@ function Workspace({
   }, [activeSkillCwd, active?.id, active?.harness]);
 
   const activeFile = activeTab ? focusedFileTab(activeTab) : undefined;
+  useExplorerRevealSource(activeFile);
   // A Mono belongs to no project, so its view keeps the project in place.
   const sidebarCwd =
     activeFile?.projectCwd ?? activeFile?.cwd ?? active?.cwd ?? projectCwd;
