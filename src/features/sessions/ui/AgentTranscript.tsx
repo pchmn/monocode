@@ -136,6 +136,7 @@ import { attachmentPreviewSrc } from "../model/attachments";
 import { TranscriptSelectionMenu } from "./TranscriptSelectionMenu";
 import { useUserMessageLink } from "../hooks/useUserMessageLink";
 import { UserLinkPreview } from "./UserLinkPreview";
+import { UserMessageLinkTail } from "./UserMessageLinkTail";
 import {
   activityPhaseTitle,
   activityStillRunning,
@@ -2833,7 +2834,7 @@ function UserMessageBlock({
                 >
                   {messageLink.beforeText}
                   <UserLinkPreview link={messageLink.link} cwd={cwd} compact />
-                  {messageLink.afterText}
+                  <UserMessageLinkTail messageLink={messageLink} cwd={cwd} />
                 </div>
               ) : displayText ? (
                 <pre

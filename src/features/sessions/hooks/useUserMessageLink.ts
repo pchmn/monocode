@@ -1,47 +1,50 @@
 import { useEffect, useMemo, useState } from "react";
+import { parseUserMessageLink, type UserLink } from "../model/linkPreview";
 import {
-  parseUserMessageLink,
-  type UserMessageLink,
-} from "../model/linkPreview";
-import {
-  findIssueReference,
+  findIssueReferences,
   resolveIssueReference,
+  userMessageLinks,
+  type UserMessageLinks,
 } from "../model/issueReferences";
 
-/** `parseUserMessageLink`, falling back to the first `#123` naming an existing issue or PR. */
+/** `parseUserMessageLink`, plus a chip for each `#123` naming an existing issue or PR. */
 export function useUserMessageLink(
   text: string,
   cwd: string | undefined,
-): UserMessageLink | null {
+): UserMessageLinks | null {
   const urlLink = useMemo(
     () => (text ? parseUserMessageLink(text) : null),
     [text],
   );
-  const reference = useMemo(
-    () => (urlLink || !cwd ? null : findIssueReference(text)),
-    [urlLink, cwd, text],
+  const references = useMemo(
+    () => (cwd ? findIssueReferences(text) : []),
+    [cwd, text],
   );
-  const [referenceLink, setReferenceLink] = useState<UserMessageLink | null>(
-    null,
+  const [resolved, setResolved] = useState<ReadonlyMap<number, UserLink>>(
+    () => new Map(),
   );
 
   useEffect(() => {
-    setReferenceLink(null);
-    if (!reference || !cwd) return;
+    setResolved(new Map());
+    if (!cwd || references.length === 0) return;
     let cancelled = false;
-    void resolveIssueReference(cwd, reference.number).then((item) => {
-      const link = item ? parseUserMessageLink(item.url)?.link : null;
-      if (cancelled || !link?.githubWorkItem) return;
-      setReferenceLink({
-        link,
-        beforeText: text.slice(0, reference.index),
-        afterText: text.slice(reference.index + reference.length),
-      });
+    const numbers = [...new Set(references.map((ref) => ref.number))];
+    void Promise.all(
+      numbers.map(async (number) => {
+        const item = await resolveIssueReference(cwd, number);
+        const link = item ? parseUserMessageLink(item.url)?.link : null;
+        return link?.githubWorkItem ? ([number, link] as const) : null;
+      }),
+    ).then((entries) => {
+      if (!cancelled) setResolved(new Map(entries.filter((e) => e !== null)));
     });
     return () => {
       cancelled = true;
     };
-  }, [cwd, reference, text]);
+  }, [cwd, references]);
 
-  return urlLink ?? referenceLink;
+  return useMemo(
+    () => userMessageLinks(text, urlLink, references, resolved),
+    [text, urlLink, references, resolved],
+  );
 }

@@ -1,5 +1,6 @@
 import type { GithubWorkItem } from "../../inbox/model/githubTasks";
 import { normalizeProjectPath } from "../../projects/model/recents";
+import type { UserLink, UserMessageLink } from "./linkPreview";
 import {
   loadIssueMentionItems,
   searchIssueMentionItems,
@@ -30,16 +31,46 @@ export function issueReferenceNumber(href: string | undefined): number | null {
   return Number.isInteger(number) && number > 0 ? number : null;
 }
 
-export function findIssueReference(
-  text: string,
-): { number: number; index: number; length: number } | null {
-  const [match] = text.matchAll(REFERENCE);
-  if (!match) return null;
-  return {
+export type IssueReference = { number: number; index: number; length: number };
+
+export function findIssueReferences(text: string): IssueReference[] {
+  return [...text.matchAll(REFERENCE)].map((match) => ({
     number: Number(match[1]),
     index: match.index,
     length: match[0].length,
-  };
+  }));
+}
+
+export type UserMessageLinks = UserMessageLink & {
+  /** Chips inside `afterText`, with offsets relative to it. */
+  afterLinks: { link: UserLink; index: number; length: number }[];
+};
+
+/** The first URL or resolved `#123` as the main chip, later resolved references as extra chips. */
+export function userMessageLinks(
+  text: string,
+  urlLink: UserMessageLink | null,
+  references: readonly IssueReference[],
+  resolved: ReadonlyMap<number, UserLink>,
+): UserMessageLinks | null {
+  let main = urlLink;
+  if (!main) {
+    const first = references.find((ref) => resolved.has(ref.number));
+    if (!first) return null;
+    main = {
+      link: resolved.get(first.number)!,
+      beforeText: text.slice(0, first.index),
+      afterText: text.slice(first.index + first.length),
+    };
+  }
+  const offset = text.length - main.afterText.length;
+  const afterLinks = references.flatMap((ref) => {
+    const link = resolved.get(ref.number);
+    return link && ref.index >= offset
+      ? [{ link, index: ref.index - offset, length: ref.length }]
+      : [];
+  });
+  return { ...main, afterLinks };
 }
 
 function splitText(value: string): MarkdownNode[] | null {
