@@ -362,7 +362,11 @@ export function FileEditor({
         await syncWatchedMtime(path);
         const hookError = automatic
           ? null
-          : await runProjectSaveCommand(path, reloadFromDisk);
+          : await runProjectSaveCommand(path, () => {
+              // Record the save first: a formatter that restores the opened text must still reload.
+              applyDiskContent(serializedContent);
+              return reloadFromDisk();
+            });
         notifyGitChanged();
         if (generation === saveGeneration.current) {
           setSaveState(
@@ -379,7 +383,7 @@ export function FileEditor({
         throw error;
       }
     },
-    [path, reloadFromDisk],
+    [applyDiskContent, path, reloadFromDisk],
   );
 
   const stageGit = useCallback(
