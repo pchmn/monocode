@@ -95,6 +95,7 @@ import {
 import { editorLint } from "../editor/editorLint";
 import { editorSearch } from "../editor/editorSearch";
 import { editorScrollbar } from "../editor/editorScrollbar";
+import { editorVscodeKeys } from "../editor/editorVscodeKeys";
 import { FilePreviewSearch } from "./FilePreviewSearch";
 
 type EditorNavigationRequest = EditorNavigation & { token: number };
@@ -799,6 +800,7 @@ export function CodeMirrorEditor({
         editorLint(path, (count) => onErrorCountChangeRef.current(count)),
         editorScrollbar,
         editorSearch,
+        editorVscodeKeys,
         Prec.high(
           keymap.of([
             ...foldKeymap,

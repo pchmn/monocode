@@ -14,6 +14,7 @@ import {
   shortcutTokens,
 } from "../../quick-composer/model/quickComposerShortcut";
 import { readFlag, writeFlag } from "./storageFlags";
+import { EDITOR_KEYBINDINGS } from "./editorKeybindings";
 
 const SECTION_KEY = "monocode.settingsSection";
 
@@ -1268,6 +1269,7 @@ export const KEYBINDINGS: KeybindingRow[] = [
   { command: "Terminal: Toggle Dock", keys: `${MOD}J`, when: "Always" },
   { command: "Editor: Find", keys: `${MOD}F`, when: "editorFocus" },
   { command: "Editor: Replace", keys: `${MOD}${ALT}F`, when: "editorFocus" },
+  ...EDITOR_KEYBINDINGS,
 ];
 
 const KEYBINDING_OVERRIDES_KEY = "monocode.keybindingOverrides";
@@ -1297,6 +1299,7 @@ const KEY_CODES: Record<string, string> = {
   "+": "Equal",
   "-": "Minus",
   "\\": "Backslash",
+  "/": "Slash",
   "↑": "ArrowUp",
   "↓": "ArrowDown",
   "←": "ArrowLeft",
