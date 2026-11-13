@@ -132,19 +132,20 @@ fn resolve_tsgo(file: &Path, root: &Path) -> Option<PathBuf> {
     let exe = if cfg!(windows) { ".exe" } else { "" };
     let dir = file.parent().unwrap_or(file);
     for ancestor in dir.ancestors() {
-        let packages = ancestor.join("node_modules").join("@typescript");
-        for candidate in [
-            packages
-                .join(format!("native-preview-{platform}"))
-                .join("lib")
-                .join(format!("tsgo{exe}")),
-            packages
-                .join(format!("typescript-{platform}"))
-                .join("lib")
-                .join(format!("tsc{exe}")),
-        ] {
-            if candidate.is_file() {
-                return Some(candidate);
+        for packages in scoped_package_dirs(&ancestor.join("node_modules")) {
+            for candidate in [
+                packages
+                    .join(format!("native-preview-{platform}"))
+                    .join("lib")
+                    .join(format!("tsgo{exe}")),
+                packages
+                    .join(format!("typescript-{platform}"))
+                    .join("lib")
+                    .join(format!("tsc{exe}")),
+            ] {
+                if candidate.is_file() {
+                    return Some(candidate);
+                }
             }
         }
         if ancestor == root {
@@ -152,6 +153,27 @@ fn resolve_tsgo(file: &Path, root: &Path) -> Option<PathBuf> {
         }
     }
     crate::harness::resolve_gui_binary("tsgo")
+}
+
+/// `@typescript` folders that may hold the platform package: pnpm leaves it
+/// beside the real `typescript` / `native-preview` folder instead of hoisting it.
+fn scoped_package_dirs(node_modules: &Path) -> Vec<PathBuf> {
+    let mut dirs = vec![node_modules.join("@typescript")];
+    for package in ["typescript", "@typescript/native-preview"] {
+        if let Ok(real) = node_modules.join(package).canonicalize() {
+            if let Some(parent) = real.parent() {
+                let scoped = if package == "typescript" {
+                    parent.join("@typescript")
+                } else {
+                    parent.to_path_buf()
+                };
+                if !dirs.contains(&scoped) {
+                    dirs.push(scoped);
+                }
+            }
+        }
+    }
+    dirs
 }
 
 fn file_uri(path: &Path) -> Result<String, String> {
@@ -408,5 +430,30 @@ mod tests {
         assert_eq!(described.root, root.to_string_lossy());
         assert_eq!(described.uri, file_uri(&file).unwrap());
         assert!(document(&root.join("a.rs")).unwrap().is_none());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn finds_typescript_7_installed_by_pnpm() {
+        let root = std::env::temp_dir().join("monocode-lsp-pnpm");
+        let _ = std::fs::remove_dir_all(&root);
+        let store = root.join("node_modules/.pnpm/typescript@7.0.2/node_modules");
+        let binary = store.join(format!(
+            "@typescript/typescript-{}/lib/tsc",
+            native_platform()
+        ));
+        std::fs::create_dir_all(binary.parent().unwrap()).unwrap();
+        std::fs::create_dir_all(store.join("typescript")).unwrap();
+        std::fs::write(&binary, "").unwrap();
+        std::os::unix::fs::symlink(
+            ".pnpm/typescript@7.0.2/node_modules/typescript",
+            root.join("node_modules/typescript"),
+        )
+        .unwrap();
+        let file = root.join("src/a.ts");
+        assert_eq!(
+            resolve_tsgo(&file, &root).unwrap(),
+            binary.canonicalize().unwrap()
+        );
     }
 }
