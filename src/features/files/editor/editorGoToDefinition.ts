@@ -74,6 +74,10 @@ function isLinkModifier(event: MouseEvent | KeyboardEvent): boolean {
 
 const syncedViews = new WeakSet<EditorView>();
 
+export function markLspSynced(view: EditorView) {
+  syncedViews.add(view);
+}
+
 // Lets tsgo drop a closed file's project instead of holding it until it stops.
 function documentTracker(path: string) {
   return ViewPlugin.define((view) => ({
@@ -86,7 +90,7 @@ function documentTracker(path: string) {
 
 async function goToDefinition(view: EditorView, path: string, pos: number) {
   const line = view.state.doc.lineAt(pos);
-  syncedViews.add(view);
+  markLspSynced(view);
   let locations: DefinitionLocation[];
   try {
     locations = await invoke<DefinitionLocation[]>("lsp_definition", {

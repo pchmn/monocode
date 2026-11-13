@@ -21,7 +21,7 @@ const MAX_SERVERS: usize = 2;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct DefinitionRequest {
+pub struct PositionRequest {
     path: String,
     text: String,
     /// 0-based, as LSP counts.
@@ -38,16 +38,35 @@ pub struct DefinitionLocation {
 }
 
 #[tauri::command]
-pub async fn lsp_definition(request: DefinitionRequest) -> Result<Vec<DefinitionLocation>, String> {
+pub async fn lsp_definition(request: PositionRequest) -> Result<Vec<DefinitionLocation>, String> {
     tauri::async_runtime::spawn_blocking(move || definition(request))
         .await
         .map_err(|error| error.to_string())?
 }
 
-fn definition(request: DefinitionRequest) -> Result<Vec<DefinitionLocation>, String> {
+fn definition(request: PositionRequest) -> Result<Vec<DefinitionLocation>, String> {
+    Ok(parse_locations(&position_request(
+        "textDocument/definition",
+        request,
+    )?))
+}
+
+#[tauri::command]
+pub async fn lsp_hover(request: PositionRequest) -> Result<Option<String>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        Ok(parse_hover(&position_request(
+            "textDocument/hover",
+            request,
+        )?))
+    })
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+fn position_request(method: &str, request: PositionRequest) -> Result<Value, String> {
     let file = PathBuf::from(&request.path);
     let Some(language) = language_id(&file) else {
-        return Ok(Vec::new());
+        return Ok(Value::Null);
     };
     if !file.is_file() {
         return Err(format!("{}: not a local file", file.display()));
@@ -56,15 +75,14 @@ fn definition(request: DefinitionRequest) -> Result<Vec<DefinitionLocation>, Str
     let server = server_for(&root, &file)?;
     let uri = file_uri(&file)?;
     server.sync_document(&uri, language, &request.text)?;
-    let result = server.request(
-        "textDocument/definition",
+    server.request(
+        method,
         json!({
             "textDocument": { "uri": uri },
             "position": { "line": request.line, "character": request.character },
         }),
         REQUEST_TIMEOUT,
-    )?;
-    Ok(parse_locations(&result))
+    )
 }
 
 #[tauri::command]
@@ -190,6 +208,33 @@ fn parse_locations(result: &Value) -> Vec<DefinitionLocation> {
         .collect()
 }
 
+/// Hover contents as Markdown, whichever of the LSP shapes the server sent.
+fn parse_hover(result: &Value) -> Option<String> {
+    fn marked(value: &Value) -> Option<String> {
+        match value {
+            Value::String(text) => Some(text.clone()),
+            Value::Object(object) => {
+                let text = object.get("value")?.as_str()?;
+                match object.get("language").and_then(Value::as_str) {
+                    Some(language) => Some(format!("```{language}\n{text}\n```")),
+                    None => Some(text.to_string()),
+                }
+            }
+            _ => None,
+        }
+    }
+    let markdown = match result.get("contents")? {
+        Value::Array(items) => items
+            .iter()
+            .filter_map(marked)
+            .collect::<Vec<_>>()
+            .join("\n\n"),
+        contents => marked(contents)?,
+    };
+    let markdown = markdown.trim();
+    (!markdown.is_empty()).then(|| markdown.to_string())
+}
+
 type Pending = Arc<Mutex<HashMap<i64, mpsc::Sender<Result<Value, String>>>>>;
 
 struct Server {
@@ -306,6 +351,7 @@ impl Server {
                 "capabilities": {
                     "textDocument": {
                         "definition": { "linkSupport": true },
+                        "hover": { "contentFormat": ["markdown", "plaintext"] },
                         "synchronization": { "didSave": false },
                     },
                 },
@@ -539,6 +585,21 @@ mod tests {
             ]
         );
         assert!(parse_locations(&Value::Null).is_empty());
+    }
+
+    #[test]
+    fn parses_every_hover_shape() {
+        let markup =
+            json!({ "contents": { "kind": "markdown", "value": "```ts\nconst a: A\n```" } });
+        assert_eq!(parse_hover(&markup).unwrap(), "```ts\nconst a: A\n```");
+        let marked =
+            json!({ "contents": [{ "language": "typescript", "value": "type A = 1" }, "Docs"] });
+        assert_eq!(
+            parse_hover(&marked).unwrap(),
+            "```typescript\ntype A = 1\n```\n\nDocs"
+        );
+        assert!(parse_hover(&json!({ "contents": "" })).is_none());
+        assert!(parse_hover(&Value::Null).is_none());
     }
 
     #[test]
