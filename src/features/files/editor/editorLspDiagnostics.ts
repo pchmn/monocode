@@ -156,6 +156,12 @@ export function serverDiagnosticsAt(
   return found;
 }
 
+// VS Code's squiggle: WebKit draws a `wavy` text-decoration almost flat.
+export function squiggle(color: string): string {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 3' width='6' height='3'><g fill='${color}'><polygon points='5.5,0 2.5,3 1.1,3 4.1,0'/><polygon points='4,0 6,2 6,0.6 5.4,0'/><polygon points='0,2 1,3 2.4,3 0,0.6'/></g></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+
 /** Errors only: hints flag unused code and warnings are rare in TS. */
 export function lintErrorCount(state: EditorState): number {
   let count = 0;
@@ -174,14 +180,7 @@ export const editorLspDiagnostics: Extension = [
   }),
   EditorView.theme({
     ".cm-lintRange-hint": { backgroundImage: "none" },
-    ".cm-lintRange-warning": {
-      backgroundImage: "none",
-      textDecorationLine: "underline",
-      textDecorationStyle: "wavy",
-      textDecorationColor: "#fbbf24",
-      textDecorationSkipInk: "none",
-      textUnderlineOffset: "3px",
-    },
+    ".cm-lintRange-warning": { backgroundImage: squiggle("#fbbf24") },
     // Overlapping diagnostics share one span: an error inside unreachable code keeps its squiggle.
     ".cm-lintRange.cm-lsp-unnecessary": {
       opacity: "0.55",
