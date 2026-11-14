@@ -28,8 +28,9 @@ Upstream bug fixes with no feature of their own. On each sync, check whether ups
 
 ## Branch PR lookup finds the PR
 - `src-tauri/src/fs.rs` — `git_pr_status_for` passes the bare branch to `gh pr list --head` (`owner:branch` matches nothing); `parse_gh_pr_list` keeps rows whose `headRepositoryOwner` is the repo owner
+- `src-tauri/src/fs.rs` — `git_pr_status_for` returns no PR on the default branch: a PR whose head is `main`/`master` (e.g. a release PR into another branch) is not the checkout's PR
 - `cargo test parse_gh_pr_list`
-- Manual: on a branch with a PR, `PR #n` shows after the branch name under the composer.
+- Manual: on a branch with a PR, `PR #n` shows after the branch name under the composer; on the default branch, no `PR #n` shows.
 
 ## Full-screen terminal apps keep their last row visible
 - `src/features/terminal/model/terminalLayout.ts` — `fitTerminal`: TUI mode resets the grid stretch, rounds cols/rows down like shell mode, then `stretchGridToHost` fills the gap (rounding up pushed the last row under the host's `overflow: hidden`)
