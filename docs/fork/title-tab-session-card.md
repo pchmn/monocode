@@ -1,6 +1,6 @@
 # Session card on title tabs
 
-A title tab shows its focused session's linked issue or PR icon after the title, and hovering the tab for 400 ms opens the same session card as the sidebar, below the tab; moving along the tabs swaps cards straight away. Only sessions of the sidebar's project have a card.
+A title tab shows its focused session's linked issue or PR icon after the title (a PR's tinted by its state, as in the sidebar), and hovering the tab for 400 ms opens the same session card as the sidebar, below the tab; moving along the tabs swaps cards straight away. Only sessions of the sidebar's project have a card.
 
 ## Fork files
 - `src/features/sessions/model/tabSessionSummaries.ts` — App publishes the sidebar's session summaries; tabs read theirs by id

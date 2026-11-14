@@ -4,7 +4,7 @@ When the PR of a session's branch is found (the `PR #n` under the composer), the
 
 In the session hover card, the linked issue or PR opens on GitHub, and hovering it shows the same GitHub preview card as an issue or PR chip in a message.
 
-A linked PR's sidebar badge and hover-card line show its state: violet merge icon once merged, red once closed. Each visible PR is fetched every 3 minutes until merged; merged PRs are remembered across launches and never fetched again.
+A linked PR's sidebar badge, title-tab icon and hover-card line show its state: violet merge icon once merged, red once closed. Each visible PR is fetched every 3 minutes until merged; merged PRs are remembered across launches and never fetched again.
 
 ## Fork files
 - `src/features/sessions/model/branchPrAutoLink.ts` — PR report channel, once-per-pair guard (localStorage)
