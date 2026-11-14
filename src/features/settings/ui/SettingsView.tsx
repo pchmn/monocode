@@ -2534,7 +2534,7 @@ function AppearancePage({ appearance }: { appearance: AppearanceSettings }) {
           <Row
             id="stacked-side-panels"
             label="Stack side panels"
-            description="Explorer, Changes and History under the sessions, in a single panel."
+            description="Sessions, Explorer, Changes and History as tabs in the sidebar."
           >
             <Toggle
               label="Stack side panels"

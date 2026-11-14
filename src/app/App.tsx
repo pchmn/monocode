@@ -37,6 +37,7 @@ import {
   usePanelsSwapped,
 } from "../features/settings/model/panelSide";
 import { useStackedPanels } from "../features/settings/model/stackedPanels";
+import { usePublishTabSessionSummaries } from "../features/sessions/model/tabSessionSummaries";
 import { useIdleSessionDetach } from "./hooks/useIdleSessionDetach";
 import { useAgentWorktreeAdoption } from "../features/source-control/hooks/useAgentWorktreeAdoption";
 import { useDockFollowsSession } from "../features/terminal/hooks/useDockFollowsSession";
@@ -12160,6 +12161,7 @@ function Workspace({
     sidebarHistoryRows,
     sameSessionSummaries,
   );
+  usePublishTabSessionSummaries(sidebarHistory);
   const {
     unseen: inboxUnseen,
     linkedSessionUpdateIds,
@@ -14098,7 +14100,7 @@ function Workspace({
       inset={insetLayout}
       rightPanelOpen={rightPanelOpen}
       onToggleRightPanel={
-        showRightPanelToggle ? onToggleRightPanel : undefined
+        showRightPanelToggle && !stackedPanels ? onToggleRightPanel : undefined
       }
       rightPanelDot={(rightPanelChanges?.files ?? 0) > 0}
       rightPanelUnavailable={!!activeAppView}
@@ -14157,6 +14159,7 @@ function Workspace({
               open: rightPanelOpen || rightPanelClosing,
               tab: rightPanelTab,
               onTabChange: showRightPanel,
+              onToggle: onToggleRightPanel,
             }
           : undefined
       }
@@ -15102,6 +15105,7 @@ function toTitleTab(
 
   return {
     id: tab.id,
+    sessionId: focused?.id,
     project: focused
       ? projectName(focused.cwd)
       : focusedFile

@@ -14,6 +14,7 @@ export function SessionCardPreview({
   id,
   session,
   status,
+  side = "right",
   onClose,
   onPointerEnter,
   onPointerLeave,
@@ -22,6 +23,7 @@ export function SessionCardPreview({
   id: string;
   session: SessionSummary;
   status: ReactNode;
+  side?: "right" | "bottom";
   onClose: () => void;
   onPointerEnter: () => void;
   onPointerLeave: () => void;
@@ -60,7 +62,7 @@ export function SessionCardPreview({
   return (
     <Popover
       anchor={anchor}
-      side="right"
+      side={side}
       align="start"
       gap={8}
       width={260}

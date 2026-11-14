@@ -42,6 +42,7 @@ import {
 } from "../../shared/ui/icons";
 import { createPortal } from "react-dom";
 import { useProjectSwipe } from "./useProjectSwipe";
+import { SidebarModeTabs } from "./SidebarModeTabs";
 import { StackedToolsPane } from "./StackedToolsPane";
 import { useStackedPanels } from "../../features/settings/model/stackedPanels";
 import {
@@ -410,6 +411,7 @@ type Props = {
     open: boolean;
     tab: RightPanelTab;
     onTabChange: (tab: RightPanelTab) => void;
+    onToggle: () => void;
   };
   unseenFinishedIds?: Set<string>;
   inboxUnseen?: boolean;
@@ -2609,6 +2611,15 @@ function SidebarComponent({
       {railVisible || inset ? (
         <>
           {workspaceHeader}
+          {stacked && paneHost && inProject ? (
+            <SidebarModeTabs
+              tab={paneTab as RightPanelTab | null}
+              order={rightTabOrder}
+              additions={changeAdditions}
+              onSelectTool={paneHost.onTabChange}
+              onSelectSessions={paneHost.onToggle}
+            />
+          ) : null}
           {/* The inset sidebar has no tabs: the project tools live in the
               right panel. */}
           {inset ? null : (
@@ -2700,7 +2711,7 @@ function SidebarComponent({
             slideRefs.current[1] = el;
           }}
           className={`sidebar-session-scroll min-h-0 flex-1 overflow-y-auto overscroll-none ${
-            tab === "sessions" ? "" : "hidden"
+            tab === "sessions" && !(stacked && paneTab) ? "" : "hidden"
           }`}
           // Marks a scrolled list straight on the element, so the header's
           // fade comes and goes without re-rendering the rows.
@@ -3371,6 +3382,7 @@ function SidebarComponent({
               changeAdditions={changeAdditions}
               changeDeletions={changeDeletions}
               onTabChange={paneHost.onTabChange}
+              hideTabs={stacked}
             >
               {filesPane}
               {changesPane}
@@ -4210,6 +4222,7 @@ function RightPanel({
   changeAdditions,
   changeDeletions,
   onTabChange,
+  hideTabs,
   children,
 }: {
   tab: RightPanelTab;
@@ -4220,6 +4233,7 @@ function RightPanel({
   changeAdditions: number;
   changeDeletions: number;
   onTabChange: (tab: RightPanelTab) => void;
+  hideTabs?: boolean;
   children: ReactNode;
 }) {
   const sortable = useAnimatedReorder(tabs, onReorder);
@@ -4228,7 +4242,7 @@ function RightPanel({
       <div
         role="tablist"
         aria-label="Project"
-        className="flex h-9 shrink-0 items-center gap-px border-b border-stroke px-2"
+        className={`flex h-9 shrink-0 items-center gap-px border-b border-stroke px-2${hideTabs ? " hidden" : ""}`}
       >
         {tabs.map((itemId) => {
           const active = tab === itemId;
