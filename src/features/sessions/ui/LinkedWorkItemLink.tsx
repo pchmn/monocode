@@ -11,6 +11,13 @@ import {
   type GithubWorkItemDetails,
 } from "../../inbox/model/githubTasks";
 import type { LinkedWorkItem } from "../model/session";
+import {
+  LINKED_PR_STATE_LABEL,
+  LINKED_PR_STATE_TONE,
+  LinkedPrStateIcon,
+  useLinkedPrState,
+} from "./LinkedPrStateIcon";
+import { LINKED_PR_ON_DEMAND_MS } from "../model/linkedPrState";
 import { GithubWorkItemCard } from "./UserLinkPreview";
 
 const OPEN_DELAY_MS = 220;
@@ -30,6 +37,8 @@ export function LinkedWorkItemLink({
   const tooltipId = useId();
   const [open, setOpen] = useState(false);
   const { workItem, details, loadState } = useWorkItemPreview(item, cwd, open);
+  const prState = useLinkedPrState(item, cwd, LINKED_PR_ON_DEMAND_MS);
+  const prLabel = prState ? LINKED_PR_STATE_LABEL[prState] : undefined;
 
   useEffect(() => () => clearTimer(timer), []);
 
@@ -63,8 +72,19 @@ export function LinkedWorkItemLink({
           void openUrl(item.url).catch(() => undefined);
         }}
       >
+        {item.kind === "pr" ? (
+          <LinkedPrStateIcon
+            state={prState}
+            className={`mr-1 inline size-3 align-[-2px] ${(prState && LINKED_PR_STATE_TONE[prState]) ?? "text-content/50"}`}
+          />
+        ) : null}
         {item.repo} #{item.number}
       </a>
+      {prState && prLabel ? (
+        <span className={`ml-1.5 ${LINKED_PR_STATE_TONE[prState] ?? ""}`}>
+          {prLabel}
+        </span>
+      ) : null}
       {open ? (
         <Popover
           anchor={anchor}

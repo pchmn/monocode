@@ -12,6 +12,7 @@ import {
   CurrentProjectIcon,
   useProjectLabel,
 } from "../../features/projects/ui/CurrentProjectIcon";
+import { LinkedPrBadgeContent } from "../../features/sessions/ui/LinkedPrStateIcon";
 import { OrchestrationSidebarAgents } from "../../features/orchestration/ui/OrchestrationSidebarAgents";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
@@ -28,7 +29,6 @@ import {
   FileScript,
   Folder,
   GitBranch,
-  GitPullRequest,
   Inbox,
   ListFilter,
   PanelLeft,
@@ -5043,11 +5043,13 @@ export const SessionCard = memo(function SessionCard({
       className="flex shrink-0 cursor-pointer items-center gap-0.5 rounded px-0.5 text-[11px] tabular-nums text-accent hover:underline"
     >
       {linkedWorkItem.kind === "pr" ? (
-        <GitPullRequest className="size-3" strokeWidth={1.75} />
+        <LinkedPrBadgeContent item={linkedWorkItem} cwd={session.cwd} dense={dense} />
       ) : (
-        <CircleDot className="size-3" strokeWidth={1.75} />
+        <>
+          <CircleDot className="size-3" strokeWidth={1.75} />
+          {dense ? null : <span>#{linkedWorkItem.number}</span>}
+        </>
       )}
-      {dense ? null : <span>#{linkedWorkItem.number}</span>}
     </button>
   ) : null;
 
