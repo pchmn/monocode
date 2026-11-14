@@ -1,4 +1,6 @@
+use std::io::Write;
 use std::path::Path;
+use std::process::Stdio;
 
 use serde::Serialize;
 
@@ -29,6 +31,55 @@ fn git(dir: &Path, args: &[&str]) -> Option<String> {
         .then(|| String::from_utf8_lossy(&output.stdout).trim().to_owned())
 }
 
+fn patch_ids(dir: &Path, input: &[u8]) -> Option<Vec<(String, String)>> {
+    let mut child = crate::fs::git_cmd()
+        .arg("-C")
+        .arg(dir)
+        .args(["patch-id", "--stable"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .ok()?;
+    let mut stdin = child.stdin.take()?;
+    let input = input.to_vec();
+    let writer = std::thread::spawn(move || stdin.write_all(&input));
+    let output = child.wait_with_output().ok()?;
+    writer.join().ok()?.ok()?;
+    output.status.success().then(|| {
+        String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .filter_map(|line| line.split_once(' '))
+            .map(|(id, commit)| (id.to_owned(), commit.to_owned()))
+            .collect()
+    })
+}
+
+/// A commit of `target` carries the branch's whole diff: a squash merge, even when later commits touched its lines.
+fn squash_merged(dir: &Path, base: &str, target: &str) -> bool {
+    let branch_id = git(dir, &["diff", "--no-color", "--no-ext-diff", base, "HEAD"])
+        .and_then(|diff| patch_ids(dir, format!("{diff}\n").as_bytes()))
+        .and_then(|ids| ids.into_iter().next())
+        .map(|(id, _)| id);
+    let Some(branch_id) = branch_id else {
+        return false;
+    };
+    let range = format!("{base}..{target}");
+    git(
+        dir,
+        &[
+            "log",
+            "-p",
+            "--no-color",
+            "--no-ext-diff",
+            "--no-merges",
+            &range,
+        ],
+    )
+    .and_then(|log| patch_ids(dir, format!("{log}\n").as_bytes()))
+    .is_some_and(|ids| ids.iter().any(|(id, _)| *id == branch_id))
+}
+
 fn default_branch(dir: &Path) -> Option<String> {
     git(dir, &["rev-parse", "--abbrev-ref", "origin/HEAD"])
         .filter(|name| !name.is_empty() && name != "origin/HEAD")
@@ -46,9 +97,14 @@ fn status(dir: &Path, target: Option<&str>) -> WorktreeCleanupStatus {
             let head = git(dir, &["rev-parse", "HEAD"])?;
             let base = git(dir, &["merge-base", "HEAD", target])?;
             // A clean merge whose result is the target's own tree adds nothing to it.
-            let merged = git(dir, &["merge-tree", "--write-tree", target, "HEAD"])?;
+            // Conflicts make merge-tree fail: that must not reset `has_commits` too.
+            let merged =
+                git(dir, &["merge-tree", "--write-tree", target, "HEAD"]).unwrap_or_default();
             let target_tree = git(dir, &["rev-parse", &format!("{target}^{{tree}}")])?;
-            Some((merged.lines().next() == Some(&target_tree), head != base))
+            let has_commits = head != base;
+            let integrated = merged.lines().next() == Some(&target_tree)
+                || (has_commits && squash_merged(dir, &base, target));
+            Some((integrated, has_commits))
         })
         .unwrap_or((false, false));
     WorktreeCleanupStatus {
@@ -148,6 +204,28 @@ mod tests {
         sync_origin(&root);
         let got = status(&tree, Some("origin/main"));
         assert!(got.clean && got.integrated && got.has_commits);
+    }
+
+    #[test]
+    fn squash_merged_branch_is_integrated_after_main_edits_its_lines() {
+        let (_dir, root, tree) = setup();
+        commit(&tree, "b.txt", "b\n");
+        run(&root, &["merge", "--squash", "feat"]);
+        run(&root, &["commit", "-m", "squash"]);
+        commit(&root, "b.txt", "b2\n");
+        sync_origin(&root);
+        let got = status(&tree, Some("origin/main"));
+        assert!(got.clean && got.integrated && got.has_commits);
+    }
+
+    #[test]
+    fn conflicting_unmerged_branch_is_not_integrated() {
+        let (_dir, root, tree) = setup();
+        commit(&tree, "a.txt", "feat\n");
+        commit(&root, "a.txt", "main\n");
+        sync_origin(&root);
+        let got = status(&tree, Some("origin/main"));
+        assert!(!got.integrated && got.has_commits);
     }
 
     #[test]
