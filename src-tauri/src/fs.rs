@@ -2931,6 +2931,10 @@ fn git_range_context_for(root: &Path) -> Result<GitRangeContext, String> {
 
 fn git_pr_status_for(root: &Path) -> Option<GitPr> {
     let branch = git_branch(root)?;
+    // A PR from the default branch (e.g. a release PR) is not this checkout's PR.
+    if git_default_branch(root, git_remote_name(root).as_deref()).as_deref() == Some(&branch) {
+        return None;
+    }
     let repo = git_github_repo_for(root).ok()?;
     let (owner, _) = split_github_repo(&repo).ok()?;
     // `gh pr list --head` ignores `owner:branch` (matches nothing); filter the owner from the rows.
