@@ -1,9 +1,9 @@
 # Worktree cleanup on tab close
 
-When a session's tab closes (and "Stop sessions when closing their tab" is on), its worktree is removed if no open session uses it, it has no local changes, and its branch is integrated into `origin`'s default branch (squash merges included). Worktrees agents created under `.worktrees/` are swept at the same time, once they have commits, all integrated, and no other session of the project is running. Anything else is kept. (PR #44)
+When a session's tab closes (and "Stop sessions when closing their tab" is on), its worktree is removed if no open session uses it, it has no local changes, and its branch is integrated into `origin`'s default branch (squash merges included, even when later commits edited the same lines). Worktrees agents created under `.worktrees/` are swept at the same time, once they have commits, all integrated, and no other session of the project is running. Anything else is kept. (PR #44)
 
 ## Fork files
-- `src-tauri/src/worktree_cleanup.rs` — `worktree_cleanup_status`: fetch, clean check, `merge-tree` integration check
+- `src-tauri/src/worktree_cleanup.rs` — `worktree_cleanup_status`: fetch, clean check, `merge-tree` integration check, falling back to a `patch-id` match for squash merges
 - `src/features/source-control/model/worktreeCleanup.ts` — candidate selection, `isRemovable`
 - `src/features/source-control/hooks/useWorktreeCleanupOnClose.ts` — detects closed tabs, calls upstream `onRemoveWorktree` with `keepSessions`
 
