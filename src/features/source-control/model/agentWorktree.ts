@@ -218,11 +218,16 @@ export function followsAgentWorktrees(session: Session): boolean {
 }
 
 export function canAdoptAgentWorktree(session: Session): boolean {
-  return (
-    followsAgentWorktrees(session) &&
-    !!session.providerSessionId &&
-    !session.busy &&
-    !session.pendingSwitch &&
-    !session.queuedMessages?.length
-  );
+  return followsAgentWorktrees(session) && !session.pendingSwitch;
+}
+
+/** Finished tool calls that may have created a worktree: a mid-turn rescan runs when it grows. */
+export function worktreeToolCount(blocks: readonly Block[]): number {
+  let count = 0;
+  for (const block of blocks) {
+    if (block.role !== "tool" || block.tool?.status !== "completed") continue;
+    const texts = [block.tool.kind, block.text, block.tool.title, block.tool.detail];
+    if (texts.some((text) => !!text && /worktree/i.test(text))) count++;
+  }
+  return count;
 }

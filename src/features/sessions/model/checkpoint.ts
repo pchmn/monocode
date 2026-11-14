@@ -113,14 +113,16 @@ export function finishSessionTurn(
   options?: { turnId?: string; after?: Promise<unknown> },
 ): Promise<void> {
   const active = activeTurns.get(sessionId);
-  const id = options?.turnId ?? (active?.cwd === cwd ? active.id : undefined);
+  const id = options?.turnId ?? active?.id;
   if (!id) return Promise.resolve();
+  // A session can follow its agent's worktree mid-turn: finish where the turn began.
+  const turnCwd = options?.turnId ? cwd : (active?.cwd ?? cwd);
   return enqueueCheckpoint(sessionId, async () => {
     // Cancellation must stop the provider before its final snapshot is taken.
     await options?.after;
     await invoke<void>("session_checkpoint_finish_turn", {
       sessionId,
-      cwd,
+      cwd: turnCwd,
       turnId: id,
     });
   })

@@ -11,6 +11,7 @@ import type { PrContent } from "../../../features/source-control/model/gitText";
 import { hasLiveCatalog } from "../../../features/sessions/model/models";
 import type { UserQuestionReply } from "../../../features/sessions/model/userQuestion";
 import type { NativeCommandProvider } from "./nativeCommands";
+import { settleHarnessSessionMove } from "./sessionMoves";
 import type {
   ApprovalDecision,
   CompactContextInput,
@@ -277,6 +278,7 @@ export function sendHarnessTurn(input: SendTurnInput & { harness: HarnessId }) {
       throw new Error(`${input.harness} is not connected yet`);
     }
     cancelIdlePark(input.sessionId);
+    await settleHarnessSessionMove(adapter, input.sessionId, input.cwd);
     const controlled = typeof isTauri === "function" && isTauri();
     if (controlled)
       await invoke("control_authorize_turn", {
@@ -323,6 +325,7 @@ export function compactHarnessContext(
       throw new Error(`${input.harness} does not support manual compaction`);
     }
     cancelIdlePark(input.sessionId);
+    await settleHarnessSessionMove(adapter, input.sessionId, input.cwd);
     try {
       await adapter.compactContext(input);
     } finally {
@@ -353,6 +356,7 @@ export function rewindHarnessLastTurn(
       );
     }
     cancelIdlePark(input.sessionId);
+    await settleHarnessSessionMove(adapter, input.sessionId, input.cwd);
     try {
       return await adapter.rewindLastTurn(input);
     } finally {
