@@ -1,10 +1,12 @@
 import { useEffect, useId, useRef, useState } from "react";
-import {
-  CheckCircle,
-  CircleDot,
-  GitPullRequest,
-} from "../../../shared/ui/icons";
+import { CheckCircle, CircleDot } from "../../../shared/ui/icons";
+import type { LinkedWorkItem } from "../model/session";
 import { useTabSessionSummary } from "../model/tabSessionSummaries";
+import {
+  LINKED_PR_STATE_TONE,
+  LinkedPrStateIcon,
+  useLinkedPrState,
+} from "./LinkedPrStateIcon";
 import { SessionCardPreview } from "./SessionCardPreview";
 import { TerminalSpinner } from "./TerminalSpinner";
 
@@ -82,15 +84,10 @@ export function TitleTabSessionHover({ tab }: { tab: TabState }) {
   }, [!!session]);
 
   const item = session?.linkedWorkItem;
-  const WorkItemIcon = item?.kind === "pr" ? GitPullRequest : CircleDot;
   return (
     <span ref={markerRef} className="contents">
-      {item ? (
-        <WorkItemIcon
-          className="size-3 shrink-0 text-accent"
-          strokeWidth={1.75}
-          aria-label={`${item.kind === "pr" ? "PR" : "Issue"} #${item.number}`}
-        />
+      {item && session ? (
+        <TabWorkItemIcon item={item} cwd={session.cwd} />
       ) : null}
       {open && anchor && session ? (
         <SessionCardPreview
@@ -104,6 +101,39 @@ export function TitleTabSessionHover({ tab }: { tab: TabState }) {
           onPointerLeave={scheduleClose}
         />
       ) : null}
+    </span>
+  );
+}
+
+function TabWorkItemIcon({ item, cwd }: { item: LinkedWorkItem; cwd: string }) {
+  const label = `${item.kind === "pr" ? "PR" : "Issue"} #${item.number}`;
+  if (item.kind !== "pr")
+    return (
+      <CircleDot
+        className="size-3 shrink-0 text-accent"
+        strokeWidth={1.75}
+        aria-label={label}
+      />
+    );
+  return <TabPrIcon item={item} cwd={cwd} label={label} />;
+}
+
+function TabPrIcon({
+  item,
+  cwd,
+  label,
+}: {
+  item: LinkedWorkItem;
+  cwd: string;
+  label: string;
+}) {
+  const state = useLinkedPrState(item, cwd);
+  return (
+    <span aria-label={label} className="contents">
+      <LinkedPrStateIcon
+        state={state}
+        className={`size-3 shrink-0 ${(state && LINKED_PR_STATE_TONE[state]) ?? "text-accent"}`}
+      />
     </span>
   );
 }
