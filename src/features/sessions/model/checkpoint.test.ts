@@ -71,6 +71,16 @@ it("an old completion cannot clear the newer turn's active token", async () => {
   expect(second).not.toBe(first);
 });
 
+it("finishes a stopped turn where it began after the session moved", async () => {
+  const turnId = await checkpoint.beginSessionTurn("s", "/repo");
+  await checkpoint.finishSessionTurn("s", "/repo/.worktrees/next");
+  expect(invoke).toHaveBeenLastCalledWith("session_checkpoint_finish_turn", {
+    sessionId: "s",
+    cwd: "/repo",
+    turnId,
+  });
+});
+
 it("does not capture a workspace when no local turn was started", async () => {
   await checkpoint.finishSessionTurn("s", "/repo");
   expect(invoke).not.toHaveBeenCalled();

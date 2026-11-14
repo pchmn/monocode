@@ -6,6 +6,7 @@ import {
   pickAgentWorktree,
   pickNewAgentWorktree,
   worktreeAddTargets,
+  worktreeToolCount,
 } from "./agentWorktree";
 import type { Worktree } from "./worktrees";
 
@@ -181,16 +182,27 @@ describe("pickNewAgentWorktree", () => {
 });
 
 describe("canAdoptAgentWorktree", () => {
-  const base = { ...newSession("claude", ROOT, "opus"), providerSessionId: "p1" };
+  const base = newSession("claude", ROOT, "opus");
 
-  it("only moves idle sessions still on the project checkout", () => {
+  it("moves sessions still on the project checkout, mid-turn included", () => {
     expect(canAdoptAgentWorktree(base)).toBe(true);
-    expect(canAdoptAgentWorktree({ ...base, busy: true })).toBe(false);
+    expect(canAdoptAgentWorktree({ ...base, busy: true })).toBe(true);
     expect(canAdoptAgentWorktree({ ...base, worktreeCwd: `${ROOT}/wt` })).toBe(false);
-    expect(canAdoptAgentWorktree({ ...base, providerSessionId: undefined })).toBe(false);
   });
 
   it("skips providers that cannot resume from another cwd", () => {
     expect(canAdoptAgentWorktree({ ...base, harness: "pi" })).toBe(false);
+  });
+});
+
+describe("worktreeToolCount", () => {
+  it("counts finished tool calls that mention a worktree", () => {
+    const blocks = [
+      shell("git worktree add .worktrees/x -b feat/x"),
+      shell("pnpm worktree feat/y"),
+      shell("pnpm test"),
+      shell("git worktree add .worktrees/z", "running"),
+    ];
+    expect(worktreeToolCount(blocks)).toBe(2);
   });
 });

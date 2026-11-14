@@ -87,7 +87,7 @@ describe("workspace folder worktrees", () => {
 
   it("let a session on a folder adopt its agent's worktree, not one already on a worktree", async () => {
     await loadCodeWorkspace(file);
-    const session = { ...newSession("claude", file, "opus"), providerSessionId: "p1" };
+    const session = newSession("claude", file, "opus");
     expect(canAdoptAgentWorktree({ ...session, worktreeCwd: "/me/sabri/api" })).toBe(true);
     expect(canAdoptAgentWorktree({ ...session, worktreeCwd: "/me/wt/api-feature" })).toBe(false);
   });
