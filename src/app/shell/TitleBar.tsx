@@ -47,6 +47,7 @@ import { HarnessIcon } from "../../features/sessions/ui/HarnessIcon";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { TerminalSpinner } from "../../features/sessions/ui/TerminalSpinner";
 import { BackgroundBadge } from "../../features/sessions/ui/BackgroundTasks";
+import { TitleTabSessionHover } from "../../features/sessions/ui/TitleTabSessionHover";
 import { TabLabel } from "../../shared/ui/TabLabel";
 import { WindowControls } from "./WindowControls";
 import { PixelMascot } from "../../features/projects/ui/PixelMascot";
@@ -83,6 +84,8 @@ const APP_VIEW_ICONS = {
 
 export type Tab = {
   id: string;
+  /** Focused session, whose card the tab shows on hover. */
+  sessionId?: string;
   appView?: AppView;
   /** A Mono open as a tab; its name is the title. */
   mono?: { mascot: string; color: string; status: MonoState["status"] };
@@ -470,6 +473,7 @@ function TitleTabItem({
             >
               {headline}
             </TabLabel>
+            <TitleTabSessionHover tab={tab} />
             {tab.dirty ? (
               <span
                 className="size-1.5 shrink-0 rounded-full bg-content/70"
