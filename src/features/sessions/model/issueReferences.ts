@@ -1,10 +1,13 @@
 import type { GithubWorkItem } from "../../inbox/model/githubTasks";
 import { normalizeProjectPath } from "../../projects/model/recents";
 import type { UserLink, UserMessageLink } from "./linkPreview";
+import { githubRepo } from "../../inbox/model/githubTasks";
 import {
   loadIssueMentionItems,
+  lookupWorkItem,
   searchIssueMentionItems,
 } from "./issueMentions";
+import { workspaceSiblingRepos } from "./workspaceSiblingRepos";
 
 type MarkdownNode = {
   type: string;
@@ -15,7 +18,9 @@ type MarkdownNode = {
 
 // A fragment href survives sanitizing and hardening, unlike a custom scheme.
 const HREF_PREFIX = "#monocode-issue-";
-const REFERENCE = /(?<![\w#&/.-])(?<!\[Image )#(\d{1,7})(?![\w-])/g;
+// `#12`, or `repo#12` / `owner/repo#12` for another GitHub repo.
+const REFERENCE =
+  /(?<![\w#&/.-])(?<!\[Image )((?:[\w.-]+\/)?[\w.-]+)?#(\d{1,7})(?![\w-])/g;
 const SKIPPED = new Set([
   "link",
   "linkReference",
@@ -25,20 +30,29 @@ const SKIPPED = new Set([
 ]);
 const MISS_TTL_MS = 60_000;
 
-export function issueReferenceNumber(href: string | undefined): number | null {
+/** `repo` as written in the text (`name` or `owner/name`), null for the project's repo. */
+export type IssueTarget = { number: number; repo: string | null };
+
+export function issueReferenceTarget(
+  href: string | undefined,
+): IssueTarget | null {
   if (!href?.startsWith(HREF_PREFIX)) return null;
-  const number = Number(href.slice(HREF_PREFIX.length));
-  return Number.isInteger(number) && number > 0 ? number : null;
+  const [digits, repo] = href.slice(HREF_PREFIX.length).split("@", 2);
+  const number = Number(digits);
+  if (!Number.isInteger(number) || number <= 0) return null;
+  return { number, repo: repo || null };
 }
 
 export type IssueReference = { number: number; index: number; length: number };
 
 export function findIssueReferences(text: string): IssueReference[] {
-  return [...text.matchAll(REFERENCE)].map((match) => ({
-    number: Number(match[1]),
-    index: match.index,
-    length: match[0].length,
-  }));
+  return [...text.matchAll(REFERENCE)]
+    .filter((match) => !match[1])
+    .map((match) => ({
+      number: Number(match[2]),
+      index: match.index,
+      length: match[0].length,
+    }));
 }
 
 export type UserMessageLinks = UserMessageLink & {
@@ -81,7 +95,7 @@ function splitText(value: string): MarkdownNode[] | null {
     if (at > last) parts.push({ type: "text", value: value.slice(last, at) });
     parts.push({
       type: "link",
-      url: `${HREF_PREFIX}${match[1]}`,
+      url: `${HREF_PREFIX}${match[2]}${match[1] ? `@${match[1]}` : ""}`,
       children: [{ type: "text", value: match[0] }],
     });
     last = at + match[0].length;
@@ -109,7 +123,7 @@ export function remarkIssueReferences() {
 
 const references = new Map<string, Promise<GithubWorkItem | null>>();
 
-async function lookup(cwd: string, number: number) {
+async function lookupInProject(cwd: string, number: number) {
   // Fails fast outside a GitHub repo, before any per-number lookup.
   const recent = await loadIssueMentionItems(cwd, "all");
   const hit = recent.find((item) => item.number === number);
@@ -118,15 +132,42 @@ async function lookup(cwd: string, number: number) {
   return found ?? null;
 }
 
-/** The issue or PR `#number` names in the project's GitHub repo, or null. */
+/** `name` as the workspace repo of that name, else as a repo of the project's owner. */
+async function qualifyRepo(cwd: string, name: string, siblings: string[]) {
+  const current = await githubRepo(cwd).catch(() => null);
+  const known = [current, ...siblings].find(
+    (repo) => repo?.split("/")[1]?.toLowerCase() === name.toLowerCase(),
+  );
+  if (known) return known;
+  if (!current) throw new Error("No GitHub owner to qualify the repo with");
+  return `${current.split("/")[0]}/${name}`;
+}
+
+async function lookup(cwd: string, number: number, repo: string | null) {
+  if (repo?.includes("/")) return lookupWorkItem(cwd, repo, number);
+  const siblings = await workspaceSiblingRepos(cwd);
+  if (repo) {
+    return lookupWorkItem(cwd, await qualifyRepo(cwd, repo, siblings), number);
+  }
+  const own = await lookupInProject(cwd, number).catch(() => null);
+  if (own) return own;
+  // A bare number the project lacks may name an item of another workspace repo.
+  const hits = await Promise.all(
+    siblings.map((other) => lookupWorkItem(cwd, other, number)),
+  );
+  return hits.find(Boolean) ?? null;
+}
+
+/** The issue or PR `#number` names in `repo`, by default the project's GitHub repo, or null. */
 export function resolveIssueReference(
   cwd: string,
   number: number,
+  repo: string | null = null,
 ): Promise<GithubWorkItem | null> {
-  const key = `${normalizeProjectPath(cwd)}|${number}`;
+  const key = `${normalizeProjectPath(cwd)}|${repo ?? ""}|${number}`;
   const hit = references.get(key);
   if (hit) return hit;
-  const promise = lookup(cwd, number).catch(() => null);
+  const promise = lookup(cwd, number, repo).catch(() => null);
   references.set(key, promise);
   // A miss may be an issue opened since: allow a retry later.
   void promise.then((item) => {

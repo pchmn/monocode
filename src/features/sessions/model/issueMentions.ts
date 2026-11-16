@@ -189,19 +189,31 @@ export function searchIssueMentionItems(
 }
 
 async function lookupNumber(cwd: string, scope: IssueScope, number: number) {
-  const repo = await githubRepo(cwd);
+  const hit = await lookupWorkItem(cwd, await githubRepo(cwd), number);
+  if (!hit || (scope === "open" && hit.state !== "open")) return [];
+  return [hit];
+}
+
+/** The PR or issue `number` of `repo` (`owner/name`), or null. */
+export async function lookupWorkItem(
+  cwd: string,
+  repo: string,
+  number: number,
+): Promise<GithubWorkItem | null> {
   // `gh issue view` also resolves PR numbers, so prefer the PR answer.
   const [pr, issue] = await Promise.allSettled(
     (["pr", "issue"] as const).map((kind) =>
-      invoke<GithubWorkItem>("git_github_work_item", { cwd, repo, kind, number }),
+      invoke<GithubWorkItem>("git_github_work_item", {
+        cwd,
+        repo,
+        kind,
+        number,
+      }),
     ),
   );
-  const hit =
-    pr.status === "fulfilled"
-      ? pr.value
-      : issue.status === "fulfilled"
-        ? issue.value
-        : null;
-  if (!hit || (scope === "open" && hit.state !== "open")) return [];
-  return [hit];
+  return pr.status === "fulfilled"
+    ? pr.value
+    : issue.status === "fulfilled"
+      ? issue.value
+      : null;
 }

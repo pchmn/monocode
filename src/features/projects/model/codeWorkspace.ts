@@ -88,6 +88,10 @@ export function parseCodeWorkspace(
   return out;
 }
 
+export function loadedCodeWorkspaces(): string[] {
+  return [...cache.keys()];
+}
+
 export function codeWorkspaceFolders(
   file: string,
 ): CodeWorkspaceFolder[] | undefined {

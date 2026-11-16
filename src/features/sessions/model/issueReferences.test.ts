@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   findIssueReferences,
-  issueReferenceNumber,
+  issueReferenceTarget,
   remarkIssueReferences,
   userMessageLinks,
 } from "./issueReferences";
@@ -30,17 +30,40 @@ describe("remarkIssueReferences", () => {
       "link",
       "text",
     ]);
-    expect(issueReferenceNumber(nodes[1]!.url)).toBe(277);
+    expect(issueReferenceTarget(nodes[1]!.url)).toEqual({
+      number: 277,
+      repo: null,
+    });
     expect(nodes[1]!.children).toEqual([text("#277")]);
-    expect(issueReferenceNumber(nodes[3]!.url)).toBe(12);
+    expect(issueReferenceTarget(nodes[3]!.url)?.number).toBe(12);
+  });
+
+  it("links references to another repo, with or without its owner", () => {
+    const nodes = run([text("See sabri#13528 and acme/web.app#4.")]);
+    expect(nodes.map((n) => n.type)).toEqual([
+      "text",
+      "link",
+      "text",
+      "link",
+      "text",
+    ]);
+    expect(nodes[1]!.children).toEqual([text("sabri#13528")]);
+    expect(issueReferenceTarget(nodes[1]!.url)).toEqual({
+      number: 13528,
+      repo: "sabri",
+    });
+    expect(issueReferenceTarget(nodes[3]!.url)).toEqual({
+      number: 4,
+      repo: "acme/web.app",
+    });
   });
 
   it("ignores hashes that are not references", () => {
     for (const value of [
-      "a#12",
       "#12a",
       "##12",
       "x/#12",
+      "a/b/c#12",
       "#12-3",
       "#abc",
       "[Image #1]",
@@ -65,11 +88,14 @@ describe("remarkIssueReferences", () => {
   });
 });
 
-describe("issueReferenceNumber", () => {
+describe("issueReferenceTarget", () => {
   it("only reads our own hrefs", () => {
-    expect(issueReferenceNumber("#monocode-issue-42")).toBe(42);
-    expect(issueReferenceNumber("#section")).toBeNull();
-    expect(issueReferenceNumber(undefined)).toBeNull();
+    expect(issueReferenceTarget("#monocode-issue-42")).toEqual({
+      number: 42,
+      repo: null,
+    });
+    expect(issueReferenceTarget("#section")).toBeNull();
+    expect(issueReferenceTarget(undefined)).toBeNull();
   });
 });
 
@@ -87,10 +113,10 @@ describe("findIssueReferences", () => {
     ]);
   });
 
-  it("ignores anchors, other hashes and image tokens", () => {
-    expect(findIssueReferences("see a#12, ##3, #abc and [Image #1]")).toEqual(
-      [],
-    );
+  it("ignores other repos, other hashes and image tokens", () => {
+    expect(
+      findIssueReferences("see a#12, o/r#4, ##3, #abc and [Image #1]"),
+    ).toEqual([]);
   });
 });
 
