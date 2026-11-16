@@ -1,6 +1,12 @@
 {
   "version": 2,
   "skills": {
+    "prototype": {
+      "source": "emilkowalski/skills",
+      "sourceType": "github",
+      "skillPath": "skills/prototype/SKILL.md",
+      "computedHash": "00fb13a91dbb746e2be91ae4dd67c4cc1f9907351f2d404a0cc6c849be1ebd95"
+    },
     "sync-upstream": {
       "source": "pchmn/skills",
       "sourceType": "github",
