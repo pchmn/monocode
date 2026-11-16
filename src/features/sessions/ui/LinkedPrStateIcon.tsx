@@ -68,11 +68,30 @@ export const LINKED_PR_CI_LABEL: Record<LinkedPrCi, string> = {
   pass: "CI passed",
 };
 
-const CI_DOT: Record<LinkedPrCi, string> = {
-  pending: "bg-amber-400 animate-pulse",
-  fail: "bg-rose-500",
-  pass: "bg-emerald-400",
-};
+// Cuts the icon under the CI badge, so the pulse never shows the icon through.
+const CI_CUTOUT = "radial-gradient(circle at calc(100% - 1.5px) calc(100% - 1.5px), transparent 4.5px, #000 5px)";
+
+function CiBadge({ ci }: { ci: LinkedPrCi }) {
+  const box = "absolute -bottom-0.5 -right-0.5 size-[7px]";
+  if (ci === "pending")
+    return (
+      <span className={`${box} grid place-items-center`}>
+        <span className="size-[5px] animate-pulse rounded-full bg-amber-400" />
+      </span>
+    );
+  return (
+    <svg
+      viewBox="0 0 10 10"
+      fill="none"
+      strokeWidth={2.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`${box} ${ci === "pass" ? "stroke-emerald-400" : "stroke-rose-500"}`}
+    >
+      <path d={ci === "pass" ? "M1.8 5.4 4.1 7.7 8.4 2.6" : "M2.3 2.3 7.7 7.7M7.7 2.3 2.3 7.7"} />
+    </svg>
+  );
+}
 
 const STATE_ICON = {
   open: GitPullRequest,
@@ -97,14 +116,15 @@ export function LinkedPrStateIcon({
   className?: string;
 }) {
   const Icon = state ? STATE_ICON[state] : GitPullRequest;
-  const icon = <Icon className={className} strokeWidth={1.75} />;
-  if (!ci) return icon;
+  if (!ci) return <Icon className={className} strokeWidth={1.75} />;
   return (
     <span className="relative inline-flex shrink-0 align-[-2px]">
-      {icon}
-      <span
-        className={`absolute -bottom-px -right-px size-[5px] rounded-full ${CI_DOT[ci]}`}
+      <Icon
+        className={className}
+        strokeWidth={1.75}
+        style={{ maskImage: CI_CUTOUT, WebkitMaskImage: CI_CUTOUT }}
       />
+      <CiBadge ci={ci} />
     </span>
   );
 }
