@@ -42,64 +42,29 @@ export function WorkingAgentTriage({
 }) {
   const { needsYou, running } = triageAgents(agents);
   const split = needsYou.length > 0 && running.length > 0;
-  const rowProps = (agent: LiveAgent) => ({
-    agent,
-    now,
-    selected: agent.id === activeSessionId,
-    onSelect,
-    ...appearance,
-  });
+  const rows = (list: LiveAgent[], gap: string) =>
+    list.length > 0 ? (
+      <div className={`flex shrink-0 flex-col ${gap}`}>
+        {list.map((agent) => (
+          <AgentRow
+            key={agent.id}
+            agent={agent}
+            now={now}
+            selected={agent.id === activeSessionId}
+            onSelect={onSelect}
+            {...appearance}
+          />
+        ))}
+      </div>
+    ) : null;
 
   return (
     <>
       {split ? <SectionLabel>Needs you</SectionLabel> : null}
-      {needsYou.length > 0 ? (
-        <div className="flex shrink-0 flex-col gap-1">
-          {needsYou.map((agent) => (
-            <AttentionCard key={agent.id} {...rowProps(agent)} />
-          ))}
-        </div>
-      ) : null}
+      {/* Tinted approval cards would merge at 1px. */}
+      {rows(needsYou, "gap-1")}
       {split ? <SectionLabel>Running</SectionLabel> : null}
-      {running.map((group) => {
-        const seed = projectName(group.cwd);
-        const color = resolveTabGroupColor(
-          group.key,
-          appearance.groupColors,
-          appearance.groupCustomColors,
-          seed,
-        );
-        return (
-          <div
-            key={group.key}
-            data-working-group={group.key}
-            title={resolveTabGroupLabel(group.key, appearance.groupLabels, seed)}
-            className="flex min-w-0 shrink-0"
-          >
-            <div className="flex w-6 shrink-0 flex-col items-center pt-[10px]">
-              <ProjectMascot
-                project={seed}
-                color={color}
-                name={resolveTabGroupMascot(group.key, appearance.groupMascots)}
-                className="size-2 shrink-0"
-                active
-              />
-              {group.agents.length > 1 ? (
-                <span
-                  aria-hidden
-                  className="mt-1 w-px flex-1 rounded-full"
-                  style={{ background: `color-mix(in srgb, ${color} 40%, transparent)` }}
-                />
-              ) : null}
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-px">
-              {group.agents.map((agent) => (
-                <RunningLine key={agent.id} {...rowProps(agent)} />
-              ))}
-            </div>
-          </div>
-        );
-      })}
+      {rows(running.flatMap((group) => group.agents), "gap-px")}
     </>
   );
 }
@@ -129,6 +94,7 @@ function useRow({ agent, now, groupLabels, groupColors, groupCustomColors, group
   const details = [agent.title, project, activity, elapsed].filter(Boolean);
   return {
     seed,
+    project,
     color: resolveTabGroupColor(key, groupColors, groupCustomColors, seed),
     mascot: resolveTabGroupMascot(key, groupMascots),
     resting,
@@ -139,56 +105,32 @@ function useRow({ agent, now, groupLabels, groupColors, groupCustomColors, group
   };
 }
 
-function rowClass(selected: boolean, extra: string, idle = "hover:bg-content/8"): string {
-  return `${selected ? "bg-selection" : idle} ${extra}`;
+function statusTone(agent: LiveAgent): string {
+  if (agent.needsApproval) return "text-amber-400";
+  if (agent.done) return "text-emerald-400";
+  return "text-content/50";
 }
 
-function AttentionCard(props: RowProps) {
-  const { agent, selected, onSelect } = props;
-  const row = useRow(props);
+function StatusGlyph({ agent, resting }: { agent: LiveAgent; resting: boolean }) {
+  if (agent.needsApproval) return <CircleAlert className="size-3 shrink-0" strokeWidth={1.75} />;
+  if (agent.done) return <Check className="size-3 shrink-0" strokeWidth={2.25} />;
+  if (resting)
+    return (
+      <span className="grid size-3 shrink-0 place-items-center">
+        <BackgroundDot />
+      </span>
+    );
   return (
-    <button
-      type="button"
-      title={row.title}
-      aria-label={row.label}
-      aria-current={selected ? "true" : undefined}
-      data-live-agent-card={agent.id}
-      onClick={() => onSelect?.(agent.id)}
-      className={rowClass(
-        selected,
-        "flex w-full min-w-0 shrink-0 flex-col gap-0.5 rounded-md px-2 py-1.5 text-left",
-        agent.needsApproval ? "bg-amber-400/8 hover:bg-amber-400/12" : undefined,
-      )}
-    >
-      <span className="flex w-full min-w-0 items-center gap-2">
-        <ProjectMascot project={row.seed} color={row.color} name={row.mascot} className="size-2 shrink-0" />
-        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold leading-snug">
-          {agent.title}
-        </span>
-        {row.elapsed ? (
-          <span className="shrink-0 text-[11px] tabular-nums text-content/40">{row.elapsed}</span>
-        ) : null}
-      </span>
-      <span
-        className={`flex w-full min-w-0 items-center gap-1.5 pl-4 text-[11px] leading-tight ${
-          agent.needsApproval ? "text-amber-400" : "text-emerald-400"
-        }`}
-      >
-        {agent.needsApproval ? (
-          <CircleAlert className="size-3 shrink-0" strokeWidth={1.75} />
-        ) : (
-          <Check className="size-3 shrink-0" strokeWidth={2.25} />
-        )}
-        <span className="min-w-0 truncate">{row.activity}</span>
-      </span>
-    </button>
+    <TerminalSpinner className="inline-block w-3 shrink-0 select-none text-center text-[11px] leading-none" />
   );
 }
 
-// Running agents need nothing from the user: one line each, the activity lives in the tooltip.
-function RunningLine(props: RowProps) {
+// The state glyph leads every row, so Needs you and Running share one shape.
+function AgentRow(props: RowProps) {
   const { agent, selected, onSelect } = props;
   const row = useRow(props);
+  const live = !agent.needsApproval && !agent.done;
+  const idle = agent.needsApproval ? "bg-amber-400/8 hover:bg-amber-400/12" : "hover:bg-content/8";
   return (
     <button
       type="button"
@@ -197,25 +139,36 @@ function RunningLine(props: RowProps) {
       aria-current={selected ? "true" : undefined}
       data-live-agent-card={agent.id}
       onClick={() => onSelect?.(agent.id)}
-      className={rowClass(
-        selected,
-        "flex h-7 w-full min-w-0 shrink-0 items-center gap-2 rounded-md px-2 text-left",
-      )}
+      className={`${selected ? "bg-selection" : idle} grid w-full min-w-0 shrink-0 grid-cols-[12px_minmax(0,1fr)] gap-x-2 gap-y-0.5 rounded-md px-2 py-1.5 text-left`}
     >
-      {row.resting ? (
-        <span className="grid w-3 shrink-0 place-items-center">
-          <BackgroundDot />
+      <span className={`flex h-[18px] items-center ${statusTone(agent)}`}>
+        <StatusGlyph agent={agent} resting={row.resting} />
+      </span>
+      <span className="flex min-w-0 items-center gap-2">
+        <span className={`min-w-0 flex-1 truncate text-[13px] leading-snug ${live ? "" : "font-semibold"}`}>
+          {agent.title}
         </span>
-      ) : (
-        <TerminalSpinner className="inline-block w-3 shrink-0 select-none text-center text-[11px] leading-none text-content/50" />
-      )}
-      <span className="min-w-0 flex-1 truncate text-[13px] leading-snug">{agent.title}</span>
-      {row.elapsed ? (
-        <span className="shrink-0 whitespace-nowrap text-[11px] tabular-nums text-content/40">
-          {row.elapsed}
-        </span>
-      ) : null}
-      <HarnessIcon harness={agent.harness} className="size-3 shrink-0 opacity-45" />
+        {row.elapsed ? (
+          <span className="shrink-0 whitespace-nowrap text-[11px] tabular-nums text-content/40">
+            {row.elapsed}
+          </span>
+        ) : null}
+      </span>
+      <span className="col-start-2 flex min-w-0 items-center gap-1.5 text-[11px] leading-tight text-content/45">
+        <ProjectMascot project={row.seed} color={row.color} name={row.mascot} className="size-2 shrink-0" />
+        <span className="shrink-0 text-content/60">{row.project}</span>
+        {row.activity ? (
+          <>
+            <span aria-hidden className="text-content/25">·</span>
+            <span className={`min-w-0 flex-1 truncate ${agent.needsApproval ? "text-amber-400/90" : ""}`}>
+              {row.activity}
+            </span>
+          </>
+        ) : (
+          <span className="flex-1" />
+        )}
+        <HarnessIcon harness={agent.harness} className="size-3 shrink-0 opacity-45" />
+      </span>
     </button>
   );
 }
