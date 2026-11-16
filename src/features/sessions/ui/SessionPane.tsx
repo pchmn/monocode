@@ -50,6 +50,7 @@ import {
   type WorkspaceMode,
   type ComposerTurnOptions,
 } from "../model/session";
+import { branchPrSessionId } from "../model/branchPrAutoLink";
 import { sessionHasBtwThreads, supportsBtwHarness } from "../model/btw";
 import { BtwSheet, useBtwConversation } from "./BtwSheet";
 import { AgentTranscript } from "./AgentTranscript";
@@ -685,7 +686,7 @@ const LocalSessionPane = memo(function LocalSessionPane({
       context={session.context}
       statusInfo={{
         costUsd: session.costUsd,
-        sessionId: session.id,
+        sessionId: branchPrSessionId(session),
         pr:
           session.linkedWorkItem?.kind === "pr"
             ? session.linkedWorkItem

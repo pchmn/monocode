@@ -20,33 +20,17 @@ import {
 import type { LinkedWorkItem } from "../model/session";
 import {
   LINKED_PR_STATE_TONE,
-  LinkedPrCiPill,
   LinkedPrStateIcon,
-  LinkedStatusPill,
   useLinkedPrCi,
   useLinkedPrState,
 } from "./LinkedPrStateIcon";
+import { LinkedPrStatusPills } from "./LinkedPrStatusPills";
 
 const PR_STATE_LABEL: Record<LinkedPrState, string> = {
   open: "Open",
   draft: "Draft",
   merged: "Merged",
   closed: "Closed",
-};
-
-const REVIEW: Record<string, { value: string; className: string }> = {
-  APPROVED: {
-    value: "approved",
-    className: "bg-emerald-400/15 text-emerald-400/90",
-  },
-  CHANGES_REQUESTED: {
-    value: "changes requested",
-    className: "bg-orange-400/15 text-orange-400/95",
-  },
-  REVIEW_REQUIRED: {
-    value: "awaiting",
-    className: "bg-content/[0.06] text-content/55",
-  },
 };
 
 export function LinkedWorkItemBlock({
@@ -65,7 +49,6 @@ export function LinkedWorkItemBlock({
     storedPrState ?? (isPr && workItem ? prStateOf(workItem) : null);
   const state = isPr ? prPill(prState) : issuePill(workItem);
   const prActive = prState === "open" || prState === "draft";
-  const review = prActive ? REVIEW[details?.reviewDecision ?? ""] : undefined;
   const author =
     details?.author && ownLogins && !ownLogins.has(details.author.toLowerCase())
       ? details.author
@@ -84,7 +67,7 @@ export function LinkedWorkItemBlock({
         event.stopPropagation();
         void openUrl(item.url).catch(() => undefined);
       }}
-      className="group mt-3 block w-full min-w-[276px] rounded-lg border border-stroke bg-content/[0.04] px-2.5 py-2 text-left transition-colors duration-100 ease-out hover:border-content/10 hover:bg-content/[0.07] active:scale-[0.99]"
+      className="group mt-3 block w-full min-w-[276px] cursor-pointer rounded-lg border border-stroke bg-content/[0.04] px-2.5 py-2 text-left transition-colors duration-100 ease-out hover:border-content/10 hover:bg-content/[0.07] active:scale-[0.99]"
     >
       <span className="flex items-center gap-1.5 text-[11px] text-content/55 [container-type:inline-size]">
         {isPr ? (
@@ -117,15 +100,13 @@ export function LinkedWorkItemBlock({
       ) : (
         <span className="mt-1.5 block h-3 w-4/5 rounded bg-content/10 motion-safe:animate-pulse" />
       )}
-      {isPr && (ci || review) ? (
-        <span className="mt-1.5 flex flex-nowrap items-center gap-1.5 whitespace-nowrap">
-          {ci && prActive ? <LinkedPrCiPill ci={ci} /> : null}
-          {review ? (
-            <LinkedStatusPill label="Review" className={review.className}>
-              {review.value}
-            </LinkedStatusPill>
-          ) : null}
-        </span>
+      {isPr ? (
+        <LinkedPrStatusPills
+          ci={ci}
+          active={prActive}
+          reviewDecision={details?.reviewDecision}
+          className="mt-1.5"
+        />
       ) : null}
       {labelCount > 0 || byline ? (
         <span className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5 text-[10.5px] text-content/45 [container-type:inline-size]">

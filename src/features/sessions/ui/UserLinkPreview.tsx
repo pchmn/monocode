@@ -34,6 +34,7 @@ import {
   type LinkPreviewMetadata,
   type UserLink,
 } from "../model/linkPreview";
+import { GithubPrStatusPills } from "./LinkedPrStatusPills";
 
 export function UserLinkPreview({
   link,
@@ -304,6 +305,7 @@ function GithubWorkItemPreview({
             item={item}
             details={details}
             loadState={loadState}
+            cwd={cwd}
           />
         </Popover>
       ) : null}
@@ -316,11 +318,13 @@ function GithubWorkItemCard({
   item,
   details,
   loadState,
+  cwd,
 }: {
   parsed: GithubWorkItemLink;
   item: GithubWorkItem | null;
   details: GithubWorkItemDetails | null;
   loadState: "idle" | "loading" | "ready" | "unavailable";
+  cwd?: string;
 }) {
   const status = workItemStatus(parsed.kind, item);
   const summary = plainTextSummary(details?.body ?? "");
@@ -382,6 +386,7 @@ function GithubWorkItemCard({
         </div>
       )}
 
+      {parsed.kind === "pr" ? <GithubPrStatusPills repo={parsed.repo} number={parsed.number} cwd={cwd} reviewDecision={details?.reviewDecision} className="mt-2" /> : null}
       {details?.author || updated ? (
         <div className="mt-2.5 flex min-w-0 items-center gap-1.5 text-[10px] text-content/45">
           {details?.author ? (

@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  branchPrSessionId,
   claimAutoLink,
   linkedWorkItemFromPrUrl,
   onBranchPr,
@@ -46,5 +47,34 @@ describe("branchPrAutoLink", () => {
     reportBranchPr("s1", pr);
     expect(listener).toHaveBeenCalledTimes(1);
     expect(listener).toHaveBeenCalledWith("s1", pr);
+  });
+
+  describe("branchPrSessionId", () => {
+    const sent = [{ id: "u1", role: "user" as const, text: "hi" }];
+    const session = (extra: object) =>
+      ({ id: "s1", cwd: "/repo", blocks: sent, ...extra }) as Parameters<
+        typeof branchPrSessionId
+      >[0];
+
+    it("waits for the first sent message", () => {
+      expect(branchPrSessionId(session({ blocks: [] }))).toBeUndefined();
+      expect(
+        branchPrSessionId(
+          session({ blocks: [{ ...sent[0], draft: true }] }),
+        ),
+      ).toBeUndefined();
+      expect(branchPrSessionId(session({}))).toBe("s1");
+    });
+
+    it("waits for the worktree a draft asked for", () => {
+      expect(
+        branchPrSessionId(session({ workspaceMode: "worktree" })),
+      ).toBeUndefined();
+      expect(
+        branchPrSessionId(
+          session({ workspaceMode: "worktree", worktreeCwd: "/wt" }),
+        ),
+      ).toBe("s1");
+    });
   });
 });
