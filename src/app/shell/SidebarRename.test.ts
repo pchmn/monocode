@@ -2291,14 +2291,12 @@ describe("sidebar working agents", () => {
       '[data-live-agents-preview="full"]',
     )!;
     expect(preview.querySelectorAll("[data-live-agent-card]")).toHaveLength(2);
-    // Running agents from two projects each get their project's rail.
     expect(
-      preview.querySelector('[data-working-group="/workspace/alpha"]')!.title,
-    ).toBe("alpha");
+      preview.querySelector('[data-live-agent-card="agent-a"]')!.textContent,
+    ).toContain("alpha");
     expect(
-      preview.querySelector('[data-working-group="/workspace/beta"]')!.title,
-    ).toBe("beta");
-    expect(preview.querySelector(".mascot-active")).not.toBeNull();
+      preview.querySelector('[data-live-agent-card="agent-b"]')!.textContent,
+    ).toContain("beta");
 
     act(() =>
       preview

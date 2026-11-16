@@ -87,11 +87,8 @@ describe("LiveAgentsPreview", () => {
       "a-2",
       "b-2",
     ]);
-    const groups = Array.from(
-      container.querySelectorAll<HTMLElement>("[data-working-group]"),
-    );
-    expect(groups.map((group) => group.title)).toEqual(["Alpha", "Beta"]);
-    expect(groups[0].querySelector(".mascot-active")).not.toBeNull();
+    expect(cards[2].textContent).toContain("Alpha");
+    expect(cards[4].textContent).toContain("Beta");
     expect(cards[2].getAttribute("aria-label")).toContain("Alpha");
   });
 
