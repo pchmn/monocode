@@ -1,8 +1,8 @@
 # Session linked to its branch's PR
 
-When the PR of a session's branch is found (the `PR #n` under the composer), the session's GitHub link switches to that PR, replacing its issue or filling an empty link: the sidebar badge, update dot and activity card then follow the PR. Each session and PR pair is linked once, so relinking the issue by hand sticks.
+When the PR of a session's branch is found (the `PR #n` under the composer), the session's GitHub link switches to that PR, replacing its issue or filling an empty link: the sidebar badge, update dot and activity card then follow the PR. Each session and PR pair is linked once, so relinking the issue by hand sticks. The lookup only links once the first message is sent and the session's own worktree exists: a draft in a VS Code workspace still sits on the first folder, whose branch PR belongs to another repo.
 
-In the session hover card, the linked issue or PR is a block under the details: `repo #n` with its state pill, its title on two lines and, for a PR, a CI pill and a review pill that name what they measure ("CI failed", "Review awaiting"), then the author when it isn't one of the `gh` accounts, and the last update. A linked issue shows up to two of its labels instead of the pills. Clicking the block opens it on GitHub.
+In the session hover card, the linked issue or PR is a block under the details: `repo #n` with its state pill, its title on two lines and, for a PR, a CI pill and a review pill that name what they measure ("CI failed", "Review awaiting"), then the author when it isn't one of the `gh` accounts, and the last update. A linked issue shows up to two of its labels instead of the pills. Clicking the block opens it on GitHub. The hover popover of a `PR #n` chip in the transcript shows the same CI and review pills.
 
 A linked PR's sidebar badge, title-tab icon and hover-card block show its state: green when open, grey draft icon while a draft, violet merge icon once merged, red once closed. While open or draft, a small tinted chip cut into the icon's bottom-right corner gives its CI rollup (amber pulsing dot while checks run, soft red cross once one fails, green check once they pass). The icon stands alone: the sidebar badge drops the PR number; its tooltip reads e.g. "Open · CI running". Each visible PR is fetched every 3 minutes until merged, every 45 s while its CI runs; merged PRs are remembered across launches and never fetched again.
 
@@ -12,15 +12,17 @@ A linked PR's sidebar badge, title-tab icon and hover-card block show its state:
 - `src/features/sessions/ui/LinkedWorkItemBlock.tsx` — the hover card's linked issue or PR block, its data and the signed-in `gh` logins
 - `src/features/sessions/ui/sessionCardFit.ts` — card width classes: only the block's status pills widen the card
 - `src/features/sessions/model/linkedPrState.ts` — linked PR state and CI store (merged PRs in localStorage; checks via `fetchGithubPrChecks`)
+- `src/features/sessions/ui/LinkedPrStatusPills.tsx` — CI and review pills row, shared by the block and the transcript chip popover
 - `src/features/sessions/ui/LinkedPrStateIcon.tsx` — `useLinkedPrState`, state icon, sidebar badge content (icon only), CI and status pills of the block
 
 ## Upstream hooks
 - `src/app/App.tsx` — `useBranchPrAutoLink(onSetHistorySessionLinkedWorkItem)`
-- `src/features/sessions/ui/SessionPane.tsx` — `sessionId` in `statusInfo`
+- `src/features/sessions/ui/SessionPane.tsx` — `sessionId: branchPrSessionId(session)` in `statusInfo`
+- `src/features/sessions/ui/UserLinkPreview.tsx` — `GithubPrStatusPills` in `GithubWorkItemCard`, `cwd` passed to it
 - `src/app/shell/Sidebar.tsx` — `LinkedPrBadgeContent` in the session row's work item badge
 - `src/features/sessions/ui/SessionCardPreview.tsx` — `LinkedWorkItemBlock` (with `cwd`) after the details in place of the linked item `Detail`; `SESSION_CARD_FIT` in place of `width={260}`
 - `src/features/sessions/ui/SessionStatusLine.tsx` (fork file) — `reportBranchPr` in `SessionPrLink`
 
 ## Verify
 - `src/features/sessions/model/branchPrAutoLink.test.ts`, `linkedPrState.test.ts`
-- Manual: start a session from an inbox issue, let the agent open a PR; within ~20 s the sidebar badge turns into the PR. Relink the issue from the session menu: it stays. Hover the session: its card shows the PR block with its title, CI and review pills, and clicking the block opens the PR. A session linked to an issue shows the issue's labels instead. Merge that PR: within ~3 min the badge and the card's PR block turn violet. A draft PR's badge is grey with the draft icon; push to an open PR's branch and its icon gets an amber pulsing dot, then a green check or red cross once CI ends.
+- Manual: start a session from an inbox issue, let the agent open a PR; within ~20 s the sidebar badge turns into the PR. Relink the issue from the session menu: it stays. Start a draft in a VS Code workspace whose first folder sits on a branch with a PR, pick another folder's worktree, send: the session links that worktree's PR, never the first folder's. Hover a `PR #n` chip in a message: its popover shows the CI and review pills. Hover the session: its card shows the PR block with its title, CI and review pills, and clicking the block opens the PR. A session linked to an issue shows the issue's labels instead. Merge that PR: within ~3 min the badge and the card's PR block turn violet. A draft PR's badge is grey with the draft icon; push to an open PR's branch and its icon gets an amber pulsing dot, then a green check or red cross once CI ends.

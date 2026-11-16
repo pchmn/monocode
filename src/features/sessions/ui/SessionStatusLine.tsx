@@ -24,14 +24,17 @@ const prTtl = (pr: Pr) => (pr ? PR_TTL_MS : NO_PR_TTL_MS);
 
 function useBranchPr(cwd: string, branch: string | undefined): Pr {
   const key = `${cwd}\0${branch ?? ""}`;
-  const [pr, setPr] = useState<Pr>(prCache.get(key)?.pr ?? null);
+  const [found, setFound] = useState<{ key: string; pr: Pr }>(() => ({
+    key,
+    pr: prCache.get(key)?.pr ?? null,
+  }));
   useEffect(() => {
     if (!cwd) return;
     let live = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const schedule = (entry: { at: number; pr: Pr }) => {
       if (!live) return;
-      setPr(entry.pr);
+      setFound({ key, pr: entry.pr });
       const due = entry.at + prTtl(entry.pr) - Date.now();
       timer = setTimeout(load, Math.max(due, 1_000));
     };
@@ -52,7 +55,8 @@ function useBranchPr(cwd: string, branch: string | undefined): Pr {
       clearTimeout(timer);
     };
   }, [cwd, key]);
-  return pr;
+  // Until the new checkout's lookup lands, the previous one's PR is not this one's.
+  return found.key === key ? found.pr : (prCache.get(key)?.pr ?? null);
 }
 
 /** Sits before the context ring; the cost follows it in `SessionStatusLine`. */

@@ -1,4 +1,5 @@
-import type { LinkedWorkItem } from "./session";
+import { hasOwnWorktree } from "../../projects/model/workspaceFolderWorktrees";
+import type { LinkedWorkItem, Session } from "./session";
 
 export type BranchPr = { number: number; url: string };
 
@@ -10,6 +11,24 @@ const listeners = new Set<Listener>();
 
 export function reportBranchPr(sessionId: string, pr: BranchPr) {
   for (const listener of listeners) listener(sessionId, pr);
+}
+
+/**
+ * The session id once its checkout is final: a draft still sits on the project's
+ * default folder, whose branch PR is not the session's.
+ */
+export function branchPrSessionId(
+  session: Pick<
+    Session,
+    "id" | "blocks" | "cwd" | "worktreeCwd" | "workspaceMode"
+  >,
+): string | undefined {
+  const sent = session.blocks.some(
+    (block) => block.role === "user" && !block.draft,
+  );
+  const worktreePending =
+    session.workspaceMode === "worktree" && !hasOwnWorktree(session);
+  return sent && !worktreePending ? session.id : undefined;
 }
 
 export function onBranchPr(listener: Listener): () => void {
