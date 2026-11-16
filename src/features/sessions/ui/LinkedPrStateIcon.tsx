@@ -83,25 +83,48 @@ const CHIP_TINT: Record<LinkedPrCi, string> = {
   pass: "bg-emerald-400/20",
 };
 
+function CiGlyph({ ci, className }: { ci: LinkedPrCi; className: string }) {
+  if (ci === "pending") {
+    return <span className="size-1 animate-pulse rounded-full bg-amber-400" />;
+  }
+  return (
+    <svg
+      viewBox="0 0 10 10"
+      fill="none"
+      strokeWidth={2.2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`${className} ${ci === "pass" ? "stroke-emerald-400/90" : "stroke-red-400/85"}`}
+    >
+      <path d={CI_GLYPH[ci]} />
+    </svg>
+  );
+}
+
 function CiChip({ ci }: { ci: LinkedPrCi }) {
   return (
     <span
       className={`absolute -bottom-[3.5px] -right-[3.5px] grid size-2 place-items-center rounded-full ${CHIP_TINT[ci]}`}
     >
-      {ci === "pending" ? (
-        <span className="size-1 animate-pulse rounded-full bg-amber-400" />
-      ) : (
-        <svg
-          viewBox="0 0 10 10"
-          fill="none"
-          strokeWidth={2.2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className={`size-1.5 ${ci === "pass" ? "stroke-emerald-400/90" : "stroke-red-400/85"}`}
-        >
-          <path d={CI_GLYPH[ci]} />
-        </svg>
-      )}
+      <CiGlyph ci={ci} className="size-1.5" />
+    </span>
+  );
+}
+
+const CI_PILL_TONE: Record<LinkedPrCi, string> = {
+  pending: "text-amber-400/90",
+  fail: "text-red-400/85",
+  pass: "text-emerald-400/90",
+};
+
+/** The CI rollup as a pill, beside the state pill of the GitHub preview card. */
+export function LinkedPrCiPill({ ci }: { ci: LinkedPrCi }) {
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-medium ${CHIP_TINT[ci]} ${CI_PILL_TONE[ci]}`}
+    >
+      <CiGlyph ci={ci} className="size-2" />
+      {LINKED_PR_CI_LABEL[ci]}
     </span>
   );
 }

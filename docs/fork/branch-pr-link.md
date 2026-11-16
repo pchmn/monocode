@@ -4,7 +4,7 @@ When the PR of a session's branch is found (the `PR #n` under the composer), the
 
 In the session hover card, the linked issue or PR stays on one line (the card widens past 260 px, up to 480 px, rather than wrapping it) and opens on GitHub, and hovering it shows the same GitHub preview card as an issue or PR chip in a message.
 
-A linked PR's sidebar badge, title-tab icon and hover-card line show its state: green when open, grey draft icon while a draft, violet merge icon once merged, red once closed. While open or draft, a small tinted chip cut into the icon's bottom-right corner gives its CI rollup (amber pulsing dot while checks run, soft red cross once one fails, green check once they pass). The icon stands alone: the sidebar badge drops the PR number and the hover-card line carries no state text (the GitHub preview on hover has it); the badge's tooltip reads e.g. "Open · CI running". Each visible PR is fetched every 3 minutes until merged, every 45 s while its CI runs; merged PRs are remembered across launches and never fetched again.
+A linked PR's sidebar badge, title-tab icon and hover-card line show its state: green when open, grey draft icon while a draft, violet merge icon once merged, red once closed. While open or draft, a small tinted chip cut into the icon's bottom-right corner gives its CI rollup (amber pulsing dot while checks run, soft red cross once one fails, green check once they pass). The icon stands alone: the sidebar badge drops the PR number and the hover-card line carries no state text (the GitHub preview on hover has it, with a CI pill such as "CI failed" beside the state); the badge's tooltip reads e.g. "Open · CI running". Each visible PR is fetched every 3 minutes until merged, every 45 s while its CI runs; merged PRs are remembered across launches and never fetched again.
 
 ## Fork files
 - `src/features/sessions/model/branchPrAutoLink.ts` — PR report channel, once-per-pair guard (localStorage)
@@ -12,14 +12,14 @@ A linked PR's sidebar badge, title-tab icon and hover-card line show its state: 
 - `src/features/sessions/ui/LinkedWorkItemLink.tsx` — link and its hover preview (reuses `GithubWorkItemCard`)
 - `src/features/sessions/ui/sessionCardFit.ts` — card width classes: only the one-line link sets the card's width
 - `src/features/sessions/model/linkedPrState.ts` — linked PR state and CI store (merged PRs in localStorage; checks via `fetchGithubPrChecks`)
-- `src/features/sessions/ui/LinkedPrStateIcon.tsx` — `useLinkedPrState`, state icon, sidebar badge content (icon only)
+- `src/features/sessions/ui/LinkedPrStateIcon.tsx` — `useLinkedPrState`, state icon, sidebar badge content (icon only), CI pill of the preview card
 
 ## Upstream hooks
 - `src/app/App.tsx` — `useBranchPrAutoLink(onSetHistorySessionLinkedWorkItem)`
 - `src/features/sessions/ui/SessionPane.tsx` — `sessionId` in `statusInfo`
 - `src/app/shell/Sidebar.tsx` — `LinkedPrBadgeContent` in the session row's work item badge
 - `src/features/sessions/ui/SessionCardPreview.tsx` — `LinkedWorkItemLink` (with `cwd`) in the linked item `Detail`; `SESSION_CARD_FIT` in place of `width={260}`
-- `src/features/sessions/ui/UserLinkPreview.tsx` — `GithubWorkItemCard` exported
+- `src/features/sessions/ui/UserLinkPreview.tsx` — `GithubWorkItemCard` exported, with a `statusExtra` slot after its state pill
 - `src/features/sessions/ui/SessionStatusLine.tsx` (fork file) — `reportBranchPr` in `SessionPrLink`
 
 ## Verify
