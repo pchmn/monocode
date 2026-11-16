@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { CheckCircle, CircleDot } from "../../../shared/ui/icons";
 import type { LinkedWorkItem } from "../model/session";
+import { inHoverBridge } from "../model/hoverBridge";
 import { useTabSessionSummary } from "../model/tabSessionSummaries";
 import {
   LINKED_PR_STATE_TONE,
@@ -35,6 +36,7 @@ export function TitleTabSessionHover({ tab }: { tab: TabState }) {
   const clear = () => {
     window.clearTimeout(timers.current.open);
     window.clearTimeout(timers.current.close);
+    timers.current = {};
   };
   const close = () => {
     clear();
@@ -82,6 +84,31 @@ export function TitleTabSessionHover({ tab }: { tab: TabState }) {
       clear();
     };
   }, [!!session]);
+
+  useEffect(() => {
+    if (!open || !anchor) return;
+    // A busy main thread (agent streaming) can fire the close timer while the
+    // pointer crosses the gap, so pointer position decides, not enter/leave.
+    const onMove = (event: PointerEvent) => {
+      const card = document.getElementById(id);
+      const overPopover =
+        event.target instanceof Element &&
+        event.target.closest("[data-popover-side]");
+      const inside =
+        overPopover ||
+        (card &&
+          inHoverBridge(
+            event.clientX,
+            event.clientY,
+            anchor.getBoundingClientRect(),
+            card.getBoundingClientRect(),
+          ));
+      if (inside) clear();
+      else if (timers.current.close === undefined) scheduleClose();
+    };
+    window.addEventListener("pointermove", onMove, true);
+    return () => window.removeEventListener("pointermove", onMove, true);
+  }, [open, anchor, id]);
 
   const item = session?.linkedWorkItem;
   return (
