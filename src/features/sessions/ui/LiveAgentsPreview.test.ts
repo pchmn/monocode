@@ -60,14 +60,14 @@ afterEach(() => {
 });
 
 describe("LiveAgentsPreview", () => {
-  it("groups agents by project in order of their first agent", () => {
+  it("lists agents that need the user first, then running agents by project", () => {
     render({
       agents: [
-        agent("a-1", "/repo/a"),
         agent("b-1", "/repo/b", { needsApproval: true }),
-        agent("a-2", "/repo/a"),
+        agent("a-1", "/repo/a"),
         agent("b-2", "/repo/b"),
-        agent("c-1", "/repo/c"),
+        agent("a-2", "/repo/a"),
+        agent("c-1", "/repo/c", { done: true, activity: "Done" }),
       ],
       groupLabels: { "/repo/a": "Alpha", "/repo/b": "Beta" },
       groupColors: {},
@@ -75,59 +75,32 @@ describe("LiveAgentsPreview", () => {
       groupMascots: {},
     });
 
-    const headers = Array.from(
-      container.querySelectorAll<HTMLElement>("[data-working-group]"),
-    );
-    expect(headers.map((header) => header.textContent)).toEqual([
-      "Alpha2",
-      "Beta2",
-      "c1",
-    ]);
+    expect(container.textContent).toContain("Needs you");
+    expect(container.textContent).toContain("Running");
     const cards = Array.from(
       container.querySelectorAll<HTMLElement>("[data-live-agent-card]"),
     );
     expect(cards.map((card) => card.dataset.liveAgentCard)).toEqual([
+      "b-1",
+      "c-1",
       "a-1",
       "a-2",
-      "b-1",
       "b-2",
-      "c-1",
     ]);
-    expect(cards[0].textContent).not.toContain("Alpha");
-    expect(cards[0].querySelector(".mascot-active")).not.toBeNull();
-  });
-
-  it("folds a project group and keeps its approval visible", () => {
-    render({
-      agents: [
-        agent("b-1", "/repo/b", { needsApproval: true }),
-        agent("a-1", "/repo/a"),
-      ],
-      groupLabels: { "/repo/a": "Alpha", "/repo/b": "Beta" },
-    });
-
-    const beta = container.querySelector<HTMLElement>(
-      '[data-working-group="/repo/b"]',
-    )!;
-    act(() => beta.click());
-    expect(beta.getAttribute("aria-expanded")).toBe("false");
-    expect(beta.querySelector('[aria-label="Needs approval"]')).not.toBeNull();
-    const cards = Array.from(
-      container.querySelectorAll<HTMLElement>("[data-live-agent-card]"),
+    const groups = Array.from(
+      container.querySelectorAll<HTMLElement>("[data-working-group]"),
     );
-    expect(cards.map((card) => card.dataset.liveAgentCard)).toEqual(["a-1"]);
+    expect(groups.map((group) => group.title)).toEqual(["Alpha", "Beta"]);
+    expect(groups[0].querySelector(".mascot-active")).not.toBeNull();
+    expect(cards[2].getAttribute("aria-label")).toContain("Alpha");
   });
 
-  it("lists a single project flat, with the project on each card", () => {
-    render({
-      agents: [agent("a-1", "/repo/a"), agent("a-2", "/repo/a")],
-      groupLabels: { "/repo/a": "Alpha" },
-    });
+  it("drops the section labels when every agent is running", () => {
+    render({ agents: [agent("a-1", "/repo/a"), agent("a-2", "/repo/a")] });
 
-    expect(container.querySelector("[data-working-group]")).toBeNull();
-    expect(
-      container.querySelector("[data-live-agent-card]")?.textContent,
-    ).toContain("Alpha");
+    expect(container.textContent).not.toContain("Needs you");
+    expect(container.textContent).not.toContain("Running");
+    expect(container.querySelectorAll("[data-live-agent-card]")).toHaveLength(2);
   });
 
   it("shows only when an agent runs outside the active session", () => {
@@ -184,8 +157,8 @@ describe("LiveAgentsPreview", () => {
 
     const card = (id: string) =>
       container.querySelector<HTMLElement>(`[data-live-agent-card="${id}"]`)!;
-    expect(card("a").textContent).toContain("Working");
-    expect(card("b").textContent).toContain("[bg] npm run dev");
+    expect(card("a").getAttribute("aria-label")).toContain("Working");
+    expect(card("b").getAttribute("aria-label")).toContain("[bg] npm run dev");
     expect(card("b").querySelector(".animate-pulse")).not.toBeNull();
   });
 });
