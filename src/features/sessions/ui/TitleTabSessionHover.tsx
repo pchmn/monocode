@@ -139,7 +139,7 @@ function TabWorkItemIcon({ item, cwd }: { item: LinkedWorkItem; cwd: string }) {
   if (item.kind !== "pr")
     return (
       <CircleDot
-        className="size-3 shrink-0 text-accent"
+        className="ml-auto size-3 shrink-0 text-accent"
         strokeWidth={1.75}
         aria-label={label}
       />
@@ -160,7 +160,10 @@ function TabPrIcon({
   const ci = useLinkedPrCi(item);
   const title = prStateTitle(state, ci);
   return (
-    <span aria-label={title ? `${label}, ${title}` : label} className="contents">
+    <span
+      aria-label={title ? `${label}, ${title}` : label}
+      className="ml-auto inline-flex shrink-0"
+    >
       <LinkedPrStateIcon
         state={state}
         ci={ci}

@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore, type CSSProperties } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import {
   GitMerge,
   GitPullRequest,
@@ -70,57 +70,39 @@ const LINKED_PR_CI_LABEL: Record<LinkedPrCi, string> = {
 
 const CI_GLYPH = {
   pass: "M1.8 5.4 4.1 7.7 8.4 2.6",
-  fail: "M2.3 2.3 7.7 7.7M7.7 2.3 2.3 7.7",
+  fail: "M2.6 2.6 7.4 7.4M7.4 2.6 2.6 7.4",
 } as const;
-type Cutout = Pick<
-  CSSProperties,
-  | "maskImage"
-  | "maskComposite"
-  | "maskSize"
-  | "WebkitMaskImage"
-  | "WebkitMaskComposite"
-  | "WebkitMaskSize"
->;
 
-const DOT_CUTOUT =
-  "radial-gradient(circle at calc(100% - 1.5px) calc(100% - 1.5px), transparent 3.6px, #000 4.1px)";
+// Cut out under the chip so the pulse never shows the icon through it.
+const CHIP_CUTOUT =
+  "radial-gradient(circle at calc(100% - 0.5px) calc(100% - 0.5px), transparent 5.2px, #000 5.7px)";
 
-// Cut out under the badge so the pulse never shows the icon; glyph coordinates assume a 12px icon.
-function cutoutStyle(ci: LinkedPrCi): Cutout {
-  if (ci === "pending") return { maskImage: DOT_CUTOUT, WebkitMaskImage: DOT_CUTOUT };
-  const glyph = `url("data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='${CI_GLYPH[ci]}' transform='translate(7 7) scale(.7)' fill='none' stroke='black' stroke-width='4.6' stroke-linecap='round' stroke-linejoin='round'/></svg>`,
-  )}")`;
-  const layers = `${glyph}, linear-gradient(#000, #000)`;
-  return {
-    maskImage: layers,
-    WebkitMaskImage: layers,
-    maskComposite: "exclude",
-    WebkitMaskComposite: "xor",
-    maskSize: "100% 100%",
-    WebkitMaskSize: "100% 100%",
-  };
-}
+const CHIP_TINT: Record<LinkedPrCi, string> = {
+  pending: "bg-amber-400/20",
+  fail: "bg-red-400/20",
+  pass: "bg-emerald-400/20",
+};
 
-function CiBadge({ ci }: { ci: LinkedPrCi }) {
-  const box = "absolute -bottom-0.5 -right-0.5 size-[7px]";
-  if (ci === "pending")
-    return (
-      <span className={`${box} grid place-items-center`}>
-        <span className="size-[6px] animate-pulse rounded-full bg-amber-400" />
-      </span>
-    );
+function CiChip({ ci }: { ci: LinkedPrCi }) {
   return (
-    <svg
-      viewBox="0 0 10 10"
-      fill="none"
-      strokeWidth={2.4}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={`${box} ${ci === "pass" ? "stroke-emerald-400" : "stroke-rose-500"}`}
+    <span
+      className={`absolute -bottom-[3.5px] -right-[3.5px] grid size-2 place-items-center rounded-full ${CHIP_TINT[ci]}`}
     >
-      <path d={CI_GLYPH[ci]} />
-    </svg>
+      {ci === "pending" ? (
+        <span className="size-1 animate-pulse rounded-full bg-amber-400" />
+      ) : (
+        <svg
+          viewBox="0 0 10 10"
+          fill="none"
+          strokeWidth={2.2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`size-1.5 ${ci === "pass" ? "stroke-emerald-400/90" : "stroke-red-400/85"}`}
+        >
+          <path d={CI_GLYPH[ci]} />
+        </svg>
+      )}
+    </span>
   );
 }
 
@@ -136,7 +118,7 @@ export function prStateTitle(state: LinkedPrState | null, ci: LinkedPrCi | null)
   return parts.filter(Boolean).join(" · ") || undefined;
 }
 
-/** The PR state icon, with a dot at its corner for the CI of an open PR. */
+/** The PR state icon, with a chip at its corner for the CI of an open PR. */
 export function LinkedPrStateIcon({
   state,
   ci = null,
@@ -153,9 +135,9 @@ export function LinkedPrStateIcon({
       <Icon
         className={className}
         strokeWidth={1.75}
-        style={cutoutStyle(ci)}
+        style={{ maskImage: CHIP_CUTOUT, WebkitMaskImage: CHIP_CUTOUT }}
       />
-      <CiBadge ci={ci} />
+      <CiChip ci={ci} />
     </span>
   );
 }
