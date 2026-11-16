@@ -4,7 +4,7 @@ import type { LinkedWorkItem } from "../model/session";
 import { inHoverBridge } from "../model/hoverBridge";
 import { useTabSessionSummary } from "../model/tabSessionSummaries";
 import {
-  LINKED_PR_STATE_TONE,
+  linkedPrStateTone,
   LinkedPrStateIcon,
   prStateTitle,
   useLinkedPrCi,
@@ -167,7 +167,7 @@ function TabPrIcon({
       <LinkedPrStateIcon
         state={state}
         ci={ci}
-        className={`size-3 shrink-0 ${state ? LINKED_PR_STATE_TONE[state] : "text-accent"}`}
+        className={`size-3 shrink-0 ${linkedPrStateTone(state)}`}
       />
     </span>
   );
