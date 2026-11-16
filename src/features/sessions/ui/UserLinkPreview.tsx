@@ -6,7 +6,6 @@ import {
   useRef,
   useState,
   type MouseEvent,
-  type ReactNode,
 } from "react";
 import {
   CircleDot,
@@ -312,18 +311,16 @@ function GithubWorkItemPreview({
   );
 }
 
-export function GithubWorkItemCard({
+function GithubWorkItemCard({
   parsed,
   item,
   details,
   loadState,
-  statusExtra,
 }: {
   parsed: GithubWorkItemLink;
   item: GithubWorkItem | null;
   details: GithubWorkItemDetails | null;
   loadState: "idle" | "loading" | "ready" | "unavailable";
-  statusExtra?: ReactNode;
 }) {
   const status = workItemStatus(parsed.kind, item);
   const summary = plainTextSummary(details?.body ?? "");
@@ -352,7 +349,6 @@ export function GithubWorkItemCard({
         >
           {status.label}
         </span>
-        {statusExtra}
       </div>
 
       {item ? (

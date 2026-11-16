@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import {
   GitMerge,
   GitPullRequest,
@@ -117,14 +117,37 @@ const CI_PILL_TONE: Record<LinkedPrCi, string> = {
   pass: "text-emerald-400/90",
 };
 
-/** The CI rollup as a pill, beside the state pill of the GitHub preview card. */
+const CI_PILL_VALUE: Record<LinkedPrCi, string> = {
+  pending: "running",
+  fail: "failed",
+  pass: "passed",
+};
+
 export function LinkedPrCiPill({ ci }: { ci: LinkedPrCi }) {
   return (
-    <span
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-medium ${CHIP_TINT[ci]} ${CI_PILL_TONE[ci]}`}
-    >
+    <LinkedStatusPill label="CI" className={`${CHIP_TINT[ci]} ${CI_PILL_TONE[ci]}`}>
       <CiGlyph ci={ci} className="size-2" />
-      {LINKED_PR_CI_LABEL[ci]}
+      {CI_PILL_VALUE[ci]}
+    </LinkedStatusPill>
+  );
+}
+
+/** A tinted pill that names what it measures, so it never reads as a GitHub label. */
+export function LinkedStatusPill({
+  label,
+  className,
+  children,
+}: {
+  label: string;
+  className: string;
+  children: ReactNode;
+}) {
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-[7px] py-px text-[10px] font-medium ${className}`}
+    >
+      <span className="font-normal opacity-60">{label}</span>
+      {children}
     </span>
   );
 }
