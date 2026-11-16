@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore, type CSSProperties } from "react";
 import {
   GitMerge,
   GitPullRequest,
@@ -68,9 +68,39 @@ export const LINKED_PR_CI_LABEL: Record<LinkedPrCi, string> = {
   pass: "CI passed",
 };
 
-// Cuts the icon under the CI badge, so the pulse never shows the icon through.
-const ciCutout = (radius: number) =>
-  `radial-gradient(circle at calc(100% - 1.5px) calc(100% - 1.5px), transparent ${radius}px, #000 ${radius + 0.5}px)`;
+const CI_GLYPH = {
+  pass: "M1.8 5.4 4.1 7.7 8.4 2.6",
+  fail: "M2.3 2.3 7.7 7.7M7.7 2.3 2.3 7.7",
+} as const;
+type Cutout = Pick<
+  CSSProperties,
+  | "maskImage"
+  | "maskComposite"
+  | "maskSize"
+  | "WebkitMaskImage"
+  | "WebkitMaskComposite"
+  | "WebkitMaskSize"
+>;
+
+const DOT_CUTOUT =
+  "radial-gradient(circle at calc(100% - 1.5px) calc(100% - 1.5px), transparent 3.6px, #000 4.1px)";
+
+// Cut out under the badge so the pulse never shows the icon; glyph coordinates assume a 12px icon.
+function cutoutStyle(ci: LinkedPrCi): Cutout {
+  if (ci === "pending") return { maskImage: DOT_CUTOUT, WebkitMaskImage: DOT_CUTOUT };
+  const glyph = `url("data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='${CI_GLYPH[ci]}' transform='translate(7 7) scale(.7)' fill='none' stroke='black' stroke-width='4.6' stroke-linecap='round' stroke-linejoin='round'/></svg>`,
+  )}")`;
+  const layers = `${glyph}, linear-gradient(#000, #000)`;
+  return {
+    maskImage: layers,
+    WebkitMaskImage: layers,
+    maskComposite: "exclude",
+    WebkitMaskComposite: "xor",
+    maskSize: "100% 100%",
+    WebkitMaskSize: "100% 100%",
+  };
+}
 
 function CiBadge({ ci }: { ci: LinkedPrCi }) {
   const box = "absolute -bottom-0.5 -right-0.5 size-[7px]";
@@ -89,7 +119,7 @@ function CiBadge({ ci }: { ci: LinkedPrCi }) {
       strokeLinejoin="round"
       className={`${box} ${ci === "pass" ? "stroke-emerald-400" : "stroke-rose-500"}`}
     >
-      <path d={ci === "pass" ? "M1.8 5.4 4.1 7.7 8.4 2.6" : "M2.3 2.3 7.7 7.7M7.7 2.3 2.3 7.7"} />
+      <path d={CI_GLYPH[ci]} />
     </svg>
   );
 }
@@ -118,13 +148,12 @@ export function LinkedPrStateIcon({
 }) {
   const Icon = state ? STATE_ICON[state] : GitPullRequest;
   if (!ci) return <Icon className={className} strokeWidth={1.75} />;
-  const cutout = ciCutout(ci === "pending" ? 3.6 : 4.5);
   return (
     <span className="relative inline-flex shrink-0 align-[-2px]">
       <Icon
         className={className}
         strokeWidth={1.75}
-        style={{ maskImage: cutout, WebkitMaskImage: cutout }}
+        style={cutoutStyle(ci)}
       />
       <CiBadge ci={ci} />
     </span>
