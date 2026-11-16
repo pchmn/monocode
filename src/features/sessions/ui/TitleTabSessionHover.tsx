@@ -139,7 +139,7 @@ function TabWorkItemIcon({ item, cwd }: { item: LinkedWorkItem; cwd: string }) {
   if (item.kind !== "pr")
     return (
       <CircleDot
-        className="ml-auto size-3 shrink-0 text-accent"
+        className="ml-auto size-3 shrink-0 text-emerald-400/90"
         strokeWidth={1.75}
         aria-label={label}
       />
