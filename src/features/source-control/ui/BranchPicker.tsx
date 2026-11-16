@@ -19,6 +19,7 @@ import {
 import { useLockOverscroll } from "../../../shared/hooks/useLockOverscroll";
 import { useProjectBranchesState } from "../hooks/useProjectBranches";
 import { useBranchWorktree } from "../hooks/useBranchWorktree";
+import { useBranchPickerFetch } from "../hooks/useBranchPickerFetch";
 import { branchHeldMessage } from "../model/branchWorktree";
 import { BranchWorktreeChip } from "./BranchWorktreeChip";
 import type { Worktree } from "../model/worktrees";
@@ -95,6 +96,7 @@ export function BranchPicker({
   const { branches: projectBranches, settled: branchesSettled } =
     useProjectBranchesState(cwd, inProject);
   const branchWorktree = useBranchWorktree(cwd, inProject && open);
+  const fetching = useBranchPickerFetch(cwd, inProject && open);
 
   const current = branch || projectBranches?.current || null;
   const detached = !branch && !!projectBranches?.detached;
@@ -419,7 +421,13 @@ export function BranchPicker({
             rows={rows}
             active={active}
             busy={busy}
-            emptyLabel={query.trim() ? "No matching branches" : "No branches"}
+            emptyLabel={
+              fetching
+                ? "Fetching remote branches…"
+                : query.trim()
+                  ? "No matching branches"
+                  : "No branches"
+            }
             onActive={setActive}
             onPick={pick}
             heldBy={branchWorktree}
