@@ -12,9 +12,10 @@ import {
 } from "../../inbox/model/githubTasks";
 import type { LinkedWorkItem } from "../model/session";
 import {
-  LINKED_PR_STATE_LABEL,
   LINKED_PR_STATE_TONE,
   LinkedPrStateIcon,
+  prStateTitle,
+  useLinkedPrCi,
   useLinkedPrState,
 } from "./LinkedPrStateIcon";
 import { LINKED_PR_ON_DEMAND_MS } from "../model/linkedPrState";
@@ -38,7 +39,7 @@ export function LinkedWorkItemLink({
   const [open, setOpen] = useState(false);
   const { workItem, details, loadState } = useWorkItemPreview(item, cwd, open);
   const prState = useLinkedPrState(item, cwd, LINKED_PR_ON_DEMAND_MS);
-  const prLabel = prState ? LINKED_PR_STATE_LABEL[prState] : undefined;
+  const ci = useLinkedPrCi(item);
 
   useEffect(() => () => clearTimer(timer), []);
 
@@ -73,18 +74,20 @@ export function LinkedWorkItemLink({
         }}
       >
         {item.kind === "pr" ? (
-          <LinkedPrStateIcon
-            state={prState}
-            className={`mr-1 inline size-3 align-[-2px] ${(prState && LINKED_PR_STATE_TONE[prState]) ?? "text-content/50"}`}
-          />
+          <span
+            role="img"
+            aria-label={prStateTitle(prState, ci)}
+            className="mr-1 inline-flex align-[-2px]"
+          >
+            <LinkedPrStateIcon
+              state={prState}
+              ci={ci}
+              className={`inline size-3 ${prState ? LINKED_PR_STATE_TONE[prState] : "text-content/50"}`}
+            />
+          </span>
         ) : null}
         {item.repo} #{item.number}
       </a>
-      {prState && prLabel ? (
-        <span className={`ml-1.5 ${LINKED_PR_STATE_TONE[prState] ?? ""}`}>
-          {prLabel}
-        </span>
-      ) : null}
       {open ? (
         <Popover
           anchor={anchor}

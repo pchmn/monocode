@@ -6,6 +6,8 @@ import { useTabSessionSummary } from "../model/tabSessionSummaries";
 import {
   LINKED_PR_STATE_TONE,
   LinkedPrStateIcon,
+  prStateTitle,
+  useLinkedPrCi,
   useLinkedPrState,
 } from "./LinkedPrStateIcon";
 import { SessionCardPreview } from "./SessionCardPreview";
@@ -155,11 +157,14 @@ function TabPrIcon({
   label: string;
 }) {
   const state = useLinkedPrState(item, cwd);
+  const ci = useLinkedPrCi(item);
+  const title = prStateTitle(state, ci);
   return (
-    <span aria-label={label} className="contents">
+    <span aria-label={title ? `${label}, ${title}` : label} className="contents">
       <LinkedPrStateIcon
         state={state}
-        className={`size-3 shrink-0 ${(state && LINKED_PR_STATE_TONE[state]) ?? "text-accent"}`}
+        ci={ci}
+        className={`size-3 shrink-0 ${state ? LINKED_PR_STATE_TONE[state] : "text-accent"}`}
       />
     </span>
   );
