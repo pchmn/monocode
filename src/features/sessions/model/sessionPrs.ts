@@ -8,28 +8,56 @@ const EMPTY: LinkedWorkItem[] = [];
 const listeners = new Set<() => void>();
 let cache: Store | null = null;
 
-const CREATE_PR_TITLE = /\bgh\s+pr\s+create\b|create_pull_request/i;
+const CREATE_PR = /\bgh\s+pr\s+create\b|create_pull_request/i;
 const PR_URL = /https:\/\/github\.com\/([\w.-]+\/[\w.-]+)\/pull\/(\d+)/g;
 
-/** PRs the agent opened: a `gh pr create` (or GitHub MCP) call whose output holds the new PR's URL. */
-export function createdPrsFromBlocks(blocks: readonly Block[]): LinkedWorkItem[] {
-  const found: LinkedWorkItem[] = [];
-  for (const block of blocks) {
-    const tool = block.tool;
-    if (!tool?.detail || tool.status === "failed") continue;
-    if (!CREATE_PR_TITLE.test(tool.title ?? "")) continue;
-    // A failed create can still print an existing PR's URL ("already exists"): take the last one only.
-    const matches = [...tool.detail.matchAll(PR_URL)];
-    const match = matches[matches.length - 1];
-    if (!match) continue;
-    found.push({
-      kind: "pr",
-      repo: match[1]!,
-      number: Number(match[2]),
-      url: `https://github.com/${match[1]}/pull/${match[2]}`,
-    });
-  }
-  return found;
+type ToolBlock = Block & { tool: NonNullable<Block["tool"]> };
+
+function printedPr(block: Block): LinkedWorkItem | undefined {
+  const tool = block.tool;
+  if (!tool?.detail || tool.status === "failed") return undefined;
+  // A failed create can still print an existing PR's URL ("already exists"): take the last one only.
+  const matches = [...tool.detail.matchAll(PR_URL)];
+  const match = matches[matches.length - 1];
+  if (!match) return undefined;
+  return {
+    kind: "pr",
+    repo: match[1]!,
+    number: Number(match[2]),
+    url: `https://github.com/${match[1]}/pull/${match[2]}`,
+  };
+}
+
+// A shell row's title keeps only the command's first line; Codex keeps it whole in the preview title.
+function createsPr({ tool }: ToolBlock, commands: Readonly<Record<string, string>>) {
+  const command = tool.callId ? commands[tool.callId] : undefined;
+  return [tool.title, tool.preview?.title, command].some((text) => text && CREATE_PR.test(text));
+}
+
+/**
+ * PRs the agent opened: a `gh pr create` (or GitHub MCP) call whose output holds the new PR's URL.
+ * `commands` holds full shell commands by tool call id.
+ */
+export function createdPrsFromBlocks(
+  blocks: readonly Block[],
+  commands: Readonly<Record<string, string>> = {},
+): LinkedWorkItem[] {
+  return blocks.flatMap((block) => {
+    const pr = printedPr(block);
+    return pr && createsPr(block as ToolBlock, commands) ? [pr] : [];
+  });
+}
+
+/** Shell calls that printed a PR URL but whose full command is still unknown. */
+export function prCallsMissingCommand(
+  blocks: readonly Block[],
+  commands: Readonly<Record<string, string>>,
+): string[] {
+  return blocks.flatMap((block) => {
+    const callId = block.tool?.callId;
+    if (!callId || callId in commands || block.tool?.kind !== "execute") return [];
+    return printedPr(block) && !createsPr(block as ToolBlock, commands) ? [callId] : [];
+  });
 }
 
 function sameItem(a: LinkedWorkItem, b: LinkedWorkItem) {
