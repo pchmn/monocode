@@ -16,6 +16,7 @@ import {
   type LinkedPrState,
 } from "../model/linkedPrState";
 import type { LinkedWorkItem } from "../model/session";
+import { useSessionWorkItems } from "../hooks/useSessionPrs";
 
 /** `maxAgeMs` bounds the first fetch's staleness; later ones follow the 3-minute cadence. */
 export function useLinkedPrState(
@@ -193,22 +194,57 @@ export function LinkedPrStateIcon({
   );
 }
 
-/** The sidebar badge's PR icon, tinted by the PR's state. */
+const CI_RANK: Record<LinkedPrCi, number> = { pass: 0, pending: 1, fail: 2 };
+
+/** The worst CI among the open PRs, so a red check on any of them shows on the badge. */
+export function worstLinkedPrCi(items: readonly LinkedWorkItem[]): LinkedPrCi | null {
+  let worst: LinkedPrCi | null = null;
+  for (const item of items) {
+    if (item.kind !== "pr") continue;
+    const state = peekLinkedPrState(item);
+    if (state !== "open" && state !== "draft") continue;
+    const ci = peekLinkedPrCi(item);
+    if (ci && (!worst || CI_RANK[ci] > CI_RANK[worst])) worst = ci;
+  }
+  return worst;
+}
+
+function WatchLinkedPr({ item, cwd }: { item: LinkedWorkItem; cwd: string }) {
+  useLinkedPrState(item, cwd);
+  return null;
+}
+
+/** The sidebar badge's PR icon, tinted by the PR's state; `+n` counts the session's other PRs. */
 export function LinkedPrBadgeContent({
   item,
   cwd,
+  sessionId = "",
 }: {
   item: LinkedWorkItem;
   cwd: string;
+  sessionId?: string;
 }) {
   const state = useLinkedPrState(item, cwd);
-  const ci = useLinkedPrCi(item);
+  const items = useSessionWorkItems(sessionId, item);
+  const others = items.slice(1);
+  const ci = useSyncExternalStore(subscribeLinkedPrStates, () =>
+    worstLinkedPrCi(items),
+  );
+  const title = prStateTitle(state, ci);
   return (
     <span
-      title={prStateTitle(state, ci)}
+      title={others.length ? `${title ?? ""}\n+${others.length} other ${others.length > 1 ? "PRs" : "PR"}`.trim() : title}
       className={`flex items-center gap-0.5 ${linkedPrStateTone(state)}`}
     >
       <LinkedPrStateIcon state={state} ci={ci} className="size-3" />
+      {others.length ? (
+        <span className="text-[10.5px] tabular-nums text-content/45">
+          +{others.length}
+        </span>
+      ) : null}
+      {others.map((other) => (
+        <WatchLinkedPr key={other.url} item={other} cwd={cwd} />
+      ))}
     </span>
   );
 }

@@ -31,13 +31,8 @@ import {
 } from "./LinkedPrStateIcon";
 import { LinkedPrStatusPills } from "./LinkedPrStatusPills";
 
-export function LinkedWorkItemBlock({
-  item,
-  cwd,
-}: {
-  item: LinkedWorkItem;
-  cwd: string;
-}) {
+/** What the block and its folded variant show for a linked issue or PR. */
+export function useLinkedWorkItemView(item: LinkedWorkItem, cwd: string) {
   const { workItem, details } = useLinkedWorkItemData(item, cwd);
   const ownLogins = useGithubLogins();
   const storedPrState = useLinkedPrState(item, cwd, LINKED_PR_ON_DEMAND_MS);
@@ -56,38 +51,41 @@ export function LinkedWorkItemBlock({
     ? formatRelativeTime(workItem.updatedAt)
     : "";
   const byline = [author, updated].filter(Boolean).join(" · ");
-  const labelCount = isPr ? 0 : (workItem?.labels.length ?? 0);
+  return { item, workItem, details, ci, isPr, prState, issue, stateLabel, prActive, byline };
+}
 
+export type LinkedWorkItemView = ReturnType<typeof useLinkedWorkItemView>;
+
+export function LinkedWorkItemStateIcon({
+  view,
+  withCi = false,
+}: {
+  view: LinkedWorkItemView;
+  withCi?: boolean;
+}) {
+  const { isPr, prState, issue, stateLabel, ci, prActive } = view;
+  const title = isPr ? prStateTitle(prState, withCi && prActive ? ci : null) : stateLabel;
   return (
-    <button
-      type="button"
-      aria-label={`Open ${item.repo} #${item.number} on GitHub${stateLabel ? ` (${stateLabel})` : ""}`}
-      onClick={(event) => {
-        event.stopPropagation();
-        void openUrl(item.url).catch(() => undefined);
-      }}
-      className="group mt-3 block w-full min-w-[276px] cursor-pointer rounded-lg border border-stroke bg-content/[0.04] px-2.5 py-2 text-left transition-colors duration-100 ease-out hover:border-content/10 hover:bg-content/[0.07] active:scale-[0.99]"
-    >
-      <span className="flex items-center gap-1.5 text-[11px] text-content/55 [container-type:inline-size]">
-        <span title={stateLabel} className="flex shrink-0">
-          {isPr ? (
-            <LinkedPrStateIcon
-              state={prState}
-              className={`size-3 shrink-0 ${linkedPrStateTone(prState)}`}
-            />
-          ) : (
-            <IssueStateIcon state={issue} />
-          )}
-        </span>
-        <span className="min-w-0 truncate">{item.repo}</span>
-        <ExternalLink
-          aria-hidden="true"
-          className="ml-auto size-3 shrink-0 text-content/45 opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100"
+    <span title={title} className="flex shrink-0">
+      {isPr ? (
+        <LinkedPrStateIcon
+          state={prState}
+          ci={withCi && prActive ? ci : null}
+          className={`size-3 shrink-0 ${linkedPrStateTone(prState)}`}
         />
-        <span className="shrink-0 tabular-nums text-content/75">
-          #{item.number}
-        </span>
-      </span>
+      ) : (
+        <IssueStateIcon state={issue} />
+      )}
+    </span>
+  );
+}
+
+/** Title, status pills and byline under the block's header line. */
+export function LinkedWorkItemDetails({ view }: { view: LinkedWorkItemView }) {
+  const { workItem, details, ci, isPr, prActive, byline } = view;
+  const labelCount = isPr ? 0 : (workItem?.labels.length ?? 0);
+  return (
+    <>
       {workItem ? (
         <span className="mt-1 line-clamp-2 text-[12px] font-medium leading-[1.4] text-content [container-type:inline-size]">
           {workItem.title}
@@ -109,6 +107,41 @@ export function LinkedWorkItemBlock({
           {byline ? <span className="truncate">{byline}</span> : null}
         </span>
       ) : null}
+    </>
+  );
+}
+
+export function LinkedWorkItemBlock({
+  item,
+  cwd,
+}: {
+  item: LinkedWorkItem;
+  cwd: string;
+}) {
+  const view = useLinkedWorkItemView(item, cwd);
+
+  return (
+    <button
+      type="button"
+      aria-label={`Open ${item.repo} #${item.number} on GitHub${view.stateLabel ? ` (${view.stateLabel})` : ""}`}
+      onClick={(event) => {
+        event.stopPropagation();
+        void openUrl(item.url).catch(() => undefined);
+      }}
+      className="group mt-3 block w-full min-w-[276px] cursor-pointer rounded-lg border border-stroke bg-content/[0.04] px-2.5 py-2 text-left transition-colors duration-100 ease-out hover:border-content/10 hover:bg-content/[0.07] active:scale-[0.99]"
+    >
+      <span className="flex items-center gap-1.5 text-[11px] text-content/55 [container-type:inline-size]">
+        <LinkedWorkItemStateIcon view={view} />
+        <span className="min-w-0 truncate">{item.repo}</span>
+        <ExternalLink
+          aria-hidden="true"
+          className="ml-auto size-3 shrink-0 text-content/45 opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100"
+        />
+        <span className="shrink-0 tabular-nums text-content/75">
+          #{item.number}
+        </span>
+      </span>
+      <LinkedWorkItemDetails view={view} />
     </button>
   );
 }

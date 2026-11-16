@@ -129,6 +129,7 @@ import { markLinkedSessionUpdateSeen } from "../../inbox/model/linkedSessionSeen
 import { RemoteSession } from "../../connections/ui/RemoteSession";
 import { isRemoteProjectPath } from "../../projects/model/recents";
 import type { HostSession } from "../../connections/model/protocol";
+import { useCreatedPrScan } from "../hooks/useSessionPrs";
 
 export type SessionPaneProps = {
   session: Session;
@@ -394,6 +395,7 @@ const LocalSessionPane = memo(function LocalSessionPane({
       sameCheckout(orchestrationCheckoutCwd(run), sessionWorkCwd(session)),
   );
   const title = sessionDisplayTitle(session.title, session.harness);
+  useCreatedPrScan(session.id, session.blocks);
   const isEmpty = session.blocks.length === 0;
   const editedPaths = useMemo(
     () => (session.busy ? undefined : sessionEditPaths(session.blocks)),
