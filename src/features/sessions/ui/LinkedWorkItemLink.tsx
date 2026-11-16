@@ -61,7 +61,8 @@ export function LinkedWorkItemLink({
         ref={anchor}
         href={item.url}
         aria-describedby={open ? tooltipId : undefined}
-        className="hover:text-content hover:underline"
+        data-one-line
+        className="whitespace-nowrap hover:text-content hover:underline"
         onMouseEnter={() =>
           open ? clearTimer(timer) : scheduleOpen(true, OPEN_DELAY_MS)
         }
