@@ -2616,6 +2616,8 @@ function SidebarComponent({
               tab={paneTab as RightPanelTab | null}
               order={rightTabOrder}
               additions={changeAdditions}
+              changedFiles={changeStats?.files ?? 0}
+              sessionsNeedYou={hasUnseenFinished || listedApprovalSessionIds.size > 0}
               onSelectTool={paneHost.onTabChange}
               onSelectSessions={paneHost.onToggle}
             />
