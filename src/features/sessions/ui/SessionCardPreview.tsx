@@ -8,6 +8,7 @@ import { resolveModel } from "../model/models";
 import { sessionDisplayTitle } from "../model/session";
 import { HarnessIcon } from "./HarnessIcon";
 import { LinkedWorkItemLink } from "./LinkedWorkItemLink";
+import { SESSION_CARD_FIT } from "./sessionCardFit";
 
 export function SessionCardPreview({
   anchor,
@@ -65,7 +66,6 @@ export function SessionCardPreview({
       side={side}
       align="start"
       gap={8}
-      width={260}
       maxHeight={440}
       role="tooltip"
       id={id}
@@ -73,7 +73,7 @@ export function SessionCardPreview({
       onDismiss={onClose}
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
-      className="overflow-y-auto overscroll-contain px-3 py-2.5"
+      className={`overflow-y-auto overscroll-contain px-3 py-2.5 ${SESSION_CARD_FIT}`}
     >
       <div className="flex items-center justify-between gap-3">
         <span className="flex min-w-0 items-center gap-1.5 text-[11px] text-content/55">
