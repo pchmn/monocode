@@ -50,7 +50,7 @@ export function SidebarModeTabs({
             type="button"
             role="tab"
             aria-selected={selected}
-            aria-label={label}
+            aria-label={needsYou && !selected ? `${label}, needs you` : label}
             data-rail-tip={selected ? undefined : label}
             data-rail-tip-detail={needsYou ? "Needs you" : undefined}
             data-rail-tip-additions={mode === "changes" ? additions : undefined}
@@ -66,7 +66,23 @@ export function SidebarModeTabs({
                 : "text-content/45 hover:bg-selection-subtle hover:text-content/80"
             }`}
           >
-            <Icon className="size-4 shrink-0" strokeWidth={1.75} />
+            <span className="relative shrink-0">
+              <Icon className="size-4" strokeWidth={1.75} />
+              {!selected && needsYou ? (
+                <span
+                  aria-hidden
+                  className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-accent"
+                />
+              ) : null}
+              {!selected && changes > 0 ? (
+                <span
+                  aria-hidden
+                  className="absolute -right-1.5 -top-1.5 text-[9px] font-semibold leading-none tabular-nums text-diff-add-fg"
+                >
+                  {changes}
+                </span>
+              ) : null}
+            </span>
             {/* 0fr → 1fr animates the label's width without measuring it. */}
             <span
               className={`grid transition-[grid-template-columns,opacity] duration-200 ease-[var(--motion-ease-out)] motion-reduce:transition-none ${
@@ -84,14 +100,6 @@ export function SidebarModeTabs({
                 </span>
               </span>
             </span>
-            {!selected && needsYou ? (
-              <span className="absolute right-0.5 top-0.5 size-[7px] rounded-full bg-amber-400" />
-            ) : null}
-            {!selected && changes > 0 ? (
-              <span className="absolute -right-1 -top-0.5 text-[9px] font-semibold tabular-nums text-diff-add-fg">
-                {changes}
-              </span>
-            ) : null}
           </button>
         );
       })}
