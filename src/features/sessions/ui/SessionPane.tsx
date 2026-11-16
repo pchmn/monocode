@@ -395,7 +395,7 @@ const LocalSessionPane = memo(function LocalSessionPane({
       sameCheckout(orchestrationCheckoutCwd(run), sessionWorkCwd(session)),
   );
   const title = sessionDisplayTitle(session.title, session.harness);
-  useCreatedPrScan(session.id, session.blocks);
+  useCreatedPrScan(session);
   const isEmpty = session.blocks.length === 0;
   const editedPaths = useMemo(
     () => (session.busy ? undefined : sessionEditPaths(session.blocks)),

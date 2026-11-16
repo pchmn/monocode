@@ -5,6 +5,7 @@ import {
   addSessionPrs,
   createdPrsFromBlocks,
   peekSessionPrs,
+  prCallsMissingCommand,
   resetSessionPrsForTest,
   sessionWorkItems,
   subscribeSessionPrs,
@@ -44,6 +45,49 @@ describe("createdPrsFromBlocks", () => {
       { id: "a", role: "assistant", text: "See https://github.com/acme/app/pull/45" } as Block,
     ];
     expect(createdPrsFromBlocks(blocks)).toEqual([]);
+  });
+});
+
+describe("multi-line shell commands", () => {
+  const pushThenCreate = {
+    id: "push",
+    role: "tool",
+    text: "",
+    tool: {
+      callId: "toolu_1",
+      kind: "execute",
+      title: "git push -u origin feat/x 2>&1 | tail -3",
+      detail: "remote: https://github.com/acme/app/pull/new/feat/x\nhttps://github.com/acme/app/pull/13\n",
+      status: "completed",
+    },
+  } as Block;
+  const view = {
+    ...pushThenCreate,
+    id: "view",
+    tool: { ...pushThenCreate.tool, callId: "toolu_2", title: "cd ../app", detail: "url: https://github.com/acme/app/pull/14" },
+  } as Block;
+
+  it("asks for the full command of a shell call that printed a PR URL", () => {
+    expect(prCallsMissingCommand([pushThenCreate, view], {})).toEqual(["toolu_1", "toolu_2"]);
+    expect(prCallsMissingCommand([pushThenCreate, view], { toolu_1: "", toolu_2: "x" })).toEqual([]);
+  });
+
+  it("takes the PR once the full command creates it", () => {
+    const commands = {
+      toolu_1: "git push -u origin feat/x 2>&1 | tail -3\ngh pr create --title t --body b",
+      toolu_2: "cd ../app\ngh pr view 14",
+    };
+    expect(createdPrsFromBlocks([pushThenCreate, view])).toEqual([]);
+    expect(createdPrsFromBlocks([pushThenCreate, view], commands)).toEqual([pr("acme/app", 13)]);
+  });
+
+  it("reads a Codex command from its preview title", () => {
+    const codex = {
+      ...pushThenCreate,
+      tool: { ...pushThenCreate.tool, preview: { kind: "shell", title: "git push\ngh pr create --fill" } },
+    } as Block;
+    expect(createdPrsFromBlocks([codex])).toEqual([pr("acme/app", 13)]);
+    expect(prCallsMissingCommand([codex], {})).toEqual([]);
   });
 });
 
