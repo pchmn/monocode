@@ -1,5 +1,6 @@
 import type { RightPanelTab } from "../../features/settings/model/appearance";
 import { Chatting, FileDiff, Folder, GitBranch } from "../../shared/ui/icons";
+import { useRailTooltip } from "./RailTooltip";
 
 const MODES = {
   sessions: { label: "Sessions", icon: Chatting },
@@ -15,56 +16,94 @@ export function SidebarModeTabs({
   tab,
   order,
   additions,
+  changedFiles,
+  sessionsNeedYou,
   onSelectTool,
   onSelectSessions,
 }: {
   tab: RightPanelTab | null;
   order: readonly RightPanelTab[];
   additions: number;
+  changedFiles: number;
+  sessionsNeedYou: boolean;
   onSelectTool: (tab: RightPanelTab) => void;
   onSelectSessions: () => void;
 }) {
   const active: Mode = tab ?? "sessions";
   const modes: Mode[] = ["sessions", ...order];
+  const { handlers, tooltip } = useRailTooltip("bottom");
   return (
     <div
       role="tablist"
       aria-label="Sidebar"
-      className="mx-3 mb-1 flex h-9 shrink-0 items-stretch gap-1 border-b border-stroke"
+      className="mx-2.5 mb-1 flex h-10 shrink-0 items-center gap-1 border-b border-stroke"
+      {...handlers}
     >
       {modes.map((mode) => {
         const { label, icon: Icon } = MODES[mode];
         const selected = mode === active;
+        const needsYou = mode === "sessions" && sessionsNeedYou;
+        const changes = mode === "changes" ? changedFiles : 0;
         return (
           <button
             key={mode}
             type="button"
             role="tab"
             aria-selected={selected}
-            aria-label={label}
-            title={selected ? undefined : label}
+            aria-label={needsYou && !selected ? `${label}, needs you` : label}
+            data-rail-tip={selected ? undefined : label}
+            data-rail-tip-detail={needsYou ? "Needs you" : undefined}
+            data-rail-tip-additions={mode === "changes" ? additions : undefined}
             data-tauri-drag-region="false"
             onClick={() => {
               if (selected) return;
               if (mode === "sessions") onSelectSessions();
               else onSelectTool(mode);
             }}
-            className={`relative flex items-center gap-1.5 px-1.5 text-[12px] leading-none transition-colors duration-150 ${
+            className={`relative flex h-7 items-center rounded-md px-1.5 text-[12px] font-medium leading-none transition-colors duration-150 active:scale-[0.97] ${
               selected
-                ? "text-content after:absolute after:-bottom-px after:left-1/2 after:h-0.5 after:w-5 after:-translate-x-1/2 after:rounded-full after:bg-content"
-                : "text-content/50 hover:text-content"
+                ? "bg-selection-strong text-content"
+                : "text-content/45 hover:bg-selection-subtle hover:text-content/80"
             }`}
           >
-            <Icon className="size-3.5 shrink-0" strokeWidth={1.75} />
-            {selected ? <span>{label}</span> : null}
-            {mode === "changes" && additions > 0 ? (
-              <span className="text-[10px] font-medium tabular-nums text-diff-add-fg">
-                +{additions}
+            <span className="relative shrink-0">
+              <Icon className="size-4" strokeWidth={1.75} />
+              {!selected && needsYou ? (
+                <span
+                  aria-hidden
+                  className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-accent"
+                />
+              ) : null}
+              {!selected && changes > 0 ? (
+                <span
+                  aria-hidden
+                  className="absolute -right-1.5 -top-1.5 text-[9px] font-semibold leading-none tabular-nums text-diff-add-fg"
+                >
+                  {changes}
+                </span>
+              ) : null}
+            </span>
+            {/* 0fr → 1fr animates the label's width without measuring it. */}
+            <span
+              className={`grid transition-[grid-template-columns,opacity] duration-200 ease-[var(--motion-ease-out)] motion-reduce:transition-none ${
+                selected ? "grid-cols-[1fr] opacity-100" : "grid-cols-[0fr] opacity-0"
+              }`}
+            >
+              <span className="min-w-0 overflow-hidden">
+                <span className="flex items-center gap-1.5 whitespace-nowrap pl-1.5 pr-0.5">
+                  {label}
+                  {mode === "changes" && additions > 0 ? (
+                    <span className="text-[10px] tabular-nums text-diff-add-fg">
+                      +{additions}
+                    </span>
+                  ) : null}
+                </span>
               </span>
-            ) : null}
+            </span>
           </button>
         );
       })}
+      {tooltip}
     </div>
   );
 }
