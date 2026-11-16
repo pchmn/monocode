@@ -256,6 +256,7 @@ import {
   remotePath,
   remoteProjectFor,
 } from "../../features/connections/model/remoteProjects";
+import { loadSidebarWidth, saveSidebarWidth } from "./sidebarWidth";
 
 const MIN_WIDTH = 260;
 /** The inset sidebar's one-line rows stay legible narrower. */
@@ -271,7 +272,7 @@ const MAX_WIDTH = 560;
 const DEFAULT_WIDTH = 260;
 const REMINDERS_COLOR = "#f59e0b";
 
-let rememberedWidth = DEFAULT_WIDTH;
+let rememberedWidth = loadSidebarWidth(DEFAULT_WIDTH);
 
 type SidebarTab = SidebarTabId;
 
@@ -700,6 +701,7 @@ function SidebarComponent({
     initial: rememberedWidth,
     onCommit: (next) => {
       rememberedWidth = next;
+      saveSidebarWidth(next);
     },
   });
   const { setPaneWidth: setSidebarWidth } = resize;
@@ -710,6 +712,7 @@ function SidebarComponent({
       max: () => Math.min(MAX_WIDTH, Math.floor(window.innerWidth * 0.5)),
       onCommit: (next: number) => {
         rememberedWidth = next;
+        saveSidebarWidth(next);
         setSidebarWidth(next);
       },
     }),
