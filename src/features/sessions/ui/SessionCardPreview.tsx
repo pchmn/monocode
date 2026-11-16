@@ -7,7 +7,7 @@ import type { SessionSummary } from "../data/sessionStore";
 import { resolveModel } from "../model/models";
 import { sessionDisplayTitle } from "../model/session";
 import { HarnessIcon } from "./HarnessIcon";
-import { LinkedWorkItemLink } from "./LinkedWorkItemLink";
+import { LinkedWorkItemBlock } from "./LinkedWorkItemBlock";
 import { SESSION_CARD_FIT } from "./sessionCardFit";
 
 export function SessionCardPreview({
@@ -132,16 +132,10 @@ export function SessionCardPreview({
             </span>
           </Detail>
         ) : null}
-        {session.linkedWorkItem ? (
-          <Detail
-            label={
-              session.linkedWorkItem.kind === "pr" ? "Pull request" : "Issue"
-            }
-          >
-            <LinkedWorkItemLink item={session.linkedWorkItem} cwd={session.cwd} />
-          </Detail>
-        ) : null}
       </dl>
+      {session.linkedWorkItem ? (
+        <LinkedWorkItemBlock item={session.linkedWorkItem} cwd={session.cwd} />
+      ) : null}
     </Popover>
   );
 }
