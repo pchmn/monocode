@@ -19,6 +19,7 @@ export const LINKED_PR_CI_PENDING_MS = 45_000;
 
 const states = new Map<string, LinkedPrState>();
 const ciStates = new Map<string, LinkedPrCi>();
+const conflicted = new Set<string>();
 const fetchedAt = new Map<string, number>();
 const inflight = new Set<string>();
 const listeners = new Set<() => void>();
@@ -85,6 +86,23 @@ export function peekLinkedPrCi(
   return ciStates.get(linkedPrKey(item)) ?? null;
 }
 
+export function peekLinkedPrConflicts(
+  item: Pick<LinkedWorkItem, "repo" | "number">,
+): boolean {
+  return conflicted.has(linkedPrKey(item));
+}
+
+function setLinkedPrConflicts(
+  item: Pick<LinkedWorkItem, "repo" | "number">,
+  conflicts: boolean,
+) {
+  const key = linkedPrKey(item);
+  if (conflicted.has(key) === conflicts) return;
+  if (conflicts) conflicted.add(key);
+  else conflicted.delete(key);
+  for (const listener of listeners) listener();
+}
+
 function setLinkedPrCi(
   item: Pick<LinkedWorkItem, "repo" | "number">,
   ci: LinkedPrCi | null,
@@ -129,12 +147,16 @@ export function refreshLinkedPrState(
   void githubWorkItem(cwd, item.repo, "pr", item.number, { force: true })
     .then(async (pr) => {
       const state = prStateOf(pr);
-      const ci =
-        state === "open" || state === "draft"
-          ? await fetchGithubPrChecks(cwd, item.repo, item.number)
-              .then((result) => ciOf(result.checks))
-              .catch(() => peekLinkedPrCi(item))
-          : null;
+      const active = state === "open" || state === "draft";
+      // `unknown` while GitHub recomputes after a push: keep the last answer.
+      if (!active || pr.mergeable !== "unknown") {
+        setLinkedPrConflicts(item, active && pr.mergeable === "conflicting");
+      }
+      const ci = active
+        ? await fetchGithubPrChecks(cwd, item.repo, item.number)
+            .then((result) => ciOf(result.checks))
+            .catch(() => peekLinkedPrCi(item))
+        : null;
       setLinkedPrCi(item, ci);
       setLinkedPrState(item, state);
     })
@@ -145,6 +167,7 @@ export function refreshLinkedPrState(
 export function resetLinkedPrStatesForTest() {
   states.clear();
   ciStates.clear();
+  conflicted.clear();
   fetchedAt.clear();
   inflight.clear();
   listeners.clear();

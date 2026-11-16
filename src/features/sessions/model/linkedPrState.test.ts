@@ -13,6 +13,7 @@ vi.mock("../../inbox/model/githubPrChecks", () => ({
 const {
   ciOf,
   peekLinkedPrCi,
+  peekLinkedPrConflicts,
   peekLinkedPrState,
   prStateOf,
   refreshLinkedPrState,
@@ -60,6 +61,23 @@ describe("linkedPrState", () => {
     await vi.waitFor(() => expect(peekLinkedPrState(pr)).toBe("merged"));
     expect(peekLinkedPrCi(pr)).toBeNull();
     expect(fetchGithubPrChecks).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the last conflict answer while GitHub recomputes it", async () => {
+    githubWorkItem.mockResolvedValue({ state: "open", draft: false, mergeable: "conflicting" });
+    refreshLinkedPrState(pr, "/repo");
+    await vi.waitFor(() => expect(peekLinkedPrConflicts(pr)).toBe(true));
+
+    githubWorkItem.mockResolvedValue({ state: "open", draft: false, mergeable: "unknown" });
+    refreshLinkedPrState(pr, "/repo", 0);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(githubWorkItem).toHaveBeenCalledTimes(2);
+    expect(peekLinkedPrConflicts(pr)).toBe(true);
+
+    githubWorkItem.mockResolvedValue({ state: "closed", draft: false, mergeable: "unknown" });
+    refreshLinkedPrState(pr, "/repo", 0);
+    await vi.waitFor(() => expect(peekLinkedPrState(pr)).toBe("closed"));
+    expect(peekLinkedPrConflicts(pr)).toBe(false);
   });
 
   it("maps GitHub states", () => {

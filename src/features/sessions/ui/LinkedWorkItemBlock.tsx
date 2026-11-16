@@ -27,6 +27,7 @@ import {
   LinkedPrStateIcon,
   prStateTitle,
   useLinkedPrCi,
+  useLinkedPrConflicts,
   useLinkedPrState,
 } from "./LinkedPrStateIcon";
 import { LinkedPrStatusPills } from "./LinkedPrStatusPills";
@@ -37,6 +38,7 @@ export function useLinkedWorkItemView(item: LinkedWorkItem, cwd: string) {
   const ownLogins = useGithubLogins();
   const storedPrState = useLinkedPrState(item, cwd, LINKED_PR_ON_DEMAND_MS);
   const ci = useLinkedPrCi(item);
+  const conflicts = useLinkedPrConflicts(item);
   const isPr = item.kind === "pr";
   const prState =
     storedPrState ?? (isPr && workItem ? prStateOf(workItem) : null);
@@ -51,7 +53,7 @@ export function useLinkedWorkItemView(item: LinkedWorkItem, cwd: string) {
     ? formatRelativeTime(workItem.updatedAt)
     : "";
   const byline = [author, updated].filter(Boolean).join(" · ");
-  return { item, workItem, details, ci, isPr, prState, issue, stateLabel, prActive, byline };
+  return { item, workItem, details, ci, conflicts, isPr, prState, issue, stateLabel, prActive, byline };
 }
 
 export type LinkedWorkItemView = ReturnType<typeof useLinkedWorkItemView>;
@@ -63,14 +65,17 @@ export function LinkedWorkItemStateIcon({
   view: LinkedWorkItemView;
   withCi?: boolean;
 }) {
-  const { isPr, prState, issue, stateLabel, ci, prActive } = view;
-  const title = isPr ? prStateTitle(prState, withCi && prActive ? ci : null) : stateLabel;
+  const { isPr, prState, issue, stateLabel, ci, conflicts, prActive } = view;
+  const title = isPr
+    ? prStateTitle(prState, withCi && prActive ? ci : null, withCi && prActive && conflicts)
+    : stateLabel;
   return (
     <span title={title} className="flex shrink-0">
       {isPr ? (
         <LinkedPrStateIcon
           state={prState}
           ci={withCi && prActive ? ci : null}
+          conflicts={withCi && prActive && conflicts}
           className={`size-3 shrink-0 ${linkedPrStateTone(prState)}`}
         />
       ) : (
@@ -82,7 +87,7 @@ export function LinkedWorkItemStateIcon({
 
 /** Title, status pills and byline under the block's header line. */
 export function LinkedWorkItemDetails({ view }: { view: LinkedWorkItemView }) {
-  const { workItem, details, ci, isPr, prActive, byline } = view;
+  const { workItem, details, ci, conflicts, isPr, prActive, byline } = view;
   const labelCount = isPr ? 0 : (workItem?.labels.length ?? 0);
   return (
     <>
@@ -96,6 +101,7 @@ export function LinkedWorkItemDetails({ view }: { view: LinkedWorkItemView }) {
       {isPr ? (
         <LinkedPrStatusPills
           ci={ci}
+          conflicts={conflicts}
           active={prActive}
           reviewDecision={details?.reviewDecision}
           className="mt-1.5"

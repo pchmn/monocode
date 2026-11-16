@@ -1243,6 +1243,7 @@ pub struct GitHubWorkItem {
     pub assignees: Vec<GitHubAssignee>,
     pub draft: bool,
     pub repo: String,
+    pub mergeable: String,
 }
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
@@ -3077,7 +3078,7 @@ fn git_github_work_item_for(
     let repo = format!("{owner}/{name}");
     let number = number.to_string();
     let fields = if kind == "pr" {
-        "number,title,url,state,createdAt,updatedAt,labels,assignees,isDraft"
+        "number,title,url,state,createdAt,updatedAt,labels,assignees,isDraft,mergeable"
     } else {
         "number,title,url,state,stateReason,createdAt,updatedAt,labels,assignees"
     };
@@ -4262,6 +4263,8 @@ fn parse_github_work_items(
         assignees: Vec<RowAssignee>,
         #[serde(default)]
         is_draft: bool,
+        #[serde(default)]
+        mergeable: String,
     }
     let rows: Vec<Row> = serde_json::from_str(json).map_err(|error| error.to_string())?;
     Ok(rows
@@ -4293,6 +4296,7 @@ fn parse_github_work_items(
                 .collect(),
             draft: row.is_draft,
             repo: repo.to_string(),
+            mergeable: row.mergeable.to_lowercase(),
         })
         .collect())
 }
@@ -8677,10 +8681,12 @@ mod tests {
             "title": "WIP checkout",
             "url": "https://github.com/acme/web/pull/12",
             "state": "OPEN",
-            "isDraft": true
+            "isDraft": true,
+            "mergeable": "CONFLICTING"
         }"#;
         let item = parse_github_work_item(json, "pr", "acme/web").unwrap();
         assert_eq!(item.number, 12);
+        assert_eq!(item.mergeable, "conflicting");
         assert_eq!(item.kind, "pr");
         assert_eq!(item.repo, "acme/web");
         assert!(item.draft);
