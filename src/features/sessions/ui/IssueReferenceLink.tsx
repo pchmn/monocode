@@ -1,16 +1,19 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useEffect, useState, type ReactNode } from "react";
 import type { GithubWorkItem } from "../../inbox/model/githubTasks";
-import { resolveIssueReference } from "../model/issueReferences";
+import {
+  resolveIssueReference,
+  type IssueTarget,
+} from "../model/issueReferences";
 
-/** `#123` as a link to its GitHub issue or PR, or plain text if none exists. */
+/** `#123` or `repo#123` as a link to its GitHub issue or PR, or plain text if none exists. */
 export function IssueReferenceLink({
   cwd,
-  number,
+  target: { number, repo },
   children,
 }: {
   cwd: string;
-  number: number;
+  target: IssueTarget;
   children: ReactNode;
 }) {
   const [item, setItem] = useState<GithubWorkItem | null>(null);
@@ -18,20 +21,20 @@ export function IssueReferenceLink({
   useEffect(() => {
     let cancelled = false;
     setItem(null);
-    void resolveIssueReference(cwd, number).then((found) => {
+    void resolveIssueReference(cwd, number, repo).then((found) => {
       if (!cancelled) setItem(found);
     });
     return () => {
       cancelled = true;
     };
-  }, [cwd, number]);
+  }, [cwd, number, repo]);
 
   if (!item) return <>{children}</>;
   const kind = item.kind === "pr" ? "PR" : "Issue";
   return (
     <a
       href={item.url}
-      title={`${kind} #${item.number} · ${item.title}`}
+      title={`${kind} ${item.repo}#${item.number} · ${item.title}`}
       className="underline decoration-content/60 decoration-dotted underline-offset-2 hover:decoration-solid hover:decoration-current"
       onClick={(event) => {
         event.preventDefault();

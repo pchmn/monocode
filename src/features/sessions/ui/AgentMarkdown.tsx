@@ -44,7 +44,7 @@ import {
 } from "../../../shared/lib/paths";
 import type { EditorNavigation, OpenFileFn } from "../../search/model/search";
 import { remarkWorkspaceFileLinks } from "../../files/model/markdownFileLinks";
-import { issueReferenceNumber, remarkIssueReferences } from "../model/issueReferences";
+import { issueReferenceTarget, remarkIssueReferences } from "../model/issueReferences";
 import { IssueReferenceLink } from "./IssueReferenceLink";
 import { inlineCodeUrl } from "../model/inlineCodeUrl";
 import { InlineCodeUrl } from "./InlineCodeUrl";
@@ -300,8 +300,8 @@ function MarkdownLink({
   const file = href ? resolveWorkspaceFileReference(href, cwd) : undefined;
   const label = textContent(children);
   const localMedia = useContext(LocalMediaContext);
-  const issueNumber = issueReferenceNumber(href);
-  if (issueNumber && cwd) return <IssueReferenceLink cwd={cwd} number={issueNumber}>{children}</IssueReferenceLink>;
+  const issueTarget = issueReferenceTarget(href);
+  if (issueTarget && cwd) return <IssueReferenceLink cwd={cwd} target={issueTarget}>{children}</IssueReferenceLink>;
   if (allowRemoteMedia && href && isInboxMediaUrl(href)) {
     return <InboxMedia src={href} alt={label} />;
   }
