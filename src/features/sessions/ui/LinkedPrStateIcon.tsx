@@ -69,14 +69,15 @@ export const LINKED_PR_CI_LABEL: Record<LinkedPrCi, string> = {
 };
 
 // Cuts the icon under the CI badge, so the pulse never shows the icon through.
-const CI_CUTOUT = "radial-gradient(circle at calc(100% - 1.5px) calc(100% - 1.5px), transparent 4.5px, #000 5px)";
+const ciCutout = (radius: number) =>
+  `radial-gradient(circle at calc(100% - 1.5px) calc(100% - 1.5px), transparent ${radius}px, #000 ${radius + 0.5}px)`;
 
 function CiBadge({ ci }: { ci: LinkedPrCi }) {
   const box = "absolute -bottom-0.5 -right-0.5 size-[7px]";
   if (ci === "pending")
     return (
       <span className={`${box} grid place-items-center`}>
-        <span className="size-[5px] animate-pulse rounded-full bg-amber-400" />
+        <span className="size-[6px] animate-pulse rounded-full bg-amber-400" />
       </span>
     );
   return (
@@ -117,12 +118,13 @@ export function LinkedPrStateIcon({
 }) {
   const Icon = state ? STATE_ICON[state] : GitPullRequest;
   if (!ci) return <Icon className={className} strokeWidth={1.75} />;
+  const cutout = ciCutout(ci === "pending" ? 3.6 : 4.5);
   return (
     <span className="relative inline-flex shrink-0 align-[-2px]">
       <Icon
         className={className}
         strokeWidth={1.75}
-        style={{ maskImage: CI_CUTOUT, WebkitMaskImage: CI_CUTOUT }}
+        style={{ maskImage: cutout, WebkitMaskImage: cutout }}
       />
       <CiBadge ci={ci} />
     </span>
