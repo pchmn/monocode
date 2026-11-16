@@ -1,6 +1,11 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useEffect, useState } from "react";
-import { CircleDot, ExternalLink } from "../../../shared/ui/icons";
+import {
+  CheckCircle,
+  CircleDot,
+  CircleSlash,
+  ExternalLink,
+} from "../../../shared/ui/icons";
 import { githubAccounts } from "../../inbox/model/githubAccounts";
 import {
   formatRelativeTime,
@@ -15,23 +20,16 @@ import {
   LINKED_PR_ON_DEMAND_MS,
   LINKED_PR_REFRESH_MS,
   prStateOf,
-  type LinkedPrState,
 } from "../model/linkedPrState";
 import type { LinkedWorkItem } from "../model/session";
 import {
   LINKED_PR_STATE_TONE,
   LinkedPrStateIcon,
+  prStateTitle,
   useLinkedPrCi,
   useLinkedPrState,
 } from "./LinkedPrStateIcon";
 import { LinkedPrStatusPills } from "./LinkedPrStatusPills";
-
-const PR_STATE_LABEL: Record<LinkedPrState, string> = {
-  open: "Open",
-  draft: "Draft",
-  merged: "Merged",
-  closed: "Closed",
-};
 
 export function LinkedWorkItemBlock({
   item,
@@ -47,7 +45,8 @@ export function LinkedWorkItemBlock({
   const isPr = item.kind === "pr";
   const prState =
     storedPrState ?? (isPr && workItem ? prStateOf(workItem) : null);
-  const state = isPr ? prPill(prState) : issuePill(workItem);
+  const issue = isPr ? null : issueState(workItem);
+  const stateLabel = isPr ? prStateTitle(prState, null) : issue?.label;
   const prActive = prState === "open" || prState === "draft";
   const author =
     details?.author && ownLogins && !ownLogins.has(details.author.toLowerCase())
@@ -62,7 +61,7 @@ export function LinkedWorkItemBlock({
   return (
     <button
       type="button"
-      aria-label={`Open ${item.repo} #${item.number} on GitHub`}
+      aria-label={`Open ${item.repo} #${item.number} on GitHub${stateLabel ? ` (${stateLabel})` : ""}`}
       onClick={(event) => {
         event.stopPropagation();
         void openUrl(item.url).catch(() => undefined);
@@ -70,28 +69,24 @@ export function LinkedWorkItemBlock({
       className="group mt-3 block w-full min-w-[276px] cursor-pointer rounded-lg border border-stroke bg-content/[0.04] px-2.5 py-2 text-left transition-colors duration-100 ease-out hover:border-content/10 hover:bg-content/[0.07] active:scale-[0.99]"
     >
       <span className="flex items-center gap-1.5 text-[11px] text-content/55 [container-type:inline-size]">
-        {isPr ? (
-          <LinkedPrStateIcon
-            state={prState}
-            className={`size-3 shrink-0 ${prState ? LINKED_PR_STATE_TONE[prState] : "text-content/50"}`}
-          />
-        ) : (
-          <CircleDot className={`size-3 shrink-0 ${state?.tone ?? "text-content/50"}`} />
-        )}
-        <span className="min-w-0 truncate">
-          {item.repo} #{item.number}
+        <span title={stateLabel} className="flex shrink-0">
+          {isPr ? (
+            <LinkedPrStateIcon
+              state={prState}
+              className={`size-3 shrink-0 ${prState ? LINKED_PR_STATE_TONE[prState] : "text-content/50"}`}
+            />
+          ) : (
+            <IssueStateIcon state={issue} />
+          )}
         </span>
+        <span className="min-w-0 truncate">{item.repo}</span>
         <ExternalLink
           aria-hidden="true"
           className="ml-auto size-3 shrink-0 text-content/45 opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100"
         />
-        {state ? (
-          <span
-            className={`shrink-0 rounded-full bg-content/[0.07] px-[7px] py-px text-[10px] font-medium ${state.tone}`}
-          >
-            {state.label}
-          </span>
-        ) : null}
+        <span className="shrink-0 tabular-nums text-content/75">
+          #{item.number}
+        </span>
       </span>
       {workItem ? (
         <span className="mt-1 line-clamp-2 text-[12px] font-medium leading-[1.4] text-content [container-type:inline-size]">
@@ -118,20 +113,33 @@ export function LinkedWorkItemBlock({
   );
 }
 
-function prPill(state: LinkedPrState | null) {
-  return state
-    ? { label: PR_STATE_LABEL[state], tone: LINKED_PR_STATE_TONE[state] }
-    : null;
+const ISSUE_STATE = {
+  open: { label: "Open", tone: "text-emerald-400/90", Icon: CircleDot },
+  completed: { label: "Closed", tone: "text-violet-400/90", Icon: CheckCircle },
+  not_planned: {
+    label: "Closed as not planned",
+    tone: "text-content/45",
+    Icon: CircleSlash,
+  },
+};
+
+function issueState(workItem: GithubWorkItem | null) {
+  if (!workItem) return null;
+  if (workItem.state.trim().toLowerCase() !== "closed") return ISSUE_STATE.open;
+  return workItem.stateReason?.toLowerCase() === "not_planned"
+    ? ISSUE_STATE.not_planned
+    : ISSUE_STATE.completed;
 }
 
-function issuePill(workItem: GithubWorkItem | null) {
-  if (!workItem) return null;
-  if (workItem.state.trim().toLowerCase() !== "closed") {
-    return { label: "Open", tone: "text-emerald-400/90" };
-  }
-  return workItem.stateReason?.toLowerCase() === "not_planned"
-    ? { label: "Closed", tone: "text-content/45" }
-    : { label: "Closed", tone: "text-violet-400/90" };
+function IssueStateIcon({
+  state,
+}: {
+  state: (typeof ISSUE_STATE)[keyof typeof ISSUE_STATE] | null;
+}) {
+  const Icon = state?.Icon ?? CircleDot;
+  return (
+    <Icon className={`size-3 shrink-0 ${state?.tone ?? "text-content/50"}`} />
+  );
 }
 
 function IssueLabels({ workItem }: { workItem: GithubWorkItem | null }) {
