@@ -1,6 +1,7 @@
 import { attachmentPreviewSrc } from "../model/attachments";
 import type { Attachment } from "../model/session";
 import { useImageTokenPreview } from "./ImageTokenPreview";
+import { LeadingSkillText } from "../../skills/ui/LeadingSkillText";
 
 const TOKEN = /(\[Image #(\d+)\])/;
 
@@ -25,10 +26,10 @@ export function SentImageTokens({
 }) {
   const preview = useImageTokenPreview();
   const parts = text.split(TOKEN);
-  if (parts.length === 1) return <>{text}</>;
+  if (parts.length === 1) return <LeadingSkillText text={text} />;
   const nodes = [];
   for (let i = 0; i < parts.length; i += 3) {
-    nodes.push(parts[i]);
+    nodes.push(i === 0 ? <LeadingSkillText key="lead" text={parts[0]} /> : parts[i]);
     const token = parts[i + 1];
     if (!token) continue;
     const file = sentTokenImage(Number(parts[i + 2]), attachments);

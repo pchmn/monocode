@@ -137,6 +137,7 @@ import { TranscriptSelectionMenu } from "./TranscriptSelectionMenu";
 import { useUserMessageLink } from "../hooks/useUserMessageLink";
 import { UserLinkPreview } from "./UserLinkPreview";
 import { UserMessageLinkTail } from "./UserMessageLinkTail";
+import { LeadingSkillText } from "../../skills/ui/LeadingSkillText";
 import {
   activityPhaseTitle,
   activityStillRunning,
@@ -2832,7 +2833,7 @@ function UserMessageBlock({
                   className="user-message-with-link min-w-0 whitespace-pre-wrap break-words font-sans text-sm"
                   data-selectable-agent-response={block.id}
                 >
-                  {messageLink.beforeText}
+                  <LeadingSkillText text={messageLink.beforeText} />
                   <UserLinkPreview link={messageLink.link} cwd={cwd} compact />
                   <UserMessageLinkTail messageLink={messageLink} cwd={cwd} />
                 </div>
