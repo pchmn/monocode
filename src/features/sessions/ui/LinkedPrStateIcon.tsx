@@ -7,8 +7,10 @@ import {
 } from "../../../shared/ui/icons";
 import {
   LINKED_PR_CI_PENDING_MS,
+  LINKED_PR_ON_DEMAND_MS,
   LINKED_PR_REFRESH_MS,
   peekLinkedPrCi,
+  peekLinkedPrConflicts,
   peekLinkedPrState,
   refreshLinkedPrState,
   subscribeLinkedPrStates,
@@ -38,7 +40,13 @@ export function useLinkedPrState(
       () => refreshLinkedPrState(target, cwd, every),
       every,
     );
-    return () => window.clearInterval(timer);
+    const onFocus = () =>
+      refreshLinkedPrState(target, cwd, LINKED_PR_ON_DEMAND_MS);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+    };
   }, [kind, repo, number, url, cwd, state, maxAgeMs, ciPending]);
   return state;
 }
@@ -46,6 +54,12 @@ export function useLinkedPrState(
 export function useLinkedPrCi(item: LinkedWorkItem): LinkedPrCi | null {
   return useSyncExternalStore(subscribeLinkedPrStates, () =>
     item.kind === "pr" ? peekLinkedPrCi(item) : null,
+  );
+}
+
+export function useLinkedPrConflicts(item: LinkedWorkItem): boolean {
+  return useSyncExternalStore(subscribeLinkedPrStates, () =>
+    item.kind === "pr" ? peekLinkedPrConflicts(item) : false,
   );
 }
 
@@ -79,6 +93,8 @@ const CI_GLYPH = {
   fail: "M2.6 2.6 7.4 7.4M7.4 2.6 2.6 7.4",
 } as const;
 
+const CONFLICT_GLYPH = "M5 2.2v3.2M5 7.8v.01";
+
 // Cut out under the chip so the pulse never shows the icon through it.
 const CHIP_CUTOUT =
   "radial-gradient(circle at calc(100% - 0.5px) calc(100% - 0.5px), transparent 5.2px, #000 5.7px)";
@@ -107,12 +123,32 @@ function CiGlyph({ ci, className }: { ci: LinkedPrCi; className: string }) {
   );
 }
 
-function CiChip({ ci }: { ci: LinkedPrCi }) {
+function ConflictGlyph({ className }: { className: string }) {
+  return (
+    <svg
+      viewBox="0 0 10 10"
+      fill="none"
+      strokeWidth={2.2}
+      strokeLinecap="round"
+      className={`${className} stroke-red-400/85`}
+    >
+      <path d={CONFLICT_GLYPH} />
+    </svg>
+  );
+}
+
+// Conflicts take the chip over CI: the PR cannot merge until they are resolved.
+function CiChip({ ci, conflicts }: { ci: LinkedPrCi | null; conflicts: boolean }) {
+  const tint = conflicts || !ci ? "bg-red-400/20" : CHIP_TINT[ci];
   return (
     <span
-      className={`absolute -bottom-[3.5px] -right-[3.5px] grid size-2 place-items-center rounded-full ${CHIP_TINT[ci]}`}
+      className={`absolute -bottom-[3.5px] -right-[3.5px] grid size-2 place-items-center rounded-full ${tint}`}
     >
-      <CiGlyph ci={ci} className="size-1.5" />
+      {conflicts || !ci ? (
+        <ConflictGlyph className="size-1.5" />
+      ) : (
+        <CiGlyph ci={ci} className="size-1.5" />
+      )}
     </span>
   );
 }
@@ -165,23 +201,33 @@ const STATE_ICON = {
   closed: GitPullRequestClosed,
 };
 
-export function prStateTitle(state: LinkedPrState | null, ci: LinkedPrCi | null) {
-  const parts = [state && LINKED_PR_STATE_LABEL[state], ci && LINKED_PR_CI_LABEL[ci]];
+export function prStateTitle(
+  state: LinkedPrState | null,
+  ci: LinkedPrCi | null,
+  conflicts = false,
+) {
+  const parts = [
+    state && LINKED_PR_STATE_LABEL[state],
+    conflicts && "Merge conflicts",
+    ci && LINKED_PR_CI_LABEL[ci],
+  ];
   return parts.filter(Boolean).join(" · ") || undefined;
 }
 
-/** The PR state icon, with a chip at its corner for the CI of an open PR. */
+/** The PR state icon, with a chip at its corner for the CI or merge conflicts of an open PR. */
 export function LinkedPrStateIcon({
   state,
   ci = null,
+  conflicts = false,
   className,
 }: {
   state: LinkedPrState | null;
   ci?: LinkedPrCi | null;
+  conflicts?: boolean;
   className?: string;
 }) {
   const Icon = state ? STATE_ICON[state] : GitPullRequest;
-  if (!ci) return <Icon className={className} strokeWidth={1.75} />;
+  if (!ci && !conflicts) return <Icon className={className} strokeWidth={1.75} />;
   return (
     <span className="relative inline-flex shrink-0 align-[-2px]">
       <Icon
@@ -189,7 +235,7 @@ export function LinkedPrStateIcon({
         strokeWidth={1.75}
         style={{ maskImage: CHIP_CUTOUT, WebkitMaskImage: CHIP_CUTOUT }}
       />
-      <CiChip ci={ci} />
+      <CiChip ci={ci} conflicts={conflicts} />
     </span>
   );
 }
@@ -230,13 +276,21 @@ export function LinkedPrBadgeContent({
   const ci = useSyncExternalStore(subscribeLinkedPrStates, () =>
     worstLinkedPrCi(items),
   );
-  const title = prStateTitle(state, ci);
+  const conflicts = useSyncExternalStore(subscribeLinkedPrStates, () =>
+    items.some((pr) => pr.kind === "pr" && peekLinkedPrConflicts(pr)),
+  );
+  const title = prStateTitle(state, ci, conflicts);
   return (
     <span
       title={others.length ? `${title ?? ""}\n+${others.length} other ${others.length > 1 ? "PRs" : "PR"}`.trim() : title}
       className={`flex items-center gap-0.5 ${linkedPrStateTone(state)}`}
     >
-      <LinkedPrStateIcon state={state} ci={ci} className="size-3" />
+      <LinkedPrStateIcon
+        state={state}
+        ci={ci}
+        conflicts={conflicts}
+        className="size-3"
+      />
       {others.length ? (
         <span className="text-[10.5px] tabular-nums text-content/45">
           +{others.length}

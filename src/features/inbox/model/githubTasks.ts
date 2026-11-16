@@ -70,6 +70,8 @@ export type GithubWorkItem = {
   assignees: GithubAssignee[];
   draft: boolean;
   repo: string;
+  /** Single-PR view only: `mergeable`, `conflicting` or `unknown` while GitHub computes it. */
+  mergeable?: string;
 };
 
 export type InboxProvider =

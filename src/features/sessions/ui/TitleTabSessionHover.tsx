@@ -8,6 +8,7 @@ import {
   LinkedPrStateIcon,
   prStateTitle,
   useLinkedPrCi,
+  useLinkedPrConflicts,
   useLinkedPrState,
 } from "./LinkedPrStateIcon";
 import { SessionCardPreview } from "./SessionCardPreview";
@@ -158,7 +159,8 @@ function TabPrIcon({
 }) {
   const state = useLinkedPrState(item, cwd);
   const ci = useLinkedPrCi(item);
-  const title = prStateTitle(state, ci);
+  const conflicts = useLinkedPrConflicts(item);
+  const title = prStateTitle(state, ci, conflicts);
   return (
     <span
       aria-label={title ? `${label}, ${title}` : label}
@@ -167,6 +169,7 @@ function TabPrIcon({
       <LinkedPrStateIcon
         state={state}
         ci={ci}
+        conflicts={conflicts}
         className={`size-3 shrink-0 ${linkedPrStateTone(state)}`}
       />
     </span>
