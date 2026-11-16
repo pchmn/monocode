@@ -13,6 +13,7 @@ import {
 import type { LinkedWorkItem } from "../model/session";
 import {
   LINKED_PR_STATE_TONE,
+  LinkedPrCiPill,
   LinkedPrStateIcon,
   prStateTitle,
   useLinkedPrCi,
@@ -78,7 +79,8 @@ export function LinkedWorkItemLink({
           <span
             role="img"
             aria-label={prStateTitle(prState, ci)}
-            className="mr-1 inline-flex align-[-2px]"
+            // The CI chip overhangs the icon's right edge by 3.5px.
+            className={`${ci ? "mr-2" : "mr-1"} inline-flex align-[-2px]`}
           >
             <LinkedPrStateIcon
               state={prState}
@@ -110,6 +112,7 @@ export function LinkedWorkItemLink({
             item={workItem}
             details={details}
             loadState={loadState}
+            statusExtra={ci ? <LinkedPrCiPill ci={ci} /> : null}
           />
         </Popover>
       ) : null}
