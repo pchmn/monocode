@@ -53,9 +53,13 @@ export function WorkingAgentTriage({
   return (
     <>
       {split ? <SectionLabel>Needs you</SectionLabel> : null}
-      {needsYou.map((agent) => (
-        <AttentionCard key={agent.id} {...rowProps(agent)} />
-      ))}
+      {needsYou.length > 0 ? (
+        <div className="flex shrink-0 flex-col gap-1">
+          {needsYou.map((agent) => (
+            <AttentionCard key={agent.id} {...rowProps(agent)} />
+          ))}
+        </div>
+      ) : null}
       {split ? <SectionLabel>Running</SectionLabel> : null}
       {running.map((group) => {
         const seed = projectName(group.cwd);
