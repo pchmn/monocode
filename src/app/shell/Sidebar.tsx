@@ -5059,7 +5059,7 @@ export const SessionCard = memo(function SessionCard({
       className="flex shrink-0 cursor-pointer items-center gap-0.5 rounded px-0.5 text-[11px] tabular-nums text-accent hover:underline"
     >
       {linkedWorkItem.kind === "pr" ? (
-        <LinkedPrBadgeContent item={linkedWorkItem} cwd={session.cwd} />
+        <LinkedPrBadgeContent item={linkedWorkItem} cwd={session.cwd} sessionId={session.id} />
       ) : (
         <>
           <CircleDot className="size-3" strokeWidth={1.75} />
