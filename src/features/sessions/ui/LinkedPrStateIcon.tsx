@@ -48,12 +48,17 @@ export function useLinkedPrCi(item: LinkedWorkItem): LinkedPrCi | null {
   );
 }
 
-export const LINKED_PR_STATE_TONE: Record<LinkedPrState, string> = {
+const LINKED_PR_STATE_TONE: Record<LinkedPrState, string> = {
   open: "text-emerald-400/90",
   draft: "text-content/45",
   merged: "text-violet-400/90",
   closed: "text-rose-400/90",
 };
+
+// Before the first fetch, so a fresh PR never flashes in the accent colour.
+export function linkedPrStateTone(state: LinkedPrState | null) {
+  return state ? LINKED_PR_STATE_TONE[state] : "text-content/50";
+}
 
 const LINKED_PR_STATE_LABEL: Record<LinkedPrState, string> = {
   open: "Open",
@@ -201,7 +206,7 @@ export function LinkedPrBadgeContent({
   return (
     <span
       title={prStateTitle(state, ci)}
-      className={`flex items-center gap-0.5 ${state ? LINKED_PR_STATE_TONE[state] : ""}`}
+      className={`flex items-center gap-0.5 ${linkedPrStateTone(state)}`}
     >
       <LinkedPrStateIcon state={state} ci={ci} className="size-3" />
     </span>

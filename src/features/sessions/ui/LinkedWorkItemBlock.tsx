@@ -23,7 +23,7 @@ import {
 } from "../model/linkedPrState";
 import type { LinkedWorkItem } from "../model/session";
 import {
-  LINKED_PR_STATE_TONE,
+  linkedPrStateTone,
   LinkedPrStateIcon,
   prStateTitle,
   useLinkedPrCi,
@@ -73,7 +73,7 @@ export function LinkedWorkItemBlock({
           {isPr ? (
             <LinkedPrStateIcon
               state={prState}
-              className={`size-3 shrink-0 ${prState ? LINKED_PR_STATE_TONE[prState] : "text-content/50"}`}
+              className={`size-3 shrink-0 ${linkedPrStateTone(prState)}`}
             />
           ) : (
             <IssueStateIcon state={issue} />
