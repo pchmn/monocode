@@ -67,3 +67,8 @@ Upstream bug fixes with no feature of their own. On each sync, check whether ups
 - `src/features/quick-composer/main.tsx`, `src/features/monos/floatingMain.tsx` — `setTheme(nativeWindowTheme())` instead of the resolved scheme: Tauri's `setTheme` sets `NSApp.appearance`, which pinned every window and stopped `prefers-color-scheme` from changing. The quick composer also re-applies on `storage`, so switching back to System unpins the app without reopening it
 - Fork files: `src/features/settings/model/nativeWindowTheme.ts`
 - Manual: Settings → Appearance → Theme: System, then switch macOS between Light and Dark; the app follows without a restart.
+
+## Sidebar width survives a restart
+- `src/app/shell/Sidebar.tsx` — `rememberedWidth` starts from `loadSidebarWidth`; both `onCommit`s call `saveSidebarWidth` (upstream only kept the width in memory)
+- Fork files: `src/app/shell/sidebarWidth.ts`
+- Manual: drag the sidebar wider, reload the window (⌘R); it keeps its width.
