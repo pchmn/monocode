@@ -5,8 +5,14 @@ const githubWorkItem = vi.fn();
 vi.mock("../../inbox/model/githubTasks", () => ({
   githubWorkItem: (...args: unknown[]) => githubWorkItem(...args),
 }));
+const fetchGithubPrChecks = vi.fn();
+vi.mock("../../inbox/model/githubPrChecks", () => ({
+  fetchGithubPrChecks: (...args: unknown[]) => fetchGithubPrChecks(...args),
+}));
 
 const {
+  ciOf,
+  peekLinkedPrCi,
   peekLinkedPrState,
   prStateOf,
   refreshLinkedPrState,
@@ -26,6 +32,34 @@ describe("linkedPrState", () => {
     localStorage.clear();
     resetLinkedPrStatesForTest();
     githubWorkItem.mockReset();
+    fetchGithubPrChecks.mockReset();
+    fetchGithubPrChecks.mockResolvedValue({ headOid: "a", checks: [] });
+  });
+
+  it("rolls checks up like GitHub", () => {
+    const c = (...states: string[]) => states.map((state) => ({ state })) as never;
+    expect(ciOf(c("pass", "pending", "fail"))).toBe("fail");
+    expect(ciOf(c("pass", "pending"))).toBe("pending");
+    expect(ciOf(c("pass", "skipping"))).toBe("pass");
+    expect(ciOf(c("skipping"))).toBeNull();
+    expect(ciOf([])).toBeNull();
+  });
+
+  it("fetches the checks of an open PR, not of a merged one", async () => {
+    githubWorkItem.mockResolvedValue({ state: "open", draft: true });
+    fetchGithubPrChecks.mockResolvedValue({
+      headOid: "a",
+      checks: [{ state: "pending" }, { state: "pass" }],
+    });
+    refreshLinkedPrState(pr, "/repo");
+    await vi.waitFor(() => expect(peekLinkedPrState(pr)).toBe("draft"));
+    expect(peekLinkedPrCi(pr)).toBe("pending");
+
+    githubWorkItem.mockResolvedValue({ state: "merged", draft: false });
+    refreshLinkedPrState(pr, "/repo", 0);
+    await vi.waitFor(() => expect(peekLinkedPrState(pr)).toBe("merged"));
+    expect(peekLinkedPrCi(pr)).toBeNull();
+    expect(fetchGithubPrChecks).toHaveBeenCalledTimes(1);
   });
 
   it("maps GitHub states", () => {
