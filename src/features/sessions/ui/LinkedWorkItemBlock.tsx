@@ -67,7 +67,7 @@ export function LinkedWorkItemBlock({
         event.stopPropagation();
         void openUrl(item.url).catch(() => undefined);
       }}
-      className="group mt-3 block w-full min-w-[276px] rounded-lg border border-stroke bg-content/[0.04] px-2.5 py-2 text-left transition-colors duration-100 ease-out hover:border-content/10 hover:bg-content/[0.07] active:scale-[0.99]"
+      className="group mt-3 block w-full min-w-[276px] cursor-pointer rounded-lg border border-stroke bg-content/[0.04] px-2.5 py-2 text-left transition-colors duration-100 ease-out hover:border-content/10 hover:bg-content/[0.07] active:scale-[0.99]"
     >
       <span className="flex items-center gap-1.5 text-[11px] text-content/55 [container-type:inline-size]">
         {isPr ? (
