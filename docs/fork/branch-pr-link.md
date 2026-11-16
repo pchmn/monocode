@@ -2,7 +2,7 @@
 
 When the PR of a session's branch is found (the `PR #n` under the composer), the session's GitHub link switches to that PR, replacing its issue or filling an empty link: the sidebar badge, update dot and activity card then follow the PR. Each session and PR pair is linked once, so relinking the issue by hand sticks. The lookup only links once the first message is sent and the session's own worktree exists: a draft in a VS Code workspace still sits on the first folder, whose branch PR belongs to another repo.
 
-In the session hover card, the linked issue or PR is a block under the details: `repo #n` with its state pill, its title on two lines and, for a PR, a CI pill and a review pill that name what they measure ("CI failed", "Review awaiting"), then the author when it isn't one of the `gh` accounts, and the last update. A linked issue shows up to two of its labels instead of the pills. Clicking the block opens it on GitHub. The hover popover of a `PR #n` chip in the transcript shows the same CI and review pills.
+In the session hover card, the linked issue or PR is a block under the details: its state icon (state in its tooltip), the repo, which truncates first, and `#n` pinned right, then its title on two lines and, for a PR, a CI pill and a review pill that name what they measure ("CI failed", "Review awaiting"), then the author when it isn't one of the `gh` accounts, and the last update. A linked issue shows up to two of its labels instead of the pills. A linked issue's icon follows GitHub's: green dot when open, violet check once completed, grey slashed circle when closed as not planned. Clicking the block opens it on GitHub. The hover popover of a `PR #n` chip in the transcript shows the same CI and review pills.
 
 A linked PR's sidebar badge, title-tab icon and hover-card block show its state: green when open, grey draft icon while a draft, violet merge icon once merged, red once closed. While open or draft, a small tinted chip cut into the icon's bottom-right corner gives its CI rollup (amber pulsing dot while checks run, soft red cross once one fails, green check once they pass). The icon stands alone: the sidebar badge drops the PR number; its tooltip reads e.g. "Open · CI running". Each visible PR is fetched every 3 minutes until merged, every 45 s while its CI runs; merged PRs are remembered across launches and never fetched again.
 
@@ -19,6 +19,7 @@ A linked PR's sidebar badge, title-tab icon and hover-card block show its state:
 - `src/app/App.tsx` — `useBranchPrAutoLink(onSetHistorySessionLinkedWorkItem)`
 - `src/features/sessions/ui/SessionPane.tsx` — `sessionId: branchPrSessionId(session)` in `statusInfo`
 - `src/features/sessions/ui/UserLinkPreview.tsx` — `GithubPrStatusPills` in `GithubWorkItemCard`, `cwd` passed to it
+- `src/shared/ui/icons.tsx` — `CircleSlash` export (not-planned issue icon)
 - `src/app/shell/Sidebar.tsx` — `LinkedPrBadgeContent` in the session row's work item badge
 - `src/features/sessions/ui/SessionCardPreview.tsx` — `LinkedWorkItemBlock` (with `cwd`) after the details in place of the linked item `Detail`; `SESSION_CARD_FIT` in place of `width={260}`
 - `src/features/sessions/ui/SessionStatusLine.tsx` (fork file) — `reportBranchPr` in `SessionPrLink`
