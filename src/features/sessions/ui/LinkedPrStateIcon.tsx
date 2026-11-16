@@ -55,14 +55,14 @@ export const LINKED_PR_STATE_TONE: Record<LinkedPrState, string> = {
   closed: "text-rose-400/90",
 };
 
-export const LINKED_PR_STATE_LABEL: Record<LinkedPrState, string> = {
+const LINKED_PR_STATE_LABEL: Record<LinkedPrState, string> = {
   open: "Open",
   draft: "Draft",
   merged: "Merged",
   closed: "Closed",
 };
 
-export const LINKED_PR_CI_LABEL: Record<LinkedPrCi, string> = {
+const LINKED_PR_CI_LABEL: Record<LinkedPrCi, string> = {
   pending: "CI running",
   fail: "CI failed",
   pass: "CI passed",
@@ -160,15 +160,13 @@ export function LinkedPrStateIcon({
   );
 }
 
-/** The sidebar badge's PR icon and number, tinted by the PR's state. */
+/** The sidebar badge's PR icon, tinted by the PR's state. */
 export function LinkedPrBadgeContent({
   item,
   cwd,
-  dense,
 }: {
   item: LinkedWorkItem;
   cwd: string;
-  dense?: boolean;
 }) {
   const state = useLinkedPrState(item, cwd);
   const ci = useLinkedPrCi(item);
@@ -178,7 +176,6 @@ export function LinkedPrBadgeContent({
       className={`flex items-center gap-0.5 ${state ? LINKED_PR_STATE_TONE[state] : ""}`}
     >
       <LinkedPrStateIcon state={state} ci={ci} className="size-3" />
-      {dense ? null : <span>#{item.number}</span>}
     </span>
   );
 }

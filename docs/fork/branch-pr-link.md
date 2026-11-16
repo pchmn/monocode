@@ -4,14 +4,14 @@ When the PR of a session's branch is found (the `PR #n` under the composer), the
 
 In the session hover card, the linked issue or PR opens on GitHub, and hovering it shows the same GitHub preview card as an issue or PR chip in a message.
 
-A linked PR's sidebar badge, title-tab icon and hover-card line show its state: green when open, grey draft icon while a draft, violet merge icon once merged, red once closed. While open or draft, a badge cut into the icon's corner gives its CI rollup (amber pulsing dot while checks run, red cross once one fails, green check once they pass), also written after the state on the hover-card line. Each visible PR is fetched every 3 minutes until merged, every 45 s while its CI runs; merged PRs are remembered across launches and never fetched again.
+A linked PR's sidebar badge, title-tab icon and hover-card line show its state: green when open, grey draft icon while a draft, violet merge icon once merged, red once closed. While open or draft, a badge cut into the icon's corner gives its CI rollup (amber pulsing dot while checks run, red cross once one fails, green check once they pass). The icon stands alone: the sidebar badge drops the PR number and the hover-card line carries no state text (the GitHub preview on hover has it); the badge's tooltip reads e.g. "Open · CI running". Each visible PR is fetched every 3 minutes until merged, every 45 s while its CI runs; merged PRs are remembered across launches and never fetched again.
 
 ## Fork files
 - `src/features/sessions/model/branchPrAutoLink.ts` — PR report channel, once-per-pair guard (localStorage)
 - `src/features/sessions/hooks/useBranchPrAutoLink.ts`
 - `src/features/sessions/ui/LinkedWorkItemLink.tsx` — link and its hover preview (reuses `GithubWorkItemCard`)
 - `src/features/sessions/model/linkedPrState.ts` — linked PR state and CI store (merged PRs in localStorage; checks via `fetchGithubPrChecks`)
-- `src/features/sessions/ui/LinkedPrStateIcon.tsx` — `useLinkedPrState`, state icon, sidebar badge content
+- `src/features/sessions/ui/LinkedPrStateIcon.tsx` — `useLinkedPrState`, state icon, sidebar badge content (icon only)
 
 ## Upstream hooks
 - `src/app/App.tsx` — `useBranchPrAutoLink(onSetHistorySessionLinkedWorkItem)`
