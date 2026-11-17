@@ -2947,14 +2947,16 @@ fn git_pr_status_for(root: &Path) -> Option<GitPr> {
             "--head",
             &branch,
             "--json",
-            "number,title,url,state,headRepositoryOwner",
+            "number,title,url,state,headRepositoryOwner,headRefOid",
             "--limit",
             "20",
             "--state",
             "all",
         ],
     )?;
-    parse_gh_pr_list(&json, &owner)
+    parse_gh_pr_list(&json, &owner, |oid| {
+        git_run(root, &["merge-base", "--is-ancestor", oid, "HEAD"]).is_some()
+    })
 }
 
 fn git_github_repo_for(root: &Path) -> Result<String, String> {
@@ -4309,7 +4311,11 @@ fn parse_github_work_item(json: &str, kind: &str, repo: &str) -> Result<GitHubWo
         .ok_or_else(|| "GitHub did not return a work item".into())
 }
 
-fn parse_gh_pr_list(json: &str, head_owner: &str) -> Option<GitPr> {
+fn parse_gh_pr_list(
+    json: &str,
+    head_owner: &str,
+    in_head_history: impl Fn(&str) -> bool,
+) -> Option<GitPr> {
     #[derive(Deserialize)]
     struct Owner {
         login: String,
@@ -4322,6 +4328,7 @@ fn parse_gh_pr_list(json: &str, head_owner: &str) -> Option<GitPr> {
         url: String,
         state: String,
         head_repository_owner: Option<Owner>,
+        head_ref_oid: Option<String>,
     }
     let rows: Vec<Row> = serde_json::from_str(json).ok()?;
     let mut best: Option<GitPr> = None;
@@ -4333,6 +4340,7 @@ fn parse_gh_pr_list(json: &str, head_owner: &str) -> Option<GitPr> {
         if !same_owner {
             continue;
         }
+        let head_oid = row.head_ref_oid.unwrap_or_default();
         let pr = GitPr {
             number: row.number,
             title: row.title,
@@ -4342,7 +4350,8 @@ fn parse_gh_pr_list(json: &str, head_owner: &str) -> Option<GitPr> {
         if pr.state == "open" {
             return Some(pr);
         }
-        if best.is_none() {
+        // A closed PR whose head isn't in our history only reused the branch name.
+        if best.is_none() && !head_oid.is_empty() && in_head_history(&head_oid) {
             best = Some(pr);
         }
     }
@@ -8548,7 +8557,7 @@ mod tests {
     #[test]
     fn parse_gh_pr_list_prefers_open() {
         let json = r#"[{"number":2,"title":"Old","url":"https://example.com/2","state":"MERGED","headRepositoryOwner":{"login":"acme"}},{"number":3,"title":"Now","url":"https://example.com/3","state":"OPEN","headRepositoryOwner":{"login":"acme"}}]"#;
-        let pr = parse_gh_pr_list(json, "acme").unwrap();
+        let pr = parse_gh_pr_list(json, "acme", |_| true).unwrap();
         assert_eq!(pr.number, 3);
         assert_eq!(pr.state, "open");
         assert_eq!(pr.title, "Now");
@@ -8556,9 +8565,21 @@ mod tests {
 
     #[test]
     fn parse_gh_pr_list_skips_prs_from_forks() {
-        let json = r#"[{"number":4,"title":"Fork","url":"https://example.com/4","state":"OPEN","headRepositoryOwner":{"login":"someone"}},{"number":2,"title":"Own","url":"https://example.com/2","state":"MERGED","headRepositoryOwner":{"login":"Acme"}}]"#;
-        assert_eq!(parse_gh_pr_list(json, "acme").unwrap().number, 2);
-        assert!(parse_gh_pr_list(json, "other").is_none());
+        let json = r#"[{"number":4,"title":"Fork","url":"https://example.com/4","state":"OPEN","headRepositoryOwner":{"login":"someone"}},{"number":2,"title":"Own","url":"https://example.com/2","state":"MERGED","headRepositoryOwner":{"login":"Acme"},"headRefOid":"abc"}]"#;
+        assert_eq!(parse_gh_pr_list(json, "acme", |_| true).unwrap().number, 2);
+        assert!(parse_gh_pr_list(json, "other", |_| true).is_none());
+    }
+
+    #[test]
+    fn parse_gh_pr_list_skips_closed_prs_that_only_share_the_branch_name() {
+        let json = r#"[{"number":2,"title":"Old","url":"https://example.com/2","state":"CLOSED","headRepositoryOwner":{"login":"acme"},"headRefOid":"old"},{"number":1,"title":"Mine","url":"https://example.com/1","state":"MERGED","headRepositoryOwner":{"login":"acme"},"headRefOid":"mine"}]"#;
+        assert_eq!(
+            parse_gh_pr_list(json, "acme", |oid| oid == "mine")
+                .unwrap()
+                .number,
+            1
+        );
+        assert!(parse_gh_pr_list(json, "acme", |_| false).is_none());
     }
 
     #[test]

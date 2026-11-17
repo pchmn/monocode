@@ -24,6 +24,7 @@ A linked PR's sidebar badge, title-tab icon and hover-card block show its state:
 - `src/app/App.tsx` — `useBranchPrAutoLink(onSetHistorySessionLinkedWorkItem)`
 - `src/features/sessions/ui/SessionPane.tsx` — `useCreatedPrScan(session)`
 - `src/features/sessions/ui/SessionPane.tsx` — `sessionId: branchPrSessionId(session)` in `statusInfo`
+- `src-tauri/src/fs.rs` — `git_pr_status_for` keeps a closed or merged PR only when its `headRefOid` is in `HEAD`'s history, so a fresh branch reusing an old PR's branch name finds none
 - `src-tauri/src/fs.rs` — `mergeable` on `GitHubWorkItem`, requested by the single-item `gh pr view` only (lists leave it empty); `GithubWorkItem.mergeable` in `src/features/inbox/model/githubTasks.ts`
 - `src/features/sessions/ui/TitleTabSessionHover.tsx` (fork file) — `conflicts` passed to the tab icon
 - `src/features/sessions/ui/UserLinkPreview.tsx` — `GithubPrStatusPills` in `GithubWorkItemCard`, `cwd` passed to it
