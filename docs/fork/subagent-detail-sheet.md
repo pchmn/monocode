@@ -6,10 +6,12 @@ A "Details" pill next to each subagent's name, shown on hover, opens the run's w
 - `src/features/sessions/ui/SubagentDetailSheet.tsx` — the button and the sheet; they talk through a DOM event scoped to the session pane
 - `src/features/sessions/model/subagentDetail.ts` — open event, height clamp and persistence
 - `src/features/sessions/ui/DetailsPill.tsx` — the outlined trigger, a `span role="button"` since it sits inside the row's toggle button
+- `src/integrations/harness/providers/claude/claudeHandback.ts` — keeps the report a Claude subagent hands back through `SubagentHandback`, whose Agent tool result only points at it
 
 ## Upstream hooks
 - `src/features/sessions/ui/AgentTranscript.tsx` — `SubagentPanel` label: `<SubagentDetailsButton>` after the name, which loses `flex-1`; `ml-auto` on the model/status span
 - `src/features/sessions/ui/SessionPane.tsx` — `<SubagentDetailSheet>` first in the docked `data-session-composer`, before `<ApprovalSheet>`
+- `src/integrations/harness/providers/claude/claude.ts` — `noteHandback` in `noteSubagentTool`, `isHandbackCall` in `noteSubagentResults`, `handbackReport` on the Agent result in `handleUser` and in `completeAgentTask`
 
 ## Verify
 - `src/features/sessions/ui/SubagentDetailSheet.test.ts`
