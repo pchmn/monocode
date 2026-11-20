@@ -85,6 +85,7 @@ import {
   stopClaudeSubagentLog,
   stopClaudeSubagentLogs,
 } from "./claudeSubagentLog";
+import { handbackReport, isHandbackCall, noteHandback } from "./claudeHandback";
 import {
   hasWaitingSteers,
   steerLifecycleEvent,
@@ -972,6 +973,7 @@ function handleUser(live: Live, rec: Record<string, unknown>): void {
     if (isAgentToolName(tool.name) && isBackgroundedAgentTool(live, tool.id)) {
       continue;
     }
+    if (!result.isError) result.text = handbackReport(tool) ?? result.text;
     live.onEvent({
       type: "tool.updated",
       callId: tool.id,
@@ -1461,7 +1463,7 @@ function noteSubagentTool(
   input: Record<string, unknown>,
 ): void {
   const parent = subagentParent(live, rec);
-  if (!parent) return;
+  if (!parent || noteHandback(parent, id, name, input)) return;
   const title = toolTitle(name, input);
   // No detail: the Agent row's detail is the report the run hands back, and
   // writing the call of the moment there would leave whatever the subagent
@@ -1531,6 +1533,7 @@ function noteSubagentResults(live: Live, rec: Record<string, unknown>): void {
   const parent = subagentParent(live, rec);
   if (!parent) return;
   for (const result of toolResultsFromUserMessage(rec)) {
+    if (isHandbackCall(parent, result.toolUseId)) continue;
     live.onEvent({
       type: "agent.step",
       callId: parent.id,
@@ -1632,7 +1635,9 @@ function completeAgentTask(
       task.toolUseId,
       task.description,
       status,
-      detail ?? (status === "failed" ? "Subagent failed." : undefined),
+      handbackReport(task.toolUseId ? live.toolsById.get(task.toolUseId) : undefined) ??
+        detail ??
+        (status === "failed" ? "Subagent failed." : undefined),
     );
   }
   maybeFinishTurn(live);

@@ -1674,6 +1674,73 @@ describe("claude subagents", () => {
     ]);
   });
 
+  it("shows the report a subagent handed back instead of the pointer to it", async () => {
+    const { events, turn } = await startTurn("s1");
+    emit({
+      type: "assistant",
+      session_id: "sess_1",
+      message: {
+        content: [
+          {
+            type: "tool_use",
+            id: "toolu_agent",
+            name: "Agent",
+            input: { description: "Review docs" },
+          },
+        ],
+      },
+    });
+    emit({
+      type: "assistant",
+      parent_tool_use_id: "toolu_agent",
+      message: {
+        content: [
+          {
+            type: "tool_use",
+            id: "toolu_handback",
+            name: "SubagentHandback",
+            input: { message: "Found 5 wrong claims." },
+          },
+        ],
+      },
+    });
+    emit({
+      type: "user",
+      parent_tool_use_id: "toolu_agent",
+      message: {
+        content: [
+          {
+            type: "tool_result",
+            tool_use_id: "toolu_handback",
+            content: '{"success":true}',
+          },
+        ],
+      },
+    });
+    emit({
+      type: "user",
+      message: {
+        content: [
+          {
+            type: "tool_result",
+            tool_use_id: "toolu_agent",
+            content: "This agent's report was delivered to you as a message.",
+          },
+        ],
+      },
+    });
+    emit({ type: "result", subtype: "success", session_id: "sess_1" });
+    await turn;
+
+    const block = events
+      .reduce(applyHarnessEvent, newSession("claude", "/repo"))
+      .blocks.find((entry) => entry.tool?.callId === "toolu_agent");
+    expect(block?.tool?.detail).toBe("Found 5 wrong claims.");
+    expect(
+      block?.agentRun?.steps.map((step) => [step.kind, step.text]),
+    ).toEqual([["message", "Found 5 wrong claims."]]);
+  });
+
   it("keeps a failed subagent tool result on its tool row", async () => {
     const { events, turn } = await startTurn("s1");
     emit({
